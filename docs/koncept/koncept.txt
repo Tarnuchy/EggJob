@@ -1,0 +1,22 @@
+taski:
+historia zmian (może opisy plus zdjęcia)
+jednorazowe, stałe, regularne
+proste w tworzeniu, zaawansowane opcje ukryte
+prywatne/publiczne
+znajomi widzą twoje publiczne taski
+można taska w kilka osób (wspólnie/kompetetywnie)
+powiadomienia dla regularnych/jednorazowych
+opcjonalne/wymagane zdjęcie/wideo
+milestones
+paczki tasków (base+tworzone przez społeczność)
+
+?podsumowanie, wykres
+
+
+bingo:
+widok bingo/standardowy
+można bingo w kilka osób (wspólnie/kompetetywnie)
+podsumowanie
+
+
+graf: ?
