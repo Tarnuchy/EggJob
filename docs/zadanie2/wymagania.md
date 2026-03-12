@@ -20,13 +20,13 @@
 
 - **S-03:** Jako system zarządzania bazą danych należy wykorzystać PostgreSQL.
 
-- **S-04:** Jedynym wymaganym danym osobowym od użytkownika jest adres e-mail.
+- **S-04:** Jedyną wymaganą daną osobową od użytkownika jest adres e-mail.
 
 
 
 ### Wymagania funkcjonalne
 
-#### MUST (Musi być)
+#### MUST
 
 - **FM-01:** Jako użytkownik aplikacji chcę tworzyć indywidualne zadania (taski), żeby **skutecznie planować swoje codzienne obowiązki**.
 
@@ -46,7 +46,7 @@
 
 
 
-#### SHOULD (Powinien być)
+#### SHOULD
 
 - **FS-01:** Jako użytkownik chcę otrzymywać inteligentne powiadomienia, żeby **nie przeoczyć terminów realizacji moich zadań**.
 
@@ -58,7 +58,7 @@
 
 
 
-#### COULD (Może być)
+#### COULD
 
 - **FC-01:** Jako użytkownik chcę komentować zadania, żeby **wymieniać opinie i uwagi z innymi uczestnikami projektu**.
 
@@ -72,7 +72,7 @@
 
 
 
-#### WON'T (Nie tym razem)
+#### WON'T
 
 - **FW-01:** Jako deweloperzy nie chcemy implementować bazy MongoDB, **żeby zapewnić wysoką spójność danych dzięki sprawdzonemu modelowi relacyjnemu PostgreSQL**.
 
