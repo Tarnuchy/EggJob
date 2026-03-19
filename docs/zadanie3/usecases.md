@@ -2,12 +2,12 @@
 
 ### **Aktorzy:**
 Użytkownik
-<br>
+
 ### **Warunki początkowe:**
 1. Urządzenie posiada zainstalowaną aplikację
 2. Urządzenie posiada łącze z internetem
 3. Użytkownik nie jest zalogowany
-<br>
+
 ### **Scenariusz główny:**
 1. Użytkownik otwiera aplikację
 2. System wyświetla ekran logowania
@@ -17,7 +17,7 @@ Użytkownik
 6. System sprawdza poprawność danych (np. format adresu email, unikalność nazwy użytkownika, siłę hasła)
 7. System tworzy nowe konto użytkownika
 8. System automatycznie loguje użytkownika i wyświetla ekran powitalny
-<br>
+
 ### **Warunki końcowe:**
 Nowe konto zostało utworzone, użytkownik został zalogowany i ma możliwość korzystania z aplikacji
 
