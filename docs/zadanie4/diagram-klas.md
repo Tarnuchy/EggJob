@@ -43,7 +43,7 @@ classDiagram
         <<abstract>>
         +id: UUID
         +name: String
-        +isSingle: bool
+        +taskCount: Int
         +privacy: PrivacyLevel
         +inviteCode: String
         +createdAt: DateTime
@@ -143,7 +143,7 @@ classDiagram
     Task <|-- StaticTask
     Task <|-- OneTimeTask
     Task <|-- RepeatableTask
-    Task "1" --> "0..*" ProgressEntry : progress_history
+    TaskProgress "1" --> "0..*" ProgressEntry : progress_history
     User "1" --> "0..*" ProgressEntry : adds
     User "1" --> "0..*" Friendship : initiates
     User "1" --> "0..*" Friendship : receives
