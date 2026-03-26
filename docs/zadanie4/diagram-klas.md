@@ -1,4 +1,4 @@
-# Simple class diagram
+# Class diagram
 
 ```mermaid
 classDiagram
@@ -17,22 +17,45 @@ classDiagram
 
     class Friendship {
         +id: UUID
-        +status: FriendInviteStatus
-        +createdAt: DateTime
+        +with: User
         +acceptedAt: DateTime
+        +deleteFriend(): Void
+    }
+
+    class Invitation {
+        +id: UUID
+        +from: User
+        +date: DateTime
         +accept(): Void
         +reject(): Void
+        +cancel(): Void
+    }
+
+    class Notification {
+        +id: UUID
+        +message: String
+        +date: DateTime
+        +active: bool
+        +read(): Void
     }
 
     class TaskGroup {
         +id: UUID
         +name: String
+        +isSingle: bool
         +privacy: PrivacyLevel
         +inviteCode: String
         +createdAt: DateTime
         +edit(): Void
         +delete(): Void
         +inviteFriend(): Void
+    }
+
+    class CompetetiveTaskGroup {
+    }
+
+    class CooperativeTaskGroup {
+        
     }
 
     class GroupMember {
@@ -46,17 +69,39 @@ classDiagram
     }
 
     class Task {
+        <<abstract>>
         +id: UUID
         +name: String
         +description: String
-        +repeatType: RepeatType
         +goal: Float
-        +photoRequired: Bool
         +status: TaskStatus
         +edit(): Void
-        +delete(): Void
+        +delete(): Void        
+    }
+
+    class TaskProgress {
+        +id: UUID
+        +value: Float
         +updateProgress(): Void
-        +markAsCompleted(): Void
+    }
+
+    class StaticTask {
+
+    }
+
+    class OneTimeTask {
+
+    }
+
+    class RepeatableTask {
+
+    }
+
+    class TaskParams {
+        +repeatType: RepeatType
+        +photoRequired: Bool
+        +
+        +edit()
     }
 
     class ProgressEntry {
@@ -68,12 +113,31 @@ classDiagram
         +validate(): Bool
     }
 
+    class Comment {
+        +id: UUID
+        +message: string
+        +date: DateTime
+        +addComment(): Void
+        +deleteComment(): Void
+    }
+
     User "1" --> "0..*" TaskGroup : creates
     User "1" --> "0..*" GroupMember : belongs_to
     TaskGroup "1" --> "1..*" GroupMember : has
     TaskGroup "1" --> "0..*" Task : contains
+    Task <|-- StaticTask
+    Task <|-- OneTimeTask
+    Task <|-- RepeatableTask
     Task "1" --> "0..*" ProgressEntry : progress_history
     User "1" --> "0..*" ProgressEntry : adds
     User "1" --> "0..*" Friendship : initiates
     User "1" --> "0..*" Friendship : receives
+    User "1" --> "0..*" Notification : receives
+    User "1" --> "0..*" Invitation : sends
+    User "1" --> "0..*" Comment : authors
+    ProgressEntry "1" --> "0..*" Comment : contains
+    TaskGroup <|-- CompetetiveTaskGroup
+    TaskGroup <|-- CooperativeTaskGroup
+    Task "1" --> "1" TaskParams : configured_by
+    Task "1" --> "1" TaskProgress : tracked_in
 ```
