@@ -40,6 +40,7 @@ classDiagram
     }
 
     class TaskGroup {
+        <<abstract>>
         +id: UUID
         +name: String
         +isSingle: bool
@@ -52,6 +53,7 @@ classDiagram
     }
 
     class CompetetiveTaskGroup {
+
     }
 
     class CooperativeTaskGroup {
@@ -80,9 +82,22 @@ classDiagram
     }
 
     class TaskProgress {
+        <<abstract>>
         +id: UUID
         +value: Float
         +updateProgress(): Void
+    }
+
+    class StaticTaskProgress {
+
+    }
+
+    class OneTimeTaskProgress {
+
+    }
+
+    class RepeatableTaskProgress {
+        +counter: Int
     }
 
     class StaticTask {
@@ -90,7 +105,7 @@ classDiagram
     }
 
     class OneTimeTask {
-
+        +deadline: DateTime
     }
 
     class RepeatableTask {
@@ -140,4 +155,10 @@ classDiagram
     TaskGroup <|-- CooperativeTaskGroup
     Task "1" --> "1" TaskParams : configured_by
     Task "1" --> "1" TaskProgress : tracked_in
+    TaskProgress <|-- StaticTaskProgress
+    TaskProgress <|-- OneTimeTaskProgress
+    TaskProgress <|-- RepeatableTaskProgress
+    StaticTask "1" --> "1" StaticTaskProgress : tracked_in
+    OneTimeTask "1" --> "1" OneTimeTaskProgress : tracked_in
+    RepeatableTask "1" --> "1" RepeatableTaskProgress : tracked_in
 ```
