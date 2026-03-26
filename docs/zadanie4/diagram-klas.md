@@ -155,11 +155,12 @@ classDiagram
     TaskGroup <|-- CooperativeTaskGroup
     Task "1" --> "1" TaskParams : configured_by
     Task "1" --> "1" TaskProgress : tracked_in
-    TaskProgress <|-- StaticTaskProgress
-    TaskProgress <|-- OneTimeTaskProgress
-    TaskProgress <|-- RepeatableTaskProgress
     StaticTask "1" --> "1" StaticTaskProgress : tracked_in
     RepeatableTask "1" --> "1" RepeatableTaskProgress : tracked_in
     OneTimeTask "1" --> "1" OneTimeTaskProgress : tracked_in
+    TaskProgress <|-- StaticTaskProgress
+    TaskProgress <|-- OneTimeTaskProgress
+    TaskProgress <|-- RepeatableTaskProgress
+
 
 ```
