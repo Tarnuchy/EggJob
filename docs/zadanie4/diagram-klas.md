@@ -144,7 +144,7 @@ classDiagram
     Task <|-- OneTimeTask
     Task <|-- RepeatableTask
     TaskProgress "1" --> "0..*" ProgressEntry : progress_history
-    User "1" --> "0..*" ProgressEntry : adds
+    GroupMember "1" --> "0..*" ProgressEntry : adds
     User "1" --> "0..*" Friendship : initiates
     User "1" --> "0..*" Friendship : receives
     User "1" --> "0..*" Notification : receives
