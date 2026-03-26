@@ -109,13 +109,13 @@ classDiagram
     }
 
     class RepeatableTask {
-
+        frequency: TimeInterval
     }
 
     class TaskParams {
-        +repeatType: RepeatType
         +photoRequired: Bool
-        +
+        +color: String
+        +notifications: Bool
         +edit()
     }
 
@@ -153,6 +153,7 @@ classDiagram
     ProgressEntry "1" --> "0..*" Comment : contains
     TaskGroup <|-- CompetetiveTaskGroup
     TaskGroup <|-- CooperativeTaskGroup
+    GroupMember "1" --> "0..*" TaskProgress : has
     Task "1" --> "1" TaskParams : configured_by
     Task "1" --> "1" TaskProgress : tracked_in
     StaticTask "1" --> "1" StaticTaskProgress : tracked_in
