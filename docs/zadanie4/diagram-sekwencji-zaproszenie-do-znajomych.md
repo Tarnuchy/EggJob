@@ -30,7 +30,7 @@ sequenceDiagram
 
             Inv ->> Notif: notify()
             Notif -->> Inv: Instancja Notification
-            Inv ->> UsrB: Dodaje powiadomienie
+            Inv -->> UsrB: Dodaje powiadomienie
 
             Inv -->> UsrA: Zaproszenie wysłane poprwnie
             
