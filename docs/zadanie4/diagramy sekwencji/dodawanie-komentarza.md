@@ -20,6 +20,6 @@ sequenceDiagram
     Com->>Usr: Powiązanie autora z komentarzem
     Com->>PE: Dodanie komentarza do wpisu
 
-    Com-->>UI: Zakończenie metody (Void)
+    Com-->>UI: Zakończenie metody
     UI-->>U: Aktualizuje widok i wyświetla nowy komentarz
 ```

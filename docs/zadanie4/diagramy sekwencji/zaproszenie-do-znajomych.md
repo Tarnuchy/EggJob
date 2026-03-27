@@ -16,16 +16,16 @@ sequenceDiagram
     UsrA->>UsrB: Wyszukuje instancję User po polu username
     
     alt Użytkownik nie istnieje lub próba zaproszenia samego siebie
-        UsrA-->>UI: Przerwanie (Void)
+        UsrA-->>UI: Przerwanie   
         UI-->>UA: Wyświetla komunikat: Nie znaleziono użytkownika
     else Użytkownik z podanym username istnieje
         UsrA->>UsrA: Sprawdza powiązania (istniejące Friendship lub Invitation)
         
         alt Już są znajomymi lub zaproszenie aktywne
-            UsrA-->>UI: Przerwanie (Void)
+            UsrA-->>UI: Przerwanie   
             UI-->>UA: Komunikat: Relacja lub zaproszenie już istnieje
         else Brak wcześniejszych powiązań
-            UsrA->>Inv: inviteFriend()
+            UsrA->>Inv: tworzy obiekt Invitation
             Inv-->>UsrB: Dodaje zaproszenie
 
             Inv ->> Notif: notify()
@@ -34,7 +34,7 @@ sequenceDiagram
 
             Inv -->> UsrA: Zaproszenie wysłane poprwnie
             
-            UsrA-->>UI: Zakończenie metody (Void)
+            UsrA-->>UI: Zakończenie metody   
             UI-->>UA: Komunikat o sukcesie: "Zaproszenie zostało wysłane"
         end
     end
