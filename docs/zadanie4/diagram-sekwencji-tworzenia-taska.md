@@ -1,18 +1,28 @@
+
+# Diagram sekwencji — tworzenie taska
+
 ```mermaid
 sequenceDiagram
-	participant U as User
+	actor U as Użytkownik
+	participant UI as Aplikacja
 	participant TG as TaskGroup
 	participant T as Task
 	participant TP as TaskParams
 	participant TPr as TaskProgress
-	participant GM as GroupMember
 
-	U->>TG: wybiera grupę i inicjuje tworzenie taska
-	TG->>T: tworzy nowy Task (np. OneTimeTask)
-	T->>TP: konfiguruje parametry (TaskParams)
-	T->>TPr: tworzy postęp (TaskProgress)
-	TG->>GM: przypisuje GroupMember do taska (opcjonalnie)
-	T->>TG: dodaje task do grupy
-	TG-->>U: potwierdzenie utworzenia taska
+	U->>UI: Wybiera opcję "Dodaj taska" w grupie
+	UI->>UI: Wyświetla formularz tworzenia taska
+	U->>UI: Wypełnia formularz (nazwa, typ, cel, parametry)
+	UI->>TG: createTask(dane taska)
+	alt Niepoprawne dane
+		TG-->>UI: false
+		UI-->>U: Wyświetla komunikat o błędzie
+	else Dane poprawne
+		TG->>T: Tworzy obiekt Task
+		T->>TP: Tworzy obiekt TaskParams
+		T->>TPr: Tworzy obiekt TaskProgress
+		TG-->>UI: true
+		UI-->>U: Wyświetla komunikat o sukcesie, odświeża widok grupy
+	end
 ```
 
