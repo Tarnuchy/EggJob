@@ -6,6 +6,8 @@ sequenceDiagram
     participant UI as Aplikacja
     participant TG as TaskGroup
     participant T as Task
+    participant TP as TaskParams
+    participant TPr as TaskProgress
 
     U->>UI: Wybiera opcję "Dodaj taska"
     UI->>UI: Wyświetla formularz tworzenia taska
@@ -16,8 +18,9 @@ sequenceDiagram
     else Dane poprawne
         UI->>TG: createTaskGroup(dane domyślnej grupy)
         TG->>TG: Tworzy nową grupę tasków
-        TG->>T: createTask(dane taska)
-        T->>T: Tworzy nowy task
+        TG->>T: Tworzy Task
+        T->>TP: Tworzy TaskParams
+        T->>TPr: Tworzy TaskProgress
         TG-->>UI: true
         UI-->>U: Wyświetla komunikat o sukcesie, odświeża widok
     end
