@@ -10,6 +10,7 @@ classDiagram
         +register(): Bool
         +login(): Bool
         +deleteAccount(): Void
+        +createUser(): Void
     }
 
     class User {

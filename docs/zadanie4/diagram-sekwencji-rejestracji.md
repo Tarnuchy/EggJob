@@ -18,7 +18,7 @@ sequenceDiagram
         Acc->>Acc: Tworzy passwordHash z hasła
         Acc->>Acc: Ustawia registrationDate
         note right of Acc: Tworzenie powiązanego profilu
-        Acc->>Usr: create(id, username)
+        Acc->>Usr: createUser()
         Usr-->>Acc: Obiekt User
         Acc-->>UI: true
         UI-->>U: Zakończenie rejestracji sukcesem

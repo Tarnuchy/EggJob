@@ -4,38 +4,39 @@
 sequenceDiagram
     actor UA as Użytkownik (Zapraszający)
     participant UI as Aplikacja
-    participant UsrA as User (Zapraszający)
-    participant UsrB as User (Zapraszany)
+    participant UsrA as User (Inicjator)
+    participant UsrB as User (Docelowy)
     participant Inv as Invitation
     participant Notif as Notification
 
-    UA->>UI: Wybiera Użytkownika B i klika "Zaproś do znajomych"
+    UA->>UI: Wpisuje nazwę użytkownika (username) i zgłasza chęć zaproszenia
     UI->>UsrA: inviteFriend()
 
-    UsrA->>UsrB: Wyszukuje Użytkownika B w bazie
+    note right of UsrA: Logika wyszukiwania
+    UsrA->>UsrB: Wyszukuje instancję User po polu username
     
-    alt Użytkownik B nie istnieje lub to sam użytkownik
-        UsrA-->>UI: Błąd
-        UI-->>UA: Wyświetla komunikat o błędzie
-    else Użytkownik B poprawny
-        UsrA->>UsrA: Sprawdza, czy istnieje zaproszenie lub przyjaźń
+    alt Użytkownik nie istnieje lub próba zaproszenia samego siebie
+        UsrA-->>UI: Przerwanie (Void)
+        UI-->>UA: Wyświetla komunikat: Nie znaleziono użytkownika
+    else Użytkownik z podanym username istnieje
+        UsrA->>UsrA: Sprawdza powiązania (istniejące Friendship lub Invitation)
         
-        alt Już są znajomymi lub zaproszenie wysłane
-            UsrA-->>UI: Błąd
-            UI-->>UA: Komunikat: "Już wysłano zaproszenie" lub "Już w znajomych"
-        else Brak powiązań (można wysłać zaproszenie)
-            UsrA->>Inv: create(from: UsrA, date: DateTime.now())
-            Inv-->>UsrA: nowa instancja Invitation
+        alt Już są znajomymi lub zaproszenie aktywne
+            UsrA-->>UI: Przerwanie (Void)
+            UI-->>UA: Komunikat: Relacja lub zaproszenie już istnieje
+        else Brak wcześniejszych powiązań
+            UsrA->>Inv: nowa instancja (from: UsrA, date: DateTime)
+            Inv-->>UsrA: Instancja Invitation
             
-            note right of UsrA: Dodanie zaproszenia do profilu Odbiorcy
-            UsrA->>UsrB: Otrzymuje zaproszenie (Invitation)
+            UsrA->>UsrB: Przekazuje Invitation
             
-            note right of UsrB: Wygenerowanie powiadomienia o zaproszeniu
-            UsrB->>Notif: create(message, date, active)
-            Notif-->>UsrB: nowa instancja Notification
+            UsrA->>Notif: nowa instancja (message: "Nowe zaproszenie", active: true)
+            Notif-->>UsrA: Instancja Notification
             
-            UsrA-->>UI: Sukces
-            UI-->>UA: Komunikat: "Zaproszenie zostało wysłane"
+            UsrA->>UsrB: Dodaje powiadomienie do profilu
+            
+            UsrA-->>UI: Zakończenie metody (Void)
+            UI-->>UA: Komunikat o sukcesie: "Zaproszenie zostało wysłane"
         end
     end
 ```
