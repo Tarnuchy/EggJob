@@ -16,7 +16,7 @@ Klasy dziedziczące po klasach abstrakcyjnych (`EndlessTask`, `OneTimeTask`, `Re
 Zachowania są porozdzielane w taki sposób, aby nie tworzyć niepotrzebnie rozbudowanych klas. Przykładowo, klasa `GroupMember` implementuje role i permissions zamiast pchać wszystkie akcje grupy do klasy `User`. Dzięki temu każda klasa implementuje tylko te funkcje, które są jej potrzebne i spełniona jest zasada ISP.
 
 ## Dependency Inversion Principle
-Relacje między kluczowymi komponentami opierają się na abstrakcjach. Klasa `Task` odnosi się do ogólnego pojęcia `TaskProgress` zamiast konkretnej implementacji (np. `RepeatableTaskProgress`). Dzięki temu łatwiej jest wstrzykiwać odpowiednie zależności do obiektów i podmieniać ich logikę.
+Relacje między modułami opierają się na abstrakcjach. Klasa `Task` odnosi się do ogólnego pojęcia `TaskProgress` zamiast konkretnej implementacji (np. `RepeatableTaskProgress`). Dzięki temu łatwiej jest wstrzykiwać odpowiednie zależności do obiektów i podmieniać ich logikę.
 
 ---
 
