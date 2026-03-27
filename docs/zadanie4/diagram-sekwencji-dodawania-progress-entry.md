@@ -4,7 +4,6 @@
 sequenceDiagram
     actor U as Użytkownik
     participant UI as Aplikacja
-    participant T as Task
     participant TP as TaskProgress
     participant PE as ProgressEntry
 
@@ -16,8 +15,7 @@ sequenceDiagram
         UI-->>U: Wyświetla komunikat o błędzie
     else Dane poprawne
         UI->>PE: Tworzy ProgressEntry
-        PE-->>T: Dodaje się do Task
-        T->>TP: updateProgress(wartość)
+        UI->>TP: updateProgress(wartość)
         UI-->>U: Wyświetla komunikat o sukcesie, odświeża widok taska
     end
 ```
