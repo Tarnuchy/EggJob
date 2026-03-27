@@ -2,16 +2,21 @@
 
 ```mermaid
 classDiagram
-    class User {
+    class Account {
         +id: UUID
         +email: String
-        +username: String
         +passwordHash: String
         +registrationDate: DateTime
         +register(): Bool
         +login(): Bool
-        +editProfile(): Void
         +deleteAccount(): Void
+    }
+
+    class User {
+        +id: UUID
+        +username: String
+        +photoUrl: String
+        +editProfile(): Void
         +inviteFriend(): Void
     }
 
@@ -50,6 +55,7 @@ classDiagram
         +edit(): Void
         +delete(): Void
         +inviteFriend(): Void
+        +changePermissions(): Void
     }
 
     class CompetetiveTaskGroup {
@@ -65,7 +71,6 @@ classDiagram
         +role: GroupRole
         +permissions: Permissions
         +joinedAt: DateTime
-        +changePermissions(): Void
         +removeFromGroup(): Void
         +leaveGroup(): Void
     }
@@ -88,7 +93,7 @@ classDiagram
         +updateProgress(): Void
     }
 
-    class StaticTaskProgress {
+    class EndlessTaskProgress {
 
     }
 
@@ -100,7 +105,7 @@ classDiagram
         +counter: Int
     }
 
-    class StaticTask {
+    class EndlessTask {
 
     }
 
@@ -136,6 +141,7 @@ classDiagram
         +deleteComment(): Void
     }
 
+    Account "1" --> "1" User : has_profile
     User "1" --> "0..*" TaskGroup : creates
     User "1" --> "0..*" GroupMember : belongs_to
     TaskGroup "1" --> "1..*" GroupMember : has
