@@ -24,7 +24,7 @@ Relacje między modułami opierają się na abstrakcjach. Klasa `Task` odnosi si
 
 ## Strategy
 * **Gdzie to pasuje:** W relacji między `Task` a `TaskProgress`.
-* **Uzasadnienie:** Różne rodzaje zadań potrzebują zupełnie innej logiki kalkulującej postęp. Dzięki powiązaniu `Task` z `TaskProgress`, to właśnie `TaskProgress` staje się "strategią" naliczania postępów. Jeśli w przyszłości pojawią się nowe sposoby zaliczania nawyków (np. punkty za serię zadań), wystarczy wstrzyknąć inną "strategię" klasy postępu (inny subtyp `TaskProgress`), bez zmieniania samej klasy `Task`.
+* **Uzasadnienie:** Różne rodzaje zadań potrzebują zupełnie innej logiki obliczającej postęp. Dzięki powiązaniu `Task` z `TaskProgress`, to właśnie `TaskProgress` staje się "strategią" naliczania postępów. Jeśli w przyszłości pojawią się nowe sposoby zaliczania nawyków (np. punkty za serię zadań), wystarczy wstrzyknąć inną "strategię" klasy postępu (inny subtyp `TaskProgress`), bez zmieniania samej klasy `Task`.
 
 ## Template Method
 * **Gdzie to pasuje:** W abstrakcyjnych klasach `TaskGroup` lub w przepływie logiki metod `Task.edit()` czy `ProgressEntry.validate()`.
