@@ -17,8 +17,8 @@ sequenceDiagram
     Com->>Com: Ustawia date (DateTime.now())
 
     note right of Com: Nawiązywanie relacji z diagramu klas
-    Com->>Usr: Powiązanie autora z komentarzem (authors)
-    Com->>PE: Dodanie komentarza do wpisu (contains)
+    Com->>Usr: Powiązanie autora z komentarzem
+    Com->>PE: Dodanie komentarza do wpisu
 
     Com-->>UI: Zakończenie metody (Void)
     UI-->>U: Aktualizuje widok i wyświetla nowy komentarz

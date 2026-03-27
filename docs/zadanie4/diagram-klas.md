@@ -56,8 +56,9 @@ classDiagram
         -createdAt: DateTime
         +edit(): Void
         +delete(): Void
-        +inviteFriend(): Void
+        +addFriend(): Void
         +changePermissions(): Void
+        +removeMember(): Void
     }
 
     class CompetetiveTaskGroup {
@@ -73,7 +74,6 @@ classDiagram
         -role: GroupRole
         -permissions: Permissions
         -joinedAt: DateTime
-        +removeFromGroup(): Void
         +leaveGroup(): Void
     }
 
@@ -123,7 +123,7 @@ classDiagram
         -photoRequired: Bool
         -color: String
         -notifications: Bool
-        +edit()
+        +edit(): Void
     }
 
     class ProgressEntry {
