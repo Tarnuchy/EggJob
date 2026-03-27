@@ -21,7 +21,7 @@ sequenceDiagram
             UI-->>U: Komunikat: Niepoprawny email lub hasło
         else Hasło poprawne
             Acc-->>UI: true
-            UI-->>U: Logowanie zakończone sukcesem, przekierowanie do pulpitu
+            UI-->>U: Logowanie zakończone sukcesem, przekierowanie do ekranu głównego
         end
     end
 ```

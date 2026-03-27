@@ -8,20 +8,20 @@ sequenceDiagram
     participant Usr as User (Zapraszany)
     participant GM as GroupMember
 
-    U->>UI: Wybiera użytkownika i klika "Dodaj do grupy"
+    U->>UI: Klika "Dodaj do grupy" i wybiera znajomego
     UI->>TG: addFriend()
 
     note right of TG: Wyszukiwanie docelowego użytkownika
     TG->>Usr: Wyszukuje instancję User
     
     alt Użytkownik nie istnieje
-        TG-->>UI: Przerwanie (Void)
+        TG-->>UI: Przerwanie  
         UI-->>U: Wyświetla komunikat: Nie znaleziono użytkownika
     else Użytkownik istnieje
         TG->>TG: Sprawdza, czy występuje obiket GroupMember dla tego powiązania
         
         alt Użytkownik jest już w grupie
-            TG-->>UI: Przerwanie (Void)
+            TG-->>UI: Przerwanie  
             UI-->>U: Komunikat: Użytkownik jest już członkiem tej grupy
         else Użytkownik nie należy do grupy
             note right of TG: Tworzenie nowego członka grupy
@@ -32,7 +32,7 @@ sequenceDiagram
             TG->>Usr: Przypisuje GroupMember do User
             TG->>TG: Przypisuje GroupMember do TaskGroup
             
-            TG-->>UI: Zakończenie metody (Void)
+            TG-->>UI: Zakończenie metody  
             UI-->>U: Komunikat o sukcesie: "Dodano do grupy"
         end
     end
