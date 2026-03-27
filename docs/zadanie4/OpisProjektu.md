@@ -32,7 +32,7 @@ Relacje między modułami opierają się na abstrakcjach. Klasa `Task` odnosi si
 
 ## Composite
 * **Gdzie to pasuje:** Do zarządzania modelem struktury grup i zadań (`TaskGroup` i jej `Task`).
-* **Uzasadnienie:** Wzorzec Kompozyt pozwoli na to, by grupę zadań traktować tak samo spójnie, jak jej poszczególne części, np. dodając nowe podgrupy do `TaskGroup`, będziesz mógł zbiorczo wywoływać różne metody.
+* **Uzasadnienie:** Wzorzec Kompozyt pozwoli na to, by grupę zadań traktować tak samo spójnie, jak jej poszczególne części, np. dodając nowe podgrupy do `TaskGroup`, będzie można zbiorczo wywoływać różne metody.
 
 ## Builder
 * **Gdzie to pasuje:** Głównie przy tworzeniu obiektów typu `Task` oraz budowaniu `TaskGroup`.
