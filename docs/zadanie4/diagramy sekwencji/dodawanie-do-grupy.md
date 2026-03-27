@@ -25,12 +25,12 @@ sequenceDiagram
             UI-->>U: Komunikat: Użytkownik jest już członkiem tej grupy
         else Użytkownik nie należy do grupy
             note right of TG: Tworzenie nowego członka grupy
-            TG->>GM: nowa instancja (role, permissions, joinedAt)
+            TG->>GM: tworzy obiekt GroupMember
             GM-->>TG: Instancja GroupMember
             
             note right of TG: Nawiązywanie relacji z diagramu klas
-            TG->>Usr: Przypisuje GroupMember do User (belongs_to)
-            TG->>TG: Przypisuje GroupMember do TaskGroup (has)
+            TG->>Usr: Przypisuje GroupMember do User
+            TG->>TG: Przypisuje GroupMember do TaskGroup
             
             TG-->>UI: Zakończenie metody (Void)
             UI-->>U: Komunikat o sukcesie: "Dodano do grupy"
