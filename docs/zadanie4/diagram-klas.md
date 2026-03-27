@@ -35,6 +35,7 @@ classDiagram
         +accept(): Void
         +reject(): Void
         +cancel(): Void
+        +notify(): Void
     }
 
     class Notification {

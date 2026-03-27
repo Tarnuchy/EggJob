@@ -25,15 +25,14 @@ sequenceDiagram
             UsrA-->>UI: Przerwanie (Void)
             UI-->>UA: Komunikat: Relacja lub zaproszenie już istnieje
         else Brak wcześniejszych powiązań
-            UsrA->>Inv: nowa instancja (from: UsrA, date: DateTime)
-            Inv-->>UsrA: Instancja Invitation
-            
-            UsrA->>UsrB: Przekazuje Invitation
-            
-            UsrA->>Notif: nowa instancja (message: "Nowe zaproszenie", active: true)
-            Notif-->>UsrA: Instancja Notification
-            
-            UsrA->>UsrB: Dodaje powiadomienie do profilu
+            UsrA->>Inv: inviteFriend()
+            Inv-->>UsrB: Instancja Invitation
+
+            Inv ->> Notif: notify()
+            Notif -->> Inv: Instancja Notification
+            Inv ->> UsrB: Dodaje powiadomienie
+
+            Inv ->> UsrA: Zaproszenie wysłane poprawnie
             
             UsrA-->>UI: Zakończenie metody (Void)
             UI-->>UA: Komunikat o sukcesie: "Zaproszenie zostało wysłane"
