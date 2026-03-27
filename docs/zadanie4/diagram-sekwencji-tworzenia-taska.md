@@ -1,5 +1,5 @@
 
-# Diagram sekwencji — tworzenie taska
+# Diagram sekwencji — tworzenie taska w grupie
 
 ```mermaid
 sequenceDiagram
