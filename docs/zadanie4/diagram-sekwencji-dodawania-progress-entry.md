@@ -1,0 +1,25 @@
+# Diagram sekwencji — dodawanie ProgressEntry do taska
+
+```mermaid
+sequenceDiagram
+    actor U as Użytkownik
+    participant UI as Aplikacja
+    participant T as Task
+    participant TP as TaskProgress
+    participant PE as ProgressEntry
+
+    U->>UI: Wybiera opcję "Dodaj postęp" w tasku
+    UI->>UI: Wyświetla formularz dodawania postępu
+    U->>UI: Wypełnia formularz (wartość, notatka, zdjęcie, itp.)
+    UI->>UI: Waliduje dane
+    alt Niepoprawne dane
+        UI-->>U: Wyświetla komunikat o błędzie
+    else Dane poprawne
+        UI->>T: getTask()
+        T->>TP: getTaskProgress()
+        UI->>PE: createProgressEntry(dane)
+        PE->>PE: Tworzy nowy ProgressEntry
+        TP->>TP: updateProgress(wartość)
+        UI-->>U: Wyświetla komunikat o sukcesie, odświeża widok taska
+    end
+```
