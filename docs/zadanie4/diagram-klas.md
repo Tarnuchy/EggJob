@@ -146,28 +146,34 @@ classDiagram
     User "1" --> "0..*" GroupMember : belongs_to
     TaskGroup "1" --> "1..*" GroupMember : has
     TaskGroup "1" --> "0..*" Task : contains
+    
     Task <|-- EndlessTask
     Task <|-- OneTimeTask
     Task <|-- RepeatableTask
+
+    TaskProgress <|-- EndlessTaskProgress
+    TaskProgress <|-- OneTimeTaskProgress
+    TaskProgress <|-- RepeatableTaskProgress
+
+    Task "1" --> "1" TaskParams : configured_by
+    Task "1" --> "1" TaskProgress : tracked_in
+    EndlessTask "1" --> "1" EndlessTaskProgress : tracked_in
+    OneTimeTask "1" --> "1" OneTimeTaskProgress : tracked_in
+    RepeatableTask "1" --> "1" RepeatableTaskProgress : tracked_in
+
     TaskProgress "1" --> "0..*" ProgressEntry : progress_history
+    GroupMember "1" --> "0..*" TaskProgress : has
     GroupMember "1" --> "0..*" ProgressEntry : adds
+    
     User "1" --> "0..*" Friendship : initiates
     User "1" --> "0..*" Friendship : receives
     User "1" --> "0..*" Notification : receives
     User "1" --> "0..*" Invitation : sends
     User "1" --> "0..*" Comment : authors
     ProgressEntry "1" --> "0..*" Comment : contains
+    
     TaskGroup <|-- CompetetiveTaskGroup
     TaskGroup <|-- CooperativeTaskGroup
-    GroupMember "1" --> "0..*" TaskProgress : has
-    Task "1" --> "1" TaskParams : configured_by
-    Task "1" --> "1" TaskProgress : tracked_in
-    EndlessTask "1" --> "1" EndlessTaskProgress : tracked_in
-    RepeatableTask "1" --> "1" RepeatableTaskProgress : tracked_in
-    OneTimeTask "1" --> "1" OneTimeTaskProgress : tracked_in
-    TaskProgress <|-- EndlessTaskProgress
-    TaskProgress <|-- OneTimeTaskProgress
-    TaskProgress <|-- RepeatableTaskProgress
 
 
 ```
