@@ -25,4 +25,3 @@ sequenceDiagram
 		UI-->>U: Wyświetla komunikat o sukcesie, odświeża widok grupy
 	end
 ```
-
