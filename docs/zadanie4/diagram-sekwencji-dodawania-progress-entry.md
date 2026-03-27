@@ -15,11 +15,9 @@ sequenceDiagram
     alt Niepoprawne dane
         UI-->>U: Wyświetla komunikat o błędzie
     else Dane poprawne
-        UI->>T: getTask()
-        T->>TP: getTaskProgress()
-        UI->>PE: createProgressEntry(dane)
-        PE->>PE: Tworzy nowy ProgressEntry
-        TP->>TP: updateProgress(wartość)
+        UI->>PE: Tworzy ProgressEntry
+        PE-->>T: Dodaje się do Task
+        T->>TP: updateProgress(wartość)
         UI-->>U: Wyświetla komunikat o sukcesie, odświeża widok taska
     end
 ```
