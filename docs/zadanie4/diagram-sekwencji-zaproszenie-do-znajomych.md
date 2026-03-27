@@ -26,13 +26,13 @@ sequenceDiagram
             UI-->>UA: Komunikat: Relacja lub zaproszenie już istnieje
         else Brak wcześniejszych powiązań
             UsrA->>Inv: inviteFriend()
-            Inv-->>UsrB: Instancja Invitation
+            Inv-->>UsrB: Dodaje zaproszenie
 
             Inv ->> Notif: notify()
             Notif -->> Inv: Instancja Notification
             Inv ->> UsrB: Dodaje powiadomienie
 
-            Inv ->> UsrA: Zaproszenie wysłane poprawnie
+            Inv -->> UsrA: Zaproszenie wysłane poprwnie
             
             UsrA-->>UI: Zakończenie metody (Void)
             UI-->>UA: Komunikat o sukcesie: "Zaproszenie zostało wysłane"
