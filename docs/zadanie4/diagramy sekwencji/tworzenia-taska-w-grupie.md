@@ -23,5 +23,6 @@ sequenceDiagram
 		T->>TPr: Tworzy obiekt TaskProgress
 		TG-->>UI: true
 		UI-->>U: Wyświetla komunikat o sukcesie, odświeża widok grupy
+		%%wszystko tak dobrze przemyślane że mucha nie siada
 	end
 ```
