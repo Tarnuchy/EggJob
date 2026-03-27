@@ -3,55 +3,55 @@
 ```mermaid
 classDiagram
     class Account {
-        +id: UUID
-        +email: String
-        +passwordHash: String
-        +registrationDate: DateTime
+        -id: UUID
+        -email: String
+        -passwordHash: String
+        -registrationDate: DateTime
         +register(): Bool
         +login(): Bool
         +deleteAccount(): Void
     }
 
     class User {
-        +id: UUID
-        +username: String
-        +photoUrl: String
+        -id: UUID
+        -username: String
+        -photoUrl: String
         +editProfile(): Void
         +inviteFriend(): Void
     }
 
     class Friendship {
-        +id: UUID
-        +with: User
-        +acceptedAt: DateTime
+        -id: UUID
+        -with: User
+        -acceptedAt: DateTime
         +deleteFriend(): Void
     }
 
     class Invitation {
-        +id: UUID
-        +from: User
-        +date: DateTime
+        -id: UUID
+        -from: User
+        -date: DateTime
         +accept(): Void
         +reject(): Void
         +cancel(): Void
     }
 
     class Notification {
-        +id: UUID
-        +message: String
-        +date: DateTime
-        +active: bool
+        -id: UUID
+        -message: String
+        -date: DateTime
+        -active: bool
         +read(): Void
     }
 
     class TaskGroup {
         <<abstract>>
-        +id: UUID
-        +name: String
-        +taskCount: Int
-        +privacy: PrivacyLevel
-        +inviteCode: String
-        +createdAt: DateTime
+        -id: UUID
+        -name: String
+        -taskCount: Int
+        -privacy: PrivacyLevel
+        -inviteCode: String
+        -createdAt: DateTime
         +edit(): Void
         +delete(): Void
         +inviteFriend(): Void
@@ -67,29 +67,29 @@ classDiagram
     }
 
     class GroupMember {
-        +id: UUID
-        +role: GroupRole
-        +permissions: Permissions
-        +joinedAt: DateTime
+        -id: UUID
+        -role: GroupRole
+        -permissions: Permissions
+        -joinedAt: DateTime
         +removeFromGroup(): Void
         +leaveGroup(): Void
     }
 
     class Task {
         <<abstract>>
-        +id: UUID
-        +name: String
-        +description: String
-        +goal: Float
-        +status: TaskStatus
+        -id: UUID
+        -name: String
+        -description: String
+        -goal: Float
+        -status: TaskStatus
         +edit(): Void
         +delete(): Void        
     }
 
     class TaskProgress {
         <<abstract>>
-        +id: UUID
-        +value: Float
+        -id: UUID
+        -value: Float
         +updateProgress(): Void
     }
 
@@ -102,7 +102,7 @@ classDiagram
     }
 
     class RepeatableTaskProgress {
-        +counter: Int
+        -counter: Int
     }
 
     class EndlessTask {
@@ -110,33 +110,33 @@ classDiagram
     }
 
     class OneTimeTask {
-        +deadline: DateTime
+        -deadline: DateTime
     }
 
     class RepeatableTask {
-        frequency: TimeInterval
+        -frequency: TimeInterval
     }
 
     class TaskParams {
-        +photoRequired: Bool
-        +color: String
-        +notifications: Bool
+        -photoRequired: Bool
+        -color: String
+        -notifications: Bool
         +edit()
     }
 
     class ProgressEntry {
-        +id: UUID
-        +value: Float
-        +note: String
-        +photoUrl: String
-        +createdAt: DateTime
+        -id: UUID
+        -value: Float
+        -note: String
+        -photoUrl: String
+        -createdAt: DateTime
         +validate(): Bool
     }
 
     class Comment {
-        +id: UUID
-        +message: string
-        +date: DateTime
+        -id: UUID
+        -message: string
+        -date: DateTime
         +addComment(): Void
         +deleteComment(): Void
     }
