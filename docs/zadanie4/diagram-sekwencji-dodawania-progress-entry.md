@@ -17,7 +17,7 @@ sequenceDiagram
         UI-->>U: Wyświetla komunikat o błędzie
     else Dane poprawne
         PE-->>UI: true
-        UI->>TP: updateProgress(wartość)
+        PE->>TP: updateProgress(wartość)
         UI-->>U: Wyświetla komunikat o sukcesie, odświeża widok taska
     end
 ```
