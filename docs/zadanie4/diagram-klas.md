@@ -146,7 +146,7 @@ classDiagram
     User "1" --> "0..*" GroupMember : belongs_to
     TaskGroup "1" --> "1..*" GroupMember : has
     TaskGroup "1" --> "0..*" Task : contains
-    Task <|-- StaticTask
+    Task <|-- EndlessTask
     Task <|-- OneTimeTask
     Task <|-- RepeatableTask
     TaskProgress "1" --> "0..*" ProgressEntry : progress_history
@@ -162,10 +162,10 @@ classDiagram
     GroupMember "1" --> "0..*" TaskProgress : has
     Task "1" --> "1" TaskParams : configured_by
     Task "1" --> "1" TaskProgress : tracked_in
-    StaticTask "1" --> "1" StaticTaskProgress : tracked_in
+    EndlessTask "1" --> "1" EndlessTaskProgress : tracked_in
     RepeatableTask "1" --> "1" RepeatableTaskProgress : tracked_in
     OneTimeTask "1" --> "1" OneTimeTaskProgress : tracked_in
-    TaskProgress <|-- StaticTaskProgress
+    TaskProgress <|-- EndlessTaskProgress
     TaskProgress <|-- OneTimeTaskProgress
     TaskProgress <|-- RepeatableTaskProgress
 
