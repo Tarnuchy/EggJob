@@ -10,10 +10,15 @@ sequenceDiagram
     U->>UI: Wybiera opcję "Dodaj taska"
     UI->>UI: Wyświetla formularz tworzenia taska
     U->>UI: Wypełnia formularz (nazwa, parametry, opcje)
-    UI->>TG: createTaskGroup(dane domyślnej grupy)
-    TG->>TG: Tworzy nową grupę tasków
-    TG->>T: createTask(dane taska)
-    T->>T: Tworzy nowy task
-    TG-->>UI: true
-    UI-->>U: Wyświetla komunikat o sukcesie, odświeża widok
+    UI->>UI: Waliduje dane
+    alt Niepoprawne dane
+        UI-->>U: Wyświetla komunikat o błędzie
+    else Dane poprawne
+        UI->>TG: createTaskGroup(dane domyślnej grupy)
+        TG->>TG: Tworzy nową grupę tasków
+        TG->>T: createTask(dane taska)
+        T->>T: Tworzy nowy task
+        TG-->>UI: true
+        UI-->>U: Wyświetla komunikat o sukcesie, odświeża widok
+    end
 ```
