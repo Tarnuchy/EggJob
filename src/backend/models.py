@@ -113,6 +113,12 @@ class TaskGroup(ABC):
 
     def removeMember(self) -> None:
         pass
+    
+    def createTask(self) -> None: #nowe
+        pass
+    
+    def changeGroupType(self) -> None: #nowe
+        pass
 
 class CompetetiveTaskGroup(TaskGroup):
     pass
@@ -122,10 +128,11 @@ class CooperativeTaskGroup(TaskGroup):
 
 class GroupMember:
     id: UUID
-    role: GroupRole
+    active: bool
     permissions: Permissions
     joinedAt: datetime
 
+    #jak ktoś wychodzi/zostaje usunięty można zostawiać jego ducha który ma progress tasków
     def leaveGroup(self) -> None:
         pass
 
@@ -133,13 +140,16 @@ class Task(ABC):
     id: UUID
     name: str
     description: str
-    goal: float
+    goal: float #raczej zawsze dodatnie
     status: TaskStatus
 
     def edit(self) -> None:
         pass
 
     def delete(self) -> None:
+        pass
+    
+    def changeTaskType(self) -> None:
         pass
 
 class EndlessTask(Task):
@@ -183,6 +193,9 @@ class ProgressEntry:
     createdAt: datetime
 
     def validate(self) -> bool:
+        pass
+    
+    def delete(self) -> None: #nowe
         pass
 
 class Comment:
