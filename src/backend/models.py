@@ -30,6 +30,7 @@ class TimeInterval(Enum):
 
 class User:
     id: UUID
+    accountID: UUID
     username: str
     photoUrl: str
 
@@ -45,7 +46,7 @@ class Account:
     passwordHash: str
     registrationDate: datetime
 
-    def register(self) -> bool:
+    def register(self, db_session) -> bool:
         pass
 
     def login(self) -> bool:
@@ -59,7 +60,8 @@ class Account:
 
 class Friendship:
     id: UUID
-    with_user: User
+    userOneID: UUID
+    userTwoID: UUID
     acceptedAt: datetime
 
     def deleteFriend(self) -> None:
@@ -67,7 +69,8 @@ class Friendship:
 
 class Invitation:
     id: UUID
-    from_user: User
+    fromUserID: UUID
+    toUserID: UUID
     date: datetime
 
     def accept(self) -> None:
@@ -84,6 +87,7 @@ class Invitation:
 
 class Notification:
     id: UUID
+    userID: UUID
     message: str
     date: datetime
     active: bool
@@ -161,6 +165,10 @@ class OneTimeTask(Task):
 class RepeatableTask(Task):
     frequency: TimeInterval
 
+class ChallengeTask(Task):
+    deadline: datetime
+
+
 class TaskProgress(ABC):
     id: UUID
     value: float
@@ -176,6 +184,9 @@ class OneTimeTaskProgress(TaskProgress):
 
 class RepeatableTaskProgress(TaskProgress):
     counter: int
+
+class ChallengeTaskProgress(TaskProgress):
+    pass
 
 class TaskParams:
     photoRequired: bool
