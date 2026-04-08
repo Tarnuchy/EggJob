@@ -1125,7 +1125,6 @@ def task_bingo_running(db_session, TG_bingo, GM_bingo_owner):
     task.name = "3 days running streak"
     task.description = ""
     task.goal = 1 # czy to tak ??
-    task.counterGoal = None # ??
     task.streakGoal = 3 # ??
     task.status = TaskStatus.IN_PROGRESS
     task.frequency = TimeInterval.DAILY
@@ -1140,7 +1139,7 @@ def TaskParams_bingo_running(db_session, task_bingo_running):
     taskParams.taskID = task_bingo_running.id
     taskParams.photoRequired = False
     taskParams.color = ""
-    taskParams.notifications = False
+    taskParams.notifications = True
 
     db_session.add(taskParams)
     db_session.flush()
@@ -1242,17 +1241,15 @@ comment_bingo_running,
 # ----------------------------------- gym ---------------------------------------
 @pytest.fixture
 def task_bingo_gym(db_session, TG_bingo, GM_bingo_owner):
-    task = RepeatableTask()
+    task = OneTimeTask()
     task.id = uuid4()
     task.ownerID = GM_bingo_owner.userID
     task.groupID = TG_bingo.id
     task.name = "workout 3 times"
-    task.description = ""
-    task.goal = 1 # czy to tak ??
-    task.counterGoal = 4 # ??
-    task.streakGoal = None # ??
+    task.description = "3 razy chce byc na silowni w tym roku"
+    task.goal = 3
     task.status = TaskStatus.IN_PROGRESS
-    task.frequency = TimeInterval.DAILY # mozna raz dziennie isc na silownie.
+    task.deadline = datetime(2027, 4, 4, 17, 0, 0)
 
     db_session.add(task)
     db_session.flush()
@@ -1264,21 +1261,19 @@ def TaskParams_bingo_gym(db_session, task_bingo_gym):
     taskParams.taskID = task_bingo_gym.id
     taskParams.photoRequired = False
     taskParams.color = ""
-    taskParams.notifications = False
+    taskParams.notifications = True
 
     db_session.add(taskParams)
     db_session.flush()
     return taskParams
 
 @pytest.fixture
-def TaskProgress_bingo_gym(db_session, GM_bingo_owner, task_bingo_gym):
-    taskProgress = RepeatableTaskProgress()
+def TaskProgress_bingo_gym(db_session, task_bingo_gym):
+    taskProgress = OneTimeTaskProgress()
     taskProgress.id = uuid4()
     taskProgress.userID = None
     taskProgress.taskID = task_bingo_gym.id
-    taskProgress.value = 0 # dzis nie biegalem
-    taskProgress.counter = 2 # total completions
-    taskProgress.streak = 1 # current streak #TODO pododawac wszedzie sensowne daty zeby dalo sie testowac te repetetivy
+    taskProgress.value = 2
 
     db_session.add(taskProgress)
     db_session.flush()
@@ -1306,7 +1301,7 @@ def PE_bingo_gym_2(db_session, TaskProgress_bingo_gym, GM_bingo_owner):
     progressEntry.TaskProgressID = TaskProgress_bingo_gym.id
     progressEntry.userID = GM_bingo_owner.userID
     progressEntry.value = 1
-    progressEntry.message = "pierwszy trening"
+    progressEntry.message = "drugi trening"
     progressEntry.photoUrl =  None
     progressEntry.createdAt = datetime(2025, 4, 6, 16, 0, 0)
 
@@ -1332,8 +1327,60 @@ PE_bingo_gym_2,
 }
 
 
-# ------------------------------- JESSZCZE MOZE COS CZWARTEGO -----------------------------------
-# WEZ ZOBACZ OLIPOL CZY COS WYMYSLISZ PLS
+# ------------------------------- president -----------------------------------
+@pytest.fixture
+def task_bingo_president(db_session, TG_bingo, GM_bingo_owner):
+    task = OneTimeTask()
+    task.id = uuid4()
+    task.ownerID = GM_bingo_owner.userID
+    task.groupID = TG_bingo.id
+    task.name = "become president"
+    task.description = "of the world"
+    task.goal = 1
+    task.status = TaskStatus.IN_PROGRESS
+    task.deadline = datetime(2027, 4, 4, 17, 0, 0)
+
+    db_session.add(task)
+    db_session.flush()
+    return task
+
+@pytest.fixture
+def TaskParams_bingo_president(db_session, task_bingo_president):
+    taskParams = TaskParams()
+    taskParams.taskID = task_bingo_president.id
+    taskParams.photoRequired = True
+    taskParams.color = "gold"
+    taskParams.notifications = True
+
+    db_session.add(taskParams)
+    db_session.flush()
+    return taskParams
+
+@pytest.fixture
+def TaskProgress_bingo_president(db_session, task_bingo_president):
+    taskProgress = OneTimeTaskProgress()
+    taskProgress.id = uuid4()
+    taskProgress.userID = None
+    taskProgress.taskID = task_bingo_president.id
+    taskProgress.value = 0
+
+    db_session.add(taskProgress)
+    db_session.flush()
+    return taskProgress
+
+@pytest.fixture
+def president_bundle(
+task_bingo_president,
+TaskParams_bingo_president,
+TaskProgress_bingo_president,
+):
+    return {
+    "task": task_bingo_president,
+    "params": TaskParams_bingo_president,
+    "progress": TaskProgress_bingo_president,
+    "entries": [],
+    "comments": [],
+}
 
 
 # --------------------------- bingo bundle --------------------------------
@@ -1344,6 +1391,7 @@ def bingo_bundle(
     money_bundle,
     running_bundle,
     gym_bundle,
+    president_bundle,
 ):
     return {
         "TG": TG_bingo,
@@ -1354,6 +1402,7 @@ def bingo_bundle(
             "money": money_bundle,
             "running": running_bundle,
             "gym": gym_bundle,
+            "president": president_bundle,
         }
     }
 # ---------------------------- bingo bundle --------------------------------

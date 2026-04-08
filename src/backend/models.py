@@ -165,7 +165,6 @@ class OneTimeTask(Task):
 
 class RepeatableTask(Task): # moze jakies end date czy cos?
     frequency: TimeInterval 
-    counterGoal: int #nowe
     streakGoal: int #nowe
 
 class ChallengeTask(Task): #czy mozna go dodac do coop tg? chyba nie ??
