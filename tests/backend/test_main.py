@@ -1,3 +1,4 @@
+#jakiś slop, trzeba będzie zaktualizować 
 from fastapi.testclient import TestClient
 
 # Importujemy aplikację z Twojego pliku main.py

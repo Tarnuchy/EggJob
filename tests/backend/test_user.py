@@ -22,5 +22,6 @@ def test_User_inviteFriend():
     # A i B sa znajomymi - blad
     # A probuje zaprosic A - blad
 
-
-# ============= INVITATION TESTS =============
+def test_User_notify():
+    pass
+    # tworzymy powiadomienie dla uzytkownika A, sprawdzamy czy jest w bazie

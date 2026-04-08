@@ -36,6 +36,9 @@ class User:
 
     def inviteFriend(self) -> None:
         pass
+    
+    def notify(self) -> None:
+        pass
 
 class Account:
     id: UUID
@@ -218,6 +221,9 @@ class ProgressEntry:
     
     def delete(self) -> None: #nowe
         pass
+    
+    def addComment(self) -> None:
+        pass
 
 class Comment:
     id: UUID
@@ -225,9 +231,6 @@ class Comment:
     progressEntryID: UUID
     message: str
     date: datetime
-
-    def addComment(self) -> None:
-        pass
 
     def deleteComment(self) -> None:
         pass
