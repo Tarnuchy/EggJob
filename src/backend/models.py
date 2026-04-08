@@ -11,12 +11,8 @@ class PrivacyLevel(Enum):
 
 class GroupRole(Enum):
     MEMBER = "member"
-    MODERATOR = "moderator"
     ADMIN = "admin"
-
-class Permissions(Enum):
-    BASIC = "basic"
-    ALL = "all"
+    OWNER = "owner"
 
 class TaskStatus(Enum):
     TODO = "todo"
@@ -27,6 +23,7 @@ class TimeInterval(Enum):
     DAILY = "daily"
     WEEKLY = "weekly"
     MONTHLY = "monthly"
+
 
 class User:
     id: UUID
@@ -97,6 +94,7 @@ class Notification:
 
 class TaskGroup(ABC):
     id: UUID
+    ownerID: UUID
     name: str
     taskCount: int
     privacy: PrivacyLevel
@@ -131,9 +129,10 @@ class CooperativeTaskGroup(TaskGroup):
     pass
 
 class GroupMember:
-    id: UUID
+    userID: UUID
+    groupID: UUID
     active: bool
-    permissions: Permissions
+    role: GroupRole
     joinedAt: datetime
 
     #jak ktoś wychodzi/zostaje usunięty można zostawiać jego ducha który ma progress tasków
@@ -142,6 +141,8 @@ class GroupMember:
 
 class Task(ABC):
     id: UUID
+    ownerID: UUID
+    groupID: UUID
     name: str
     description: str
     goal: float #raczej zawsze dodatnie
@@ -162,15 +163,19 @@ class EndlessTask(Task):
 class OneTimeTask(Task):
     deadline: datetime
 
-class RepeatableTask(Task):
-    frequency: TimeInterval
+class RepeatableTask(Task): # moze jakies end date czy cos?
+    frequency: TimeInterval 
+    counterGoal: int #nowe
+    streakGoal: int #nowe
 
-class ChallengeTask(Task):
+class ChallengeTask(Task): #czy mozna go dodac do coop tg? chyba nie ??
     deadline: datetime
 
 
 class TaskProgress(ABC):
-    id: UUID
+    id: UUID #wyjebac   # a jednak nie?? bo moze byc kilka progressow przeciez!!!dla challenge taska
+    userID: UUID # nowe, None dla coop, wazne dla competetive
+    taskID: UUID
     value: float
 
     def updateProgress(self) -> None:
@@ -184,11 +189,13 @@ class OneTimeTaskProgress(TaskProgress):
 
 class RepeatableTaskProgress(TaskProgress):
     counter: int
+    streak: int
 
 class ChallengeTaskProgress(TaskProgress):
     pass
 
 class TaskParams:
+    taskID: UUID
     photoRequired: bool
     color: str
     notifications: bool
@@ -196,10 +203,13 @@ class TaskParams:
     def edit(self) -> None:
         pass
 
+
 class ProgressEntry:
     id: UUID
+    userID: UUID
+    TaskProgressID: UUID # = taskID  #cap level 1000000000
     value: float
-    note: str
+    message: str
     photoUrl: str
     createdAt: datetime
 
@@ -211,6 +221,8 @@ class ProgressEntry:
 
 class Comment:
     id: UUID
+    userID: UUID
+    progressEntryID: UUID
     message: str
     date: datetime
 
