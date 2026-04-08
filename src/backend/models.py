@@ -97,6 +97,7 @@ class TaskGroup(ABC):
     ownerID: UUID
     name: str
     taskCount: int
+    isBingo: bool
     privacy: PrivacyLevel
     inviteCode: str
     createdAt: datetime

@@ -43,7 +43,7 @@ def account_a(db_session):
     account.id = uuid4()
     account.email = "user_A@example.com"
     account.passwordHash = "P@ssw0rd_A"
-    account.registrationDate = datetime(2026, 4, 4, 12, 0, 0)
+    account.registrationDate = datetime(2020, 4, 4, 12, 0, 0)
 
     db_session.add(account)
     db_session.flush()
@@ -69,7 +69,7 @@ def account_b(db_session):
     account.id = uuid4()
     account.email = "user_B@example.com"
     account.passwordHash = "P@ssw0rd_B"
-    account.registrationDate = datetime(2026, 4, 4, 12, 5, 0)
+    account.registrationDate = datetime(2020, 4, 4, 12, 5, 0)
 
     db_session.add(account)
     db_session.flush()
@@ -95,7 +95,7 @@ def account_c(db_session):
     account.id = uuid4()
     account.email = "user_C@example.com"
     account.passwordHash = "P@ssw0rd_C"
-    account.registrationDate = datetime(2026, 4, 4, 12, 10, 0)
+    account.registrationDate = datetime(2020, 4, 4, 12, 10, 0)
 
     db_session.add(account)
     db_session.flush()
@@ -121,7 +121,7 @@ def account_d(db_session):
     account.id = uuid4()
     account.email = "user_D@example.com"
     account.passwordHash = "P@ssw0rd_D"
-    account.registrationDate = datetime(2026, 4, 4, 12, 15, 0)
+    account.registrationDate = datetime(2020, 4, 4, 12, 15, 0)
 
     db_session.add(account)
     db_session.flush()
@@ -155,7 +155,7 @@ def friendship_ab(db_session, user_a, user_b):
     friendship.id = uuid4()
     friendship.userOneID = user_a.id
     friendship.userTwoID = user_b.id
-    friendship.acceptedAt = datetime(2026, 4, 4, 13, 0, 0)
+    friendship.acceptedAt = datetime(2021, 4, 4, 13, 0, 0)
     
     db_session.add(friendship)
     db_session.flush()
@@ -167,7 +167,7 @@ def friendship_bc(db_session, user_b, user_c):
     friendship.id = uuid4()
     friendship.userOneID = user_b.id
     friendship.userTwoID = user_c.id
-    friendship.acceptedAt = datetime(2026, 4, 4, 13, 0, 0)
+    friendship.acceptedAt = datetime(2021, 4, 4, 13, 0, 0)
     
     db_session.add(friendship)
     db_session.flush()
@@ -187,7 +187,7 @@ def invitation_bc(db_session, user_b, user_c):
     invitation.id = uuid4()
     invitation.fromUserID = user_b.id
     invitation.toUserID = user_c.id
-    invitation.date = datetime(2026, 4, 4, 13, 0, 0)
+    invitation.date = datetime(2021, 4, 4, 12, 0, 0)
     
     db_session.add(invitation)
     db_session.flush()
@@ -199,7 +199,7 @@ def notification_c(db_session, user_c, user_b):
     notification.id = uuid4()
     notification.userID = user_c.id
     notification.message = f"User {user_b.username} sent you an invite"
-    notification.date = datetime(2026, 4, 4, 13, 0, 0)
+    notification.date = datetime(2021, 4, 4, 12, 0, 0)
     notification.active = True
     
     db_session.add(notification)
@@ -222,6 +222,7 @@ def TG_shoppingList(db_session, user_a):
     taskGroup.ownerID = user_a.id
     taskGroup.name = "Shopping List"
     taskGroup.taskCount = 4
+    taskGroup.isBingo = False
     taskGroup.privacy = PrivacyLevel.PRIVATE
     taskGroup.inviteCode = "TEST-CODE-1" # ??
     """
@@ -309,7 +310,7 @@ def TaskParams_shoppingList_eggs(db_session, task_shoppingList_eggs):
 def TaskProgress_shoppingList_eggs(db_session, task_shoppingList_eggs):
     taskProgress = OneTimeTaskProgress()
     taskProgress.id = uuid4()
-    taskProgress.userID = None
+    taskProgress.userID = task_shoppingList_eggs.ownerID
     taskProgress.taskID = task_shoppingList_eggs.id
     taskProgress.value = 10
 
@@ -394,7 +395,7 @@ def TaskParams_shoppingList_milk(db_session, task_shoppingList_milk):
 def TaskProgress_shoppingList_milk(db_session, task_shoppingList_milk):
     taskProgress = OneTimeTaskProgress()
     taskProgress.id = uuid4()
-    taskProgress.userID = None
+    taskProgress.userID = task_shoppingList_milk.ownerID
     taskProgress.taskID = task_shoppingList_milk.id
     taskProgress.value = 0
 
@@ -449,7 +450,7 @@ def TaskParams_shoppingList_bread(db_session, task_shoppingList_bread):
 def TaskProgress_shoppingList_bread(db_session, task_shoppingList_bread):
     taskProgress = OneTimeTaskProgress()
     taskProgress.id = uuid4()
-    taskProgress.userID = None
+    taskProgress.userID = task_shoppingList_bread.ownerID
     taskProgress.taskID = task_shoppingList_bread.id
     taskProgress.value = 1
 
@@ -492,7 +493,7 @@ def comment_shoppingList_bread_2(db_session, PE_shoppingList_bread, user_d):
     comment.userID = user_d.id
     comment.progressEntryID = PE_shoppingList_bread.id
     comment.message = "czy to chleb bezglutenowy?"
-    comment.date = datetime(2025, 4, 4, 18, 0, 0)
+    comment.date = datetime(2025, 4, 4, 18, 10, 0)
 
     db_session.add(comment)
     db_session.flush()
@@ -549,7 +550,7 @@ def TaskParams_shoppingList_cheese(db_session, task_shoppingList_cheese):
 def TaskProgress_shoppingList_cheese(db_session, task_shoppingList_cheese):
     taskProgress = OneTimeTaskProgress()
     taskProgress.id = uuid4()
-    taskProgress.userID = None
+    taskProgress.userID = task_shoppingList_cheese.ownerID
     taskProgress.taskID = task_shoppingList_cheese.id
     taskProgress.value = 4
 
@@ -601,13 +602,13 @@ def comment_shoppingList_cheese_1(db_session, PE_shoppingList_cheese_1, user_d):
     return comment
 
 @pytest.fixture
-def comment_shoppingList_cheese_2(db_session, PE_shoppingList_cheese_2, user_b):
+def comment_shoppingList_cheese_2(db_session, PE_shoppingList_cheese_1, user_b):
     comment = Comment()
     comment.id = uuid4()
     comment.userID = user_b.id
-    comment.progressEntryID = PE_shoppingList_cheese_2.id
+    comment.progressEntryID = PE_shoppingList_cheese_1.id
     comment.message = "dobra git jest co ty gadasz"
-    comment.date = datetime(2025, 4, 4, 18, 0, 0)
+    comment.date = datetime(2025, 4, 4, 18, 10, 0)
 
     db_session.add(comment)
     db_session.flush()
@@ -684,6 +685,7 @@ def TG_eggChallenge(db_session, user_b):
     taskGroup.ownerID = user_b.id
     taskGroup.name = "EGG EATING CHALLENGE"
     taskGroup.taskCount = 1
+    taskGroup.isBingo = False
     taskGroup.privacy = PrivacyLevel.PUBLIC
     taskGroup.inviteCode = "TEST-CODE-2"
     taskGroup.createdAt = datetime(2025, 4, 4, 13, 0, 0)
@@ -827,7 +829,7 @@ def PE_eggChallenge_eating_admin_2(db_session, TaskProgress_eggChallenge_eating_
     progressEntry.value = 3
     progressEntry.message = "sadzone 3 jaja"
     progressEntry.photoUrl = "https://example.com/sadzone-3-jaja.png"
-    progressEntry.createdAt = datetime(2025, 4, 4, 20, 0, 0)
+    progressEntry.createdAt = datetime(2025, 4, 4, 21, 0, 0)
 
     db_session.add(progressEntry)
     db_session.flush()
@@ -842,7 +844,7 @@ def PE_eggChallenge_eating_admin_3(db_session, TaskProgress_eggChallenge_eating_
     progressEntry.value = 2
     progressEntry.message = "na twardo 2 jaja"
     progressEntry.photoUrl = "https://example.com/na-twardo-2-jaja.png"
-    progressEntry.createdAt = datetime(2025, 4, 4, 20, 0, 0)
+    progressEntry.createdAt = datetime(2025, 4, 4, 21, 5, 0)
 
     db_session.add(progressEntry)
     db_session.flush()
@@ -857,7 +859,7 @@ def PE_eggChallenge_eating_admin_4(db_session, TaskProgress_eggChallenge_eating_
     progressEntry.value = 4
     progressEntry.message = "jajecznica 4 jaja"
     progressEntry.photoUrl = "https://example.com/jajecznica-4-jaja.png"
-    progressEntry.createdAt = datetime(2025, 4, 4, 20, 0, 0)
+    progressEntry.createdAt = datetime(2025, 4, 4, 22, 0, 0)
 
     db_session.add(progressEntry)
     db_session.flush()
@@ -883,7 +885,7 @@ def comment_eggChallenge_eating_owner_2(db_session, PE_eggChallenge_eating_owner
     comment.userID = user_c.id
     comment.progressEntryID = PE_eggChallenge_eating_owner_2.id
     comment.message = "oj chyba cos oszukujesz chlopie"
-    comment.date = datetime(2025, 4, 4, 17, 0, 0)
+    comment.date = datetime(2025, 4, 4, 20, 30, 0)
 
     db_session.add(comment)
     db_session.flush()
@@ -896,7 +898,7 @@ def comment_eggChallenge_eating_owner_3(db_session, PE_eggChallenge_eating_owner
     comment.userID = user_b.id
     comment.progressEntryID = PE_eggChallenge_eating_owner_2.id
     comment.message = "nieprawda po prostu mi zasdroscisz bo ty bys tyle nie zjadl"
-    comment.date = datetime(2025, 4, 4, 18, 0, 0)
+    comment.date = datetime(2025, 4, 4, 20, 40, 0)
 
     db_session.add(comment)
     db_session.flush()
@@ -972,6 +974,7 @@ def TG_bingo(db_session, user_b):
     taskGroup.ownerID = user_b.id
     taskGroup.name = "BINGO 2026"
     taskGroup.taskCount = 4
+    taskGroup.isBingo = True
     taskGroup.privacy = PrivacyLevel.PUBLIC
     taskGroup.inviteCode = "TEST-CODE-3"
     taskGroup.createdAt = datetime(2026, 4, 4, 13, 0, 0)
@@ -1006,7 +1009,7 @@ def task_bingo_money(db_session, TG_bingo, GM_bingo_owner):
     task.description = ""
     task.goal = 1000
     task.status = TaskStatus.IN_PROGRESS
-    task.deadline = datetime(2026, 4, 4, 13, 0, 0)
+    #task.deadline = datetime(2027, 4, 4, 13, 0, 0) #endless nie ma deadline
 
     db_session.add(task)
     db_session.flush()
@@ -1025,10 +1028,10 @@ def TaskParams_bingo_money(db_session, task_bingo_money):
     return taskParams
 
 @pytest.fixture
-def TaskProgress_bingo_money(db_session, GM_bingo_owner, task_bingo_money):
+def TaskProgress_bingo_money(db_session, task_bingo_money):
     taskProgress = EndlessTaskProgress()
     taskProgress.id = uuid4()
-    taskProgress.userID = None
+    taskProgress.userID = task_bingo_money.ownerID
     taskProgress.taskID = task_bingo_money.id
     taskProgress.value = 700
 
@@ -1045,7 +1048,7 @@ def PE_bingo_money_1(db_session, TaskProgress_bingo_money, GM_bingo_owner):
     progressEntry.value = 800
     progressEntry.message = "wyplata"
     progressEntry.photoUrl =  None
-    progressEntry.createdAt = datetime(2025, 4, 4, 16, 0, 0)
+    progressEntry.createdAt = datetime(2026, 4, 4, 16, 0, 0)
 
     db_session.add(progressEntry)
     db_session.flush()
@@ -1060,7 +1063,7 @@ def PE_bingo_money_2(db_session, TaskProgress_bingo_money, GM_bingo_owner):
     progressEntry.value = 400
     progressEntry.message = "kieszonkowe od babci"
     progressEntry.photoUrl =  None
-    progressEntry.createdAt = datetime(2025, 4, 4, 16, 0, 0)
+    progressEntry.createdAt = datetime(2026, 4, 4, 16, 10, 0)
 
     db_session.add(progressEntry)
     db_session.flush()
@@ -1075,7 +1078,7 @@ def PE_bingo_money_3(db_session, TaskProgress_bingo_money, GM_bingo_owner):
     progressEntry.value = -500
     progressEntry.message = "rick owens"
     progressEntry.photoUrl =  None
-    progressEntry.createdAt = datetime(2025, 4, 4, 16, 0, 0)
+    progressEntry.createdAt = datetime(2026, 4, 4, 17, 0, 0)
 
     db_session.add(progressEntry)
     db_session.flush()
@@ -1088,7 +1091,7 @@ def comment_bingo_money(db_session, PE_bingo_money_3, user_a):
     comment.userID = user_a.id
     comment.progressEntryID = PE_bingo_money_3.id
     comment.message = "za te cene chyba fake rick"
-    comment.date = datetime(2025, 4, 4, 17, 0, 0)
+    comment.date = datetime(2026, 4, 4, 17, 30, 0)
 
     db_session.add(comment)
     db_session.flush()
@@ -1146,10 +1149,10 @@ def TaskParams_bingo_running(db_session, task_bingo_running):
     return taskParams
 
 @pytest.fixture
-def TaskProgress_bingo_running(db_session, GM_bingo_owner, task_bingo_running):
+def TaskProgress_bingo_running(db_session, task_bingo_running):
     taskProgress = RepeatableTaskProgress()
     taskProgress.id = uuid4()
-    taskProgress.userID = None
+    taskProgress.userID = task_bingo_running.ownerID
     taskProgress.taskID = task_bingo_running.id
     taskProgress.value = 0 # dzis nie biegalem
     taskProgress.counter = 3 # total completions
@@ -1168,7 +1171,7 @@ def PE_bingo_running_1(db_session, TaskProgress_bingo_running, GM_bingo_owner):
     progressEntry.value = 1
     progressEntry.message = "pierwszy bieg"
     progressEntry.photoUrl =  None
-    progressEntry.createdAt = datetime(2025, 4, 4, 16, 0, 0)
+    progressEntry.createdAt = datetime(2026, 4, 4, 16, 0, 0)
 
     db_session.add(progressEntry)
     db_session.flush()
@@ -1212,7 +1215,7 @@ def comment_bingo_running(db_session, PE_bingo_running_3, user_c):
     comment.userID = user_c.id
     comment.progressEntryID = PE_bingo_running_3.id
     comment.message = "performative"
-    comment.date = datetime(2025, 4, 4, 17, 0, 0)
+    comment.date = datetime(2026, 4, 11, 17, 0, 0)
 
     db_session.add(comment)
     db_session.flush()
@@ -1271,7 +1274,7 @@ def TaskParams_bingo_gym(db_session, task_bingo_gym):
 def TaskProgress_bingo_gym(db_session, task_bingo_gym):
     taskProgress = OneTimeTaskProgress()
     taskProgress.id = uuid4()
-    taskProgress.userID = None
+    taskProgress.userID = task_bingo_gym.ownerID
     taskProgress.taskID = task_bingo_gym.id
     taskProgress.value = 2
 
@@ -1288,7 +1291,7 @@ def PE_bingo_gym_1(db_session, TaskProgress_bingo_gym, GM_bingo_owner):
     progressEntry.value = 1
     progressEntry.message = "pierwszy trening"
     progressEntry.photoUrl =  None
-    progressEntry.createdAt = datetime(2025, 4, 4, 16, 0, 0)
+    progressEntry.createdAt = datetime(2026, 4, 4, 16, 0, 0)
 
     db_session.add(progressEntry)
     db_session.flush()
@@ -1303,7 +1306,7 @@ def PE_bingo_gym_2(db_session, TaskProgress_bingo_gym, GM_bingo_owner):
     progressEntry.value = 1
     progressEntry.message = "drugi trening"
     progressEntry.photoUrl =  None
-    progressEntry.createdAt = datetime(2025, 4, 6, 16, 0, 0)
+    progressEntry.createdAt = datetime(2026, 4, 6, 16, 0, 0)
 
     db_session.add(progressEntry)
     db_session.flush()
@@ -1360,7 +1363,7 @@ def TaskParams_bingo_president(db_session, task_bingo_president):
 def TaskProgress_bingo_president(db_session, task_bingo_president):
     taskProgress = OneTimeTaskProgress()
     taskProgress.id = uuid4()
-    taskProgress.userID = None
+    taskProgress.userID = task_bingo_president.ownerID
     taskProgress.taskID = task_bingo_president.id
     taskProgress.value = 0
 
