@@ -9,8 +9,7 @@
 		"noEmit": true,
 		"allowJs": false,
 		"resolveJsonModule": true,
-		"isolatedModules": true,
-		"baseUrl": "."
+		"isolatedModules": true
 	},
 	"include": [
 		"tests/**/*.ts",
