@@ -32,4 +32,6 @@ def test_ProgressEntry_addComment(db_session, eggs_bundle, money_bundle, user_b,
     assert db_session.query(Comment).filter_by(progressEntryID=entry.id, userID=user_b.id, message="ez").first() is not None
     entry.addComment(db_session, user_c.id, "asdfg") 
     assert db_session.query(Comment).filter_by(progressEntryID=entry.id, userID=user_c.id, message="asdfg").first() is not None
+    with pytest.raises(Exception): #nie znajomy
+        entry.addComment(db_session, user_d.id, "głupiś")
     

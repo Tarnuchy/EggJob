@@ -11,7 +11,6 @@ def test_Friendship_deleteFriend(db_session, friendship_ab):
     assert saved is not None
     
     friendship_ab.deleteFriend(db_session)
-    db_session.flush()
     
     deleted = db_session.query(Friendship).filter(Friendship.id == id).first()
     assert deleted is None
