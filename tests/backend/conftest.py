@@ -1125,12 +1125,11 @@ def task_bingo_running(db_session, TG_bingo, GM_bingo_owner):
     task.id = uuid4()
     task.ownerID = GM_bingo_owner.userID
     task.groupID = TG_bingo.id
-    task.name = "3 days running streak"
+    task.name = "biegac 3 razy w miesiacu"
     task.description = ""
-    task.goal = 1 # czy to tak ??
-    task.streakGoal = 3 # ??
+    task.goal = 3
     task.status = TaskStatus.IN_PROGRESS
-    task.frequency = TimeInterval.DAILY
+    task.frequency = TimeInterval.MONTHLY
 
     db_session.add(task)
     db_session.flush()
@@ -1171,7 +1170,7 @@ def PE_bingo_running_1(db_session, TaskProgress_bingo_running, GM_bingo_owner):
     progressEntry.value = 1
     progressEntry.message = "pierwszy bieg"
     progressEntry.photoUrl =  None
-    progressEntry.createdAt = datetime(2026, 4, 4, 16, 0, 0)
+    progressEntry.createdAt = datetime(2026, 3, 4, 16, 0, 0)
 
     db_session.add(progressEntry)
     db_session.flush()
