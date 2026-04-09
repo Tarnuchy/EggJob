@@ -116,12 +116,6 @@ class TaskGroup(ABC):
 
     def addFriend(self) -> None:
         pass
-
-    def changePermissions(self) -> None:
-        pass
-
-    def removeMember(self) -> None:
-        pass
     
     def createTask(self) -> None: #nowe
         pass
@@ -144,6 +138,12 @@ class GroupMember:
 
     #jak ktoś wychodzi/zostaje usunięty można zostawiać jego ducha który ma progress tasków
     def leaveGroup(self) -> None:
+        pass
+
+    def changePermissions(self) -> None:
+        pass
+
+    def removeMember(self) -> None:
         pass
 
 class Task(ABC):
