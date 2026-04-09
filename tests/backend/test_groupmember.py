@@ -123,3 +123,15 @@ def test_GroupMember_leaveGroup_keep_progress(
     assert member_after.active is False
     assert progress_after is not None
     assert entry_after is not None
+
+def test_TaskGroup_changePermissions():
+    pass
+    # zmieniamy uprawnienia członka, sprawdzamy czy się zmieniły
+    # próbujemy zmienić uprawnienia nie mając do tego praw, powinno wywalić błąd
+
+def test_TaskGroup_removeMember():
+    pass
+    # usuwamy członka z grupy razem z progressem, sprawdzamy czy się wszystko usunęło
+    # usuwamy członka z grupy bez progresu, sprawdzamy czy GroupMember.active jest false
+    # próbujemy usunąć kogoś, kogo nie ma w grupie, powinno wywalić błąd
+    # próbujemy wyrzucić kogoś z wyższymi/równymi uprawnieniami, powinno wywalić błąd
