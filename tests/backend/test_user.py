@@ -22,6 +22,8 @@ def test_User_inviteFriend():
     # A i B sa znajomymi - blad
     # A probuje zaprosic A - blad
 
-def test_User_notify():
+def test_User_notify(db_session, user_a):
     pass
     # tworzymy powiadomienie dla uzytkownika A, sprawdzamy czy jest w bazie
+    user_a.notify(db_session, "wstawaj samuraju")
+    assert db_session.query(Notification).filter_by(userID=user_a.id, content="wstawaj samuraju").first() is not None
