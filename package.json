@@ -1,0 +1,14 @@
+{
+	"name": "eggjob",
+	"version": "0.1.0",
+	"private": true,
+	"scripts": {
+		"test": "vitest run",
+		"test:frontend": "vitest run --config vitest.config.ts",
+		"test:frontend:watch": "vitest --config vitest.config.ts"
+	},
+	"devDependencies": {
+		"typescript": "^5.8.3",
+		"vitest": "^2.1.8"
+	}
+}
