@@ -57,6 +57,9 @@ class Account:
 
     def createUser(self) -> None:
         pass
+    
+    def changePassword(self) -> None:
+        pass
 
 class Friendship:
     id: UUID

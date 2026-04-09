@@ -90,3 +90,14 @@ def test_Account_createUser(db_session, account_a, account_b):
         
     db_session.rollback()
     
+    
+def test_Account_changePassword(db_session, account_a):
+    # zmieniamy hasło na nowe i silne, sprawdzamy czy się zmieniło
+    new_password = "noweSilneHaslo_6969" #powinien byc hash xd
+    account_a.changePassword(db_session, new_password)
+    assert db_session.query(Account).filter(Account.id == account_a.id, Account.passwordHash == new_password).first() is not None
+    
+    # słabe hasło
+    new_password = "slabe"
+    with pytest.raises(ValueError):
+        account_a.changePassword(db_session, new_password)
