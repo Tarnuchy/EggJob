@@ -1,6 +1,8 @@
+import pytest
+
 from src.backend.models import *
 
-def test_GroupMember_leaveGroup_take_progress(
+def test_GroupMember_removeMember_take_progress(
     db_session,
     GM_shoppingList_ghost,
     task_shoppingList_cheese,
@@ -26,6 +28,7 @@ def test_GroupMember_leaveGroup_take_progress(
     entry_before = db_session.query(ProgressEntry).filter(
         ProgressEntry.id == PE_shoppingList_eggs.id
     ).first()
+    owner = db_session.query(User).filter_by(id=TaskProgress_shoppingList_eggs.userId).first()
 
     assert member_before is not None
     assert task_cheese_before is not None
@@ -37,7 +40,7 @@ def test_GroupMember_leaveGroup_take_progress(
     owner_progress_before_value = owner_progress_before.value
     ghost_entry_value = PE_shoppingList_eggs.value
 
-    GM_shoppingList_ghost.leaveGroup(session=db_session, take_progress=True)
+    GM_shoppingList_ghost.removeMember(session=db_session, take_progress=True, punisher=owner.id)
     db_session.flush()
 
     member_after = db_session.query(GroupMember).filter_by(
@@ -72,7 +75,7 @@ def test_GroupMember_leaveGroup_take_progress(
     admin_entries_before = eggChallenge_bundle["tasks"]["eating"]["entries"]["admin"]
     owner_progress_before = eggChallenge_bundle["tasks"]["eating"]["progress"]["owner"]
     
-    admin.leaveGroup(session=db_session, take_progress=True)
+    admin.removeMember(session=db_session, take_progress=True, punisher=admin.id)
     db_session.flush()#???
     assert db_session.query(GroupMember).filter_by(userID=admin.userID, groupID=eggChallenge_bundle["TG"].id).first() is None
     assert db_session.query(OneTimeTaskProgress).filter_by(userId=admin.userID, taskID=admin_progress_before.taskID).first() is not None
@@ -80,9 +83,11 @@ def test_GroupMember_leaveGroup_take_progress(
         assert db_session.query(ProgressEntry).filter_by(id=entry.id).first() is None
     assert db_session.query(OneTimeTaskProgress).filter_by(userId=eggChallenge_bundle["GM"]["owner"].userID, taskID=admin_progress_before.taskID).first().value == owner_progress_before.value
     
+    with pytest.raises(Exception):
+        owner.removeMember(session=db_session, take_progress=True, punisher=owner.id)
+    
 
-
-def test_GroupMember_leaveGroup_keep_progress(
+def test_GroupMember_removeMember_keep_progress(
     db_session,
     GM_shoppingList_member,
     TaskProgress_shoppingList_bread,
@@ -105,7 +110,7 @@ def test_GroupMember_leaveGroup_keep_progress(
     assert progress_before is not None
     assert entry_before is not None
 
-    GM_shoppingList_member.leaveGroup(session=db_session, take_progress=False)
+    GM_shoppingList_member.removeMember(session=db_session, take_progress=False, punisher = GM_shoppingList_member.id)
     db_session.flush()
 
     member_after = db_session.query(GroupMember).filter_by(
@@ -123,15 +128,15 @@ def test_GroupMember_leaveGroup_keep_progress(
     assert member_after.active is False
     assert progress_after is not None
     assert entry_after is not None
+    
 
-def test_TaskGroup_changePermissions():
-    pass
+def test_GroupMember_changePermissions(db_session, GM_shoppingList_member, GM_shoppingList_owner):
     # zmieniamy uprawnienia członka, sprawdzamy czy się zmieniły
+    GM_shoppingList_member.changePermissions(db_session, GroupRole.ADMIN, GM_shoppingList_owner.id)
+    assert db_session.query(GroupMember).filter_by(userID=GM_shoppingList_member.userID, groupID=GM_shoppingList_member.groupID).first().role == GroupRole.ADMIN
     # próbujemy zmienić uprawnienia nie mając do tego praw, powinno wywalić błąd
-
-def test_TaskGroup_removeMember():
-    pass
-    # usuwamy członka z grupy razem z progressem, sprawdzamy czy się wszystko usunęło
-    # usuwamy członka z grupy bez progresu, sprawdzamy czy GroupMember.active jest false
-    # próbujemy usunąć kogoś, kogo nie ma w grupie, powinno wywalić błąd
-    # próbujemy wyrzucić kogoś z wyższymi/równymi uprawnieniami, powinno wywalić błąd
+    with pytest.raises(Exception):
+        GM_shoppingList_member.changePermissions(db_session, GroupRole.ADMIN, GM_shoppingList_member.id)
+    
+    with pytest.raises(Exception):
+        GM_shoppingList_owner.changePermissions(db_session, GroupRole.ADMIN, GM_shoppingList_owner.id)

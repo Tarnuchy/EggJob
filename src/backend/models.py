@@ -136,13 +136,10 @@ class GroupMember:
     role: GroupRole
     joinedAt: datetime
 
-    #jak ktoś wychodzi/zostaje usunięty można zostawiać jego ducha który ma progress tasków
-    def leaveGroup(self) -> None:
-        pass
-
     def changePermissions(self) -> None:
         pass
-
+    
+    #jak ktoś wychodzi/zostaje usunięty można zostawiać jego ducha który ma progress tasków
     def removeMember(self) -> None:
         pass
 
