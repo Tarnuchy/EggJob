@@ -11,12 +11,8 @@ class PrivacyLevel(Enum):
 
 class GroupRole(Enum):
     MEMBER = "member"
-    MODERATOR = "moderator"
     ADMIN = "admin"
-
-class Permissions(Enum):
-    BASIC = "basic"
-    ALL = "all"
+    OWNER = "owner"
 
 class TaskStatus(Enum):
     TODO = "todo"
@@ -28,8 +24,10 @@ class TimeInterval(Enum):
     WEEKLY = "weekly"
     MONTHLY = "monthly"
 
+
 class User:
     id: UUID
+    accountID: UUID
     username: str
     photoUrl: str
 
@@ -38,6 +36,9 @@ class User:
 
     def inviteFriend(self) -> None:
         pass
+    
+    def notify(self) -> None:
+        pass
 
 class Account:
     id: UUID
@@ -45,7 +46,7 @@ class Account:
     passwordHash: str
     registrationDate: datetime
 
-    def register(self) -> bool:
+    def register(self, db_session) -> bool:
         pass
 
     def login(self) -> bool:
@@ -56,10 +57,14 @@ class Account:
 
     def createUser(self) -> None:
         pass
+    
+    def changePassword(self) -> None:
+        pass
 
 class Friendship:
     id: UUID
-    with_user: User
+    userOneID: UUID
+    userTwoID: UUID
     acceptedAt: datetime
 
     def deleteFriend(self) -> None:
@@ -67,7 +72,8 @@ class Friendship:
 
 class Invitation:
     id: UUID
-    from_user: User
+    fromUserID: UUID
+    toUserID: UUID
     date: datetime
 
     def accept(self) -> None:
@@ -84,6 +90,7 @@ class Invitation:
 
 class Notification:
     id: UUID
+    userID: UUID
     message: str
     date: datetime
     active: bool
@@ -93,8 +100,10 @@ class Notification:
 
 class TaskGroup(ABC):
     id: UUID
+    ownerID: UUID
     name: str
     taskCount: int
+    isBingo: bool
     privacy: PrivacyLevel
     inviteCode: str
     createdAt: datetime
@@ -107,11 +116,11 @@ class TaskGroup(ABC):
 
     def addFriend(self) -> None:
         pass
-
-    def changePermissions(self) -> None:
+    
+    def createTask(self) -> None: #nowe
         pass
-
-    def removeMember(self) -> None:
+    
+    def changeGroupType(self) -> None: #nowe
         pass
 
 class CompetetiveTaskGroup(TaskGroup):
@@ -121,25 +130,35 @@ class CooperativeTaskGroup(TaskGroup):
     pass
 
 class GroupMember:
-    id: UUID
+    userID: UUID
+    groupID: UUID
+    active: bool
     role: GroupRole
-    permissions: Permissions
     joinedAt: datetime
 
-    def leaveGroup(self) -> None:
+    def changePermissions(self) -> None:
+        pass
+    
+    #jak ktoś wychodzi/zostaje usunięty można zostawiać jego ducha który ma progress tasków
+    def removeMember(self) -> None:
         pass
 
 class Task(ABC):
     id: UUID
+    ownerID: UUID
+    groupID: UUID
     name: str
     description: str
-    goal: float
+    goal: float #raczej zawsze dodatnie
     status: TaskStatus
 
     def edit(self) -> None:
         pass
 
     def delete(self) -> None:
+        pass
+    
+    def changeTaskType(self) -> None:
         pass
 
 class EndlessTask(Task):
@@ -148,11 +167,17 @@ class EndlessTask(Task):
 class OneTimeTask(Task):
     deadline: datetime
 
-class RepeatableTask(Task):
-    frequency: TimeInterval
+class RepeatableTask(Task): # moze jakies end date czy cos?
+    frequency: TimeInterval 
+
+class ChallengeTask(Task): #czy mozna go dodac do coop tg? chyba nie ??
+    deadline: datetime
+
 
 class TaskProgress(ABC):
-    id: UUID
+    id: UUID #wyjebac   # a jednak nie?? bo moze byc kilka progressow przeciez!!!dla challenge taska
+    userID: UUID # nowe, None dla coop, wazne dla competetive
+    taskID: UUID
     value: float
 
     def updateProgress(self) -> None:
@@ -166,8 +191,13 @@ class OneTimeTaskProgress(TaskProgress):
 
 class RepeatableTaskProgress(TaskProgress):
     counter: int
+    streak: int
+
+class ChallengeTaskProgress(TaskProgress):
+    pass
 
 class TaskParams:
+    taskID: UUID
     photoRequired: bool
     color: str
     notifications: bool
@@ -175,23 +205,31 @@ class TaskParams:
     def edit(self) -> None:
         pass
 
+
 class ProgressEntry:
     id: UUID
+    userID: UUID
+    TaskProgressID: UUID # = taskID  #cap level 1000000000
     value: float
-    note: str
+    message: str
     photoUrl: str
     createdAt: datetime
 
     def validate(self) -> bool:
         pass
+    
+    def delete(self) -> None: #nowe
+        pass
+    
+    def addComment(self) -> None:
+        pass
 
 class Comment:
     id: UUID
+    userID: UUID
+    progressEntryID: UUID
     message: str
     date: datetime
-
-    def addComment(self) -> None:
-        pass
 
     def deleteComment(self) -> None:
         pass
