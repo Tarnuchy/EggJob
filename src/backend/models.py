@@ -7,10 +7,12 @@ from uuid import UUID, uuid4
 
 from sqlalchemy import (
     Boolean,
+    CheckConstraint,
     DateTime,
     Enum as SAEnum,
     Float,
     ForeignKey,
+    Index,
     Integer,
     String,
     Text,
@@ -58,6 +60,9 @@ class TaskType(Enum):
 
 class Account(Base):
     __tablename__ = "accounts"
+    __table_args__ = (
+        CheckConstraint("email LIKE '%_@_%._%'", name="ck_accounts_email_format"),
+    )
 
     id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
     email: Mapped[str] = mapped_column(String(320), unique=True, nullable=False, index=True)
@@ -89,6 +94,9 @@ class Account(Base):
 
 class User(Base):
     __tablename__ = "users"
+    __table_args__ = (
+        CheckConstraint("username <> ''", name="ck_users_username_not_empty"),
+    )
 
     id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
     accountID: Mapped[UUID] = mapped_column(
@@ -179,6 +187,9 @@ class Friendship(Base):
     __tablename__ = "friendships"
     __table_args__ = (
         UniqueConstraint("userOneID", "userTwoID", name="uq_friendship_pair"),
+        CheckConstraint('"userOneID" <> "userTwoID"', name="ck_friendships_distinct_users"),
+        Index("ix_friendships_user_pair", "userOneID", "userTwoID"),
+        Index("ix_friendships_accepted_at", "acceptedAt"),
     )
 
     id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
@@ -213,6 +224,9 @@ class Invitation(Base):
     __tablename__ = "invitations"
     __table_args__ = (
         UniqueConstraint("fromUserID", "toUserID", name="uq_invitation_pair"),
+        CheckConstraint('"fromUserID" <> "toUserID"', name="ck_invitations_distinct_users"),
+        Index("ix_invitations_from_date", "fromUserID", "date"),
+        Index("ix_invitations_to_date", "toUserID", "date"),
     )
 
     id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
@@ -254,6 +268,10 @@ class Invitation(Base):
 
 class Notification(Base):
     __tablename__ = "notifications"
+    __table_args__ = (
+        Index("ix_notifications_user_date", "userID", "date"),
+        Index("ix_notifications_user_active", "userID", "active"),
+    )
 
     id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
     userID: Mapped[UUID] = mapped_column(
@@ -276,6 +294,11 @@ class Notification(Base):
 
 class TaskGroup(Base):
     __tablename__ = "task_groups"
+    __table_args__ = (
+        CheckConstraint("name <> ''", name="ck_task_groups_name_not_empty"),
+        CheckConstraint('"taskCount" >= 0', name="ck_task_groups_task_count_non_negative"),
+        Index("ix_task_groups_owner_created", "ownerID", "createdAt"),
+    )
 
     id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
     ownerID: Mapped[UUID] = mapped_column(
@@ -288,7 +311,7 @@ class TaskGroup(Base):
     taskCount: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     isBingo: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     privacy: Mapped[PrivacyLevel] = mapped_column(
-        SAEnum(PrivacyLevel, name="privacy_level", native_enum=False),
+        SAEnum(PrivacyLevel, name="privacy_level", native_enum=True),
         nullable=False,
         default=PrivacyLevel.PRIVATE,
     )
@@ -368,6 +391,8 @@ class GroupMember(Base):
     __tablename__ = "group_members"
     __table_args__ = (
         UniqueConstraint("userID", "groupID", name="uq_group_member_user_group"),
+        Index("ix_group_members_group_active", "groupID", "active"),
+        Index("ix_group_members_user_active", "userID", "active"),
     )
 
     id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
@@ -385,7 +410,7 @@ class GroupMember(Base):
     )
     active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     role: Mapped[GroupRole] = mapped_column(
-        SAEnum(GroupRole, name="group_role", native_enum=False),
+        SAEnum(GroupRole, name="group_role", native_enum=True),
         nullable=False,
         default=GroupRole.MEMBER,
     )
@@ -403,6 +428,11 @@ class GroupMember(Base):
 
 class Task(Base):
     __tablename__ = "tasks"
+    __table_args__ = (
+        CheckConstraint("name <> ''", name="ck_tasks_name_not_empty"),
+        Index("ix_tasks_group_status", "groupID", "status"),
+        Index("ix_tasks_owner_group", "ownerID", "groupID"),
+    )
 
     id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
     ownerID: Mapped[UUID | None] = mapped_column(
@@ -421,7 +451,7 @@ class Task(Base):
     description: Mapped[str] = mapped_column(Text, nullable=False, default="")
     goal: Mapped[float | None] = mapped_column(Float, nullable=True)
     status: Mapped[TaskStatus] = mapped_column(
-        SAEnum(TaskStatus, name="task_status", native_enum=False),
+        SAEnum(TaskStatus, name="task_status", native_enum=True),
         nullable=False,
         default=TaskStatus.TODO,
     )
@@ -495,7 +525,7 @@ class RepeatableTask(Task):
         primary_key=True,
     )
     frequency: Mapped[TimeInterval | None] = mapped_column(
-        SAEnum(TimeInterval, name="time_interval", native_enum=False),
+        SAEnum(TimeInterval, name="time_interval", native_enum=True),
         nullable=True,
     )
 
@@ -523,6 +553,8 @@ class TaskProgress(Base):
     __tablename__ = "task_progresses"
     __table_args__ = (
         UniqueConstraint("userID", "taskID", name="uq_task_progress_user_task"),
+        Index("ix_task_progresses_task_type", "taskID", "type"),
+        Index("ix_task_progresses_user_task", "userID", "taskID"),
     )
 
     id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
@@ -654,6 +686,10 @@ class TaskParams(Base):
 
 class ProgressEntry(Base):
     __tablename__ = "progress_entries"
+    __table_args__ = (
+        Index("ix_progress_entries_progress_created", "TaskProgressID", "createdAt"),
+        Index("ix_progress_entries_user_created", "userID", "createdAt"),
+    )
 
     id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
     userID: Mapped[UUID] = mapped_column(
@@ -693,6 +729,10 @@ class ProgressEntry(Base):
 
 class Comment(Base):
     __tablename__ = "comments"
+    __table_args__ = (
+        Index("ix_comments_progress_date", "progressEntryID", "date"),
+        Index("ix_comments_user_date", "userID", "date"),
+    )
 
     id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
     userID: Mapped[UUID] = mapped_column(
