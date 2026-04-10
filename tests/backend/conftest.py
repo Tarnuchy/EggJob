@@ -2,35 +2,26 @@ from datetime import datetime
 from uuid import uuid4
 
 import pytest
+from sqlalchemy.orm import sessionmaker
+
+from src.backend.database import Base, build_engine, get_test_database_url
 from src.backend.models import *
 
-class MockDBSession:
-    """ Tymczasowa atrapa sesji bazy danych dopóki nie zostanie zaimplementowane SQLAlchemy """ # a nie postgres w sensie?
-    def add(self, object): pass
-    def flush(self): pass
-    def clear(self): pass
-    def rollback(self): pass
-    def query(self, model):
-        class MockQuery:
-            def filter(self, *args, **kwargs):
-                return self
-            def first(self):
-                # Na potrzeby testów zwraca atrapę logiki True/False lub instancję, 
-                # będzie to zmienione po dodaniu SQLAlchemy
-                return None
-        return MockQuery()
+TEST_ENGINE = build_engine(get_test_database_url())
+TestingSessionLocal = sessionmaker(bind=TEST_ENGINE, autoflush=False, autocommit=False)
 
 @pytest.fixture
 def db_session():
-    """ 
-    Fixture dla sesji bazy danych. Docelowo tutaj będzie:
+    """Real PostgreSQL-backed session for backend tests."""
+    Base.metadata.drop_all(bind=TEST_ENGINE)
+    Base.metadata.create_all(bind=TEST_ENGINE)
+
     session = TestingSessionLocal()
-    yield session
-    session.close() 
-    """
-    session = MockDBSession()
-    yield session
-    session.clear()
+    try:
+        yield session
+    finally:
+        session.rollback()
+        session.close()
 
 
 # =============================================
@@ -1465,13 +1456,13 @@ def ecosystem(
 #     comment = ecosystem["TG"]["shopping"]["tasks"]["eggs"]["comments"][0]
 #     comment_id = comment.id
     
-#     saved = db_session.query(Comment).filter(Comment.id == comment_id).first()
+#     saved = db_session.query(Comment).filter_by(id=comment_id).first()
 #     assert saved is not None
     
 #     comment.deleteComment(db_session)
 #     db_session.flush()
     
-#     deleted = db_session.query(Comment).filter(Comment.id == comment_id).first()
+#     deleted = db_session.query(Comment).filter_by(id=comment_id).first()
 #     assert deleted is None
 
 #xdddddd

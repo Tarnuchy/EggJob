@@ -16,17 +16,17 @@ def test_GroupMember_removeMember_take_progress(
         userID=GM_shoppingList_ghost.userID,
         groupID=GM_shoppingList_ghost.groupID,
     ).first()
-    task_cheese_before = db_session.query(OneTimeTask).filter(
-        OneTimeTask.id == task_shoppingList_cheese.id
+    task_cheese_before = db_session.query(OneTimeTask).filter_by(
+        id=task_shoppingList_cheese.id
     ).first()
-    cheese_progress_before = db_session.query(OneTimeTaskProgress).filter(
-        OneTimeTaskProgress.id == TaskProgress_shoppingList_cheese.id
+    cheese_progress_before = db_session.query(OneTimeTaskProgress).filter_by(
+        id=TaskProgress_shoppingList_cheese.id
     ).first()
-    owner_progress_before = db_session.query(OneTimeTaskProgress).filter(
-        OneTimeTaskProgress.id == TaskProgress_shoppingList_eggs.id
+    owner_progress_before = db_session.query(OneTimeTaskProgress).filter_by(
+        id=TaskProgress_shoppingList_eggs.id
     ).first()
-    entry_before = db_session.query(ProgressEntry).filter(
-        ProgressEntry.id == PE_shoppingList_eggs.id
+    entry_before = db_session.query(ProgressEntry).filter_by(
+        id=PE_shoppingList_eggs.id
     ).first()
     owner = db_session.query(User).filter_by(id=TaskProgress_shoppingList_eggs.userId).first()
 
@@ -47,17 +47,17 @@ def test_GroupMember_removeMember_take_progress(
         userID=GM_shoppingList_ghost.userID,
         groupID=GM_shoppingList_ghost.groupID,
     ).first()
-    task_cheese_after = db_session.query(OneTimeTask).filter(
-        OneTimeTask.id == task_shoppingList_cheese.id
+    task_cheese_after = db_session.query(OneTimeTask).filter_by(
+        id=task_shoppingList_cheese.id
     ).first()
-    cheese_progress_after = db_session.query(OneTimeTaskProgress).filter(
-        OneTimeTaskProgress.id == TaskProgress_shoppingList_cheese.id
+    cheese_progress_after = db_session.query(OneTimeTaskProgress).filter_by(
+        id=TaskProgress_shoppingList_cheese.id
     ).first()
-    owner_progress_after = db_session.query(OneTimeTaskProgress).filter(
-        OneTimeTaskProgress.id == TaskProgress_shoppingList_eggs.id
+    owner_progress_after = db_session.query(OneTimeTaskProgress).filter_by(
+        id=TaskProgress_shoppingList_eggs.id
     ).first()
-    entry_after = db_session.query(ProgressEntry).filter(
-        ProgressEntry.id == PE_shoppingList_eggs.id
+    entry_after = db_session.query(ProgressEntry).filter_by(
+        id=PE_shoppingList_eggs.id
     ).first()
 
     assert member_after is None
@@ -98,11 +98,11 @@ def test_GroupMember_removeMember_keep_progress(
         userID=GM_shoppingList_member.userID,
         groupID=GM_shoppingList_member.groupID,
     ).first()
-    progress_before = db_session.query(OneTimeTaskProgress).filter(
-        OneTimeTaskProgress.id == TaskProgress_shoppingList_bread.id
+    progress_before = db_session.query(OneTimeTaskProgress).filter_by(
+        id=TaskProgress_shoppingList_bread.id
     ).first()
-    entry_before = db_session.query(ProgressEntry).filter(
-        ProgressEntry.id == PE_shoppingList_bread.id
+    entry_before = db_session.query(ProgressEntry).filter_by(
+        id=PE_shoppingList_bread.id
     ).first()
 
     assert member_before is not None
@@ -117,11 +117,11 @@ def test_GroupMember_removeMember_keep_progress(
         userID=GM_shoppingList_member.userID,
         groupID=GM_shoppingList_member.groupID,
     ).first()
-    progress_after = db_session.query(OneTimeTaskProgress).filter(
-        OneTimeTaskProgress.id == TaskProgress_shoppingList_bread.id
+    progress_after = db_session.query(OneTimeTaskProgress).filter_by(
+        id=TaskProgress_shoppingList_bread.id
     ).first()
-    entry_after = db_session.query(ProgressEntry).filter(
-        ProgressEntry.id == PE_shoppingList_bread.id
+    entry_after = db_session.query(ProgressEntry).filter_by(
+        id=PE_shoppingList_bread.id
     ).first()
 
     assert member_after is not None
