@@ -143,7 +143,6 @@ def user_d(db_session, account_d):
 @pytest.fixture
 def friendship_ab(db_session, user_a, user_b):
     friendship = Friendship()
-    friendship.id = uuid4()
     friendship.userOneID = user_a.id
     friendship.userTwoID = user_b.id
     friendship.acceptedAt = datetime(2021, 4, 4, 13, 0, 0)
@@ -155,7 +154,6 @@ def friendship_ab(db_session, user_a, user_b):
 @pytest.fixture
 def friendship_bc(db_session, user_b, user_c):
     friendship = Friendship()
-    friendship.id = uuid4()
     friendship.userOneID = user_b.id
     friendship.userTwoID = user_c.id
     friendship.acceptedAt = datetime(2021, 4, 4, 13, 0, 0)
@@ -175,7 +173,6 @@ def friendship_bc(db_session, user_b, user_c):
 @pytest.fixture
 def invitation_cd(db_session, user_c, user_d):
     invitation = Invitation()
-    invitation.id = uuid4()
     invitation.fromUserID = user_c.id
     invitation.toUserID = user_d.id
     invitation.date = datetime(2021, 4, 4, 12, 0, 0)

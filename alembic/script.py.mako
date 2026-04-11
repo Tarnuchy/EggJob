@@ -5,6 +5,8 @@ Revises: ${down_revision | comma,n}
 Create Date: ${create_date}
 
 """
+#to wgl python jest?XD
+#co tu sie dzieje i kim jest mako
 from typing import Sequence, Union
 
 from alembic import op

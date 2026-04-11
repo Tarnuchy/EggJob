@@ -75,7 +75,7 @@ def test_GroupMember_removeMember_take_progress(
     admin_entries_before = eggChallenge_bundle["tasks"]["eating"]["entries"]["admin"]
     owner_progress_before = eggChallenge_bundle["tasks"]["eating"]["progress"]["owner"]
     
-    admin.removeMember(session=db_session, take_progress=True, punisher=admin.id)
+    admin.removeMember(session=db_session, take_progress=True, punisher=admin.userID)
     db_session.flush()#???
     assert db_session.query(GroupMember).filter_by(userID=admin.userID, groupID=eggChallenge_bundle["TG"].id).first() is None
     assert db_session.query(OneTimeTaskProgress).filter_by(userId=admin.userID, taskID=admin_progress_before.taskID).first() is not None
@@ -110,7 +110,7 @@ def test_GroupMember_removeMember_keep_progress(
     assert progress_before is not None
     assert entry_before is not None
 
-    GM_shoppingList_member.removeMember(session=db_session, take_progress=False, punisher = GM_shoppingList_member.id)
+    GM_shoppingList_member.removeMember(session=db_session, take_progress=False, punisher = GM_shoppingList_member.userID)
     db_session.flush()
 
     member_after = db_session.query(GroupMember).filter_by(
@@ -132,11 +132,11 @@ def test_GroupMember_removeMember_keep_progress(
 
 def test_GroupMember_changePermissions(db_session, GM_shoppingList_member, GM_shoppingList_owner):
     # zmieniamy uprawnienia członka, sprawdzamy czy się zmieniły
-    GM_shoppingList_member.changePermissions(db_session, GroupRole.ADMIN, GM_shoppingList_owner.id)
+    GM_shoppingList_member.changePermissions(db_session, GroupRole.ADMIN, GM_shoppingList_owner.userID)
     assert db_session.query(GroupMember).filter_by(userID=GM_shoppingList_member.userID, groupID=GM_shoppingList_member.groupID).first().role == GroupRole.ADMIN
     # próbujemy zmienić uprawnienia nie mając do tego praw, powinno wywalić błąd
     with pytest.raises(Exception):
-        GM_shoppingList_member.changePermissions(db_session, GroupRole.ADMIN, GM_shoppingList_member.id)
+        GM_shoppingList_member.changePermissions(db_session, GroupRole.ADMIN, GM_shoppingList_member.userID)
     
     with pytest.raises(Exception):
-        GM_shoppingList_owner.changePermissions(db_session, GroupRole.ADMIN, GM_shoppingList_owner.id)
+        GM_shoppingList_owner.changePermissions(db_session, GroupRole.ADMIN, GM_shoppingList_owner.userID)

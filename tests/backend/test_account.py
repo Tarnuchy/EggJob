@@ -147,7 +147,7 @@ def test_Account_deleteAccount(ecosystem):
     # -------------------------------------------------------------------
     
     # 1. Relacje i powiadomienia (tylko friendship, w conftest nie ma inv/notif dla User A, ale na wypadek sprawdzimy uniwersalnie)
-    friendship_ab_id = ecosystem["friendships"]["ab"].id
+    friendship_ab = ecosystem["friendships"]["ab"]
     
     # 2. Obiekty z Grupy "Shopping List", której CAŁYM właścicielem jest A (usunięcie grupy niszczy wszystko wewnątrz)
     shopping_tg = ecosystem["TG"]["shopping"]
@@ -194,7 +194,10 @@ def test_Account_deleteAccount(ecosystem):
     assert db_session.query(User).filter_by(id=user_id).first() is None
 
     # 2. Bezpośrednie socjalne relacje 
-    assert db_session.query(Friendship).filter_by(id=friendship_ab_id).first() is None
+    assert db_session.query(Friendship).filter_by(
+        userOneID=friendship_ab.userOneID,
+        userTwoID=friendship_ab.userTwoID,
+    ).first() is None
     assert db_session.query(Invitation).filter((Invitation.fromUserID == user_id) | (Invitation.toUserID == user_id)).first() is None
     assert db_session.query(Notification).filter_by(userID=user_id).first() is None
 

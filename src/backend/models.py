@@ -186,21 +186,20 @@ class User(Base):
 class Friendship(Base):
     __tablename__ = "friendships"
     __table_args__ = (
-        UniqueConstraint("userOneID", "userTwoID", name="uq_friendship_pair"),
         CheckConstraint('"userOneID" <> "userTwoID"', name="ck_friendships_distinct_users"),
-        Index("ix_friendships_user_pair", "userOneID", "userTwoID"),
         Index("ix_friendships_accepted_at", "acceptedAt"),
     )
 
-    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
     userOneID: Mapped[UUID] = mapped_column(
         Uuid(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),
+        primary_key=True,
         nullable=False,
     )
     userTwoID: Mapped[UUID] = mapped_column(
         Uuid(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),
+        primary_key=True,
         nullable=False,
     )
     acceptedAt: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=utcnow)
@@ -223,24 +222,23 @@ class Friendship(Base):
 class Invitation(Base):
     __tablename__ = "invitations"
     __table_args__ = (
-        UniqueConstraint("fromUserID", "toUserID", name="uq_invitation_pair"),
         CheckConstraint('"fromUserID" <> "toUserID"', name="ck_invitations_distinct_users"),
-        Index("ix_invitations_from_date", "fromUserID", "date"),
-        Index("ix_invitations_to_date", "toUserID", "date"),
     )
 
-    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
     fromUserID: Mapped[UUID] = mapped_column(
         Uuid(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),
+        primary_key=True,
         nullable=False,
     )
     toUserID: Mapped[UUID] = mapped_column(
         Uuid(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),
+        primary_key=True,
         nullable=False,
     )
     date: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=utcnow)
+    createdAt = synonym("date")
 
     fromUser: Mapped[User] = relationship(
         "User",
@@ -284,6 +282,7 @@ class Notification(Base):
     date: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=utcnow)
     active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
+    createdAt = synonym("date")
     content = synonym("message")
 
     user: Mapped[User] = relationship("User", back_populates="notifications")
@@ -318,6 +317,8 @@ class TaskGroup(Base):
     inviteCode: Mapped[str | None] = mapped_column(String(64), nullable=True)
     createdAt: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=utcnow)
     type: Mapped[str] = mapped_column(String(32), nullable=False)
+
+    date = synonym("createdAt")
 
     owner: Mapped[User] = relationship("User", back_populates="ownedGroups")
     members: Mapped[list[GroupMember]] = relationship(
@@ -390,21 +391,21 @@ class CooperativeTaskGroup(TaskGroup):
 class GroupMember(Base):
     __tablename__ = "group_members"
     __table_args__ = (
-        UniqueConstraint("userID", "groupID", name="uq_group_member_user_group"),
         Index("ix_group_members_group_active", "groupID", "active"),
         Index("ix_group_members_user_active", "userID", "active"),
     )
 
-    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
     userID: Mapped[UUID] = mapped_column(
         Uuid(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),
+        primary_key=True,
         nullable=False,
         index=True,
     )
     groupID: Mapped[UUID] = mapped_column(
         Uuid(as_uuid=True),
         ForeignKey("task_groups.id", ondelete="CASCADE"),
+        primary_key=True,
         nullable=False,
         index=True,
     )
@@ -472,9 +473,9 @@ class Task(Base):
     )
 
     __mapper_args__ = {
-        "polymorphic_identity": "task",
         "polymorphic_on": type,
         "with_polymorphic": "*",
+        "polymorphic_abstract": True,
     }
 
     def edit(self, db_session: Session, user_id: UUID, **new_data: Any) -> None:
@@ -584,9 +585,9 @@ class TaskProgress(Base):
     )
 
     __mapper_args__ = {
-        "polymorphic_identity": "task_progress",
         "polymorphic_on": type,
         "with_polymorphic": "*",
+        "polymorphic_abstract": True,
     }
 
     def updateProgress(
@@ -660,17 +661,17 @@ class ChallengeTaskProgress(TaskProgress):
 class TaskParams(Base):
     __tablename__ = "task_params"
 
-    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
     taskID: Mapped[UUID] = mapped_column(
         Uuid(as_uuid=True),
         ForeignKey("tasks.id", ondelete="CASCADE"),
+        primary_key=True,
         nullable=False,
-        unique=True,
-        index=True,
     )
     photoRequired: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     color: Mapped[str | None] = mapped_column(String(32), nullable=True)
     notifications: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+
+    id = synonym("taskID")
 
     task: Mapped[Task] = relationship("Task", back_populates="params")
 
@@ -686,10 +687,6 @@ class TaskParams(Base):
 
 class ProgressEntry(Base):
     __tablename__ = "progress_entries"
-    __table_args__ = (
-        Index("ix_progress_entries_progress_created", "TaskProgressID", "createdAt"),
-        Index("ix_progress_entries_user_created", "userID", "createdAt"),
-    )
 
     id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
     userID: Mapped[UUID] = mapped_column(
@@ -708,6 +705,8 @@ class ProgressEntry(Base):
     message: Mapped[str] = mapped_column(Text, nullable=False, default="")
     photoUrl: Mapped[str | None] = mapped_column(String(1024), nullable=True)
     createdAt: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=utcnow)
+
+    date = synonym("createdAt")
 
     user: Mapped[User] = relationship("User", back_populates="progressEntries")
     taskProgress: Mapped[TaskProgress] = relationship("TaskProgress", back_populates="entries")
@@ -729,10 +728,6 @@ class ProgressEntry(Base):
 
 class Comment(Base):
     __tablename__ = "comments"
-    __table_args__ = (
-        Index("ix_comments_progress_date", "progressEntryID", "date"),
-        Index("ix_comments_user_date", "userID", "date"),
-    )
 
     id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
     userID: Mapped[UUID] = mapped_column(
@@ -750,6 +745,8 @@ class Comment(Base):
     message: Mapped[str] = mapped_column(Text, nullable=False)
     date: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=utcnow)
 
+    createdAt = synonym("date")
+
     user: Mapped[User] = relationship("User", back_populates="comments")
     progressEntry: Mapped[ProgressEntry] = relationship("ProgressEntry", back_populates="comments")
 
@@ -757,7 +754,7 @@ class Comment(Base):
         pass
 
 
-__all__ = [
+__all__ = [ #do importów
     "PrivacyLevel",
     "GroupRole",
     "TaskStatus",
