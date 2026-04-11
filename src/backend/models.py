@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
+import re
 from typing import Any
 from uuid import UUID, uuid4
 
@@ -22,6 +23,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, Session, mapped_column, relationship, synonym
 
 from src.backend.database import Base
+from src.backend.security import hash_password, password_needs_rehash, verify_password
 
 
 def utcnow() -> datetime:
@@ -76,11 +78,62 @@ class Account(Base):
         cascade="all, delete-orphan",
     )
 
+    @staticmethod
+    def _is_valid_email(email: str) -> bool:
+        return bool(re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email))
+
+    @staticmethod
+    def _is_strong_password(password: str) -> bool:
+        if len(password) < 8:
+            return False
+        has_letter = any(ch.isalpha() for ch in password)
+        has_digit = any(ch.isdigit() for ch in password)
+        return has_letter and has_digit
+
     def register(self, db_session: Session, email: str, username: str, password: str) -> bool:
-        pass
+        if not self._is_valid_email(email):
+            raise ValueError("Invalid email format")
+        if not self._is_strong_password(password):
+            raise ValueError("Weak password")
+
+        if db_session.query(Account).filter_by(email=email).first() is not None:
+            raise ValueError("Email already in use")
+        if db_session.query(User).filter_by(username=username).first() is not None:
+            raise ValueError("Username already in use")
+
+        self.email = email
+        self.passwordHash = hash_password(password)
+        self.registrationDate = utcnow()
+        db_session.add(self)
+        db_session.flush()
+        return True
 
     def login(self, db_session: Session, email: str, password: str) -> bool:
-        pass
+        account = db_session.query(Account).filter_by(email=email).first()
+        if account is None:
+            raise ValueError("Account does not exist")
+
+        stored_hash = account.passwordHash
+        is_argon_hash = isinstance(stored_hash, str) and stored_hash.startswith("$argon2")
+
+        if is_argon_hash:
+            password_ok = verify_password(password, stored_hash)
+        else:
+            #Backward compatibility
+            password_ok = stored_hash == password
+
+        if not password_ok:
+            raise ValueError("Invalid credentials")
+
+        if is_argon_hash and password_needs_rehash(stored_hash):
+            account.passwordHash = hash_password(password)
+            db_session.flush()
+
+        self.id = account.id
+        self.email = account.email
+        self.passwordHash = account.passwordHash
+        self.registrationDate = account.registrationDate
+        return True
 
     def deleteAccount(self, db_session: Session) -> None:
         pass
@@ -216,7 +269,8 @@ class Friendship(Base):
     )
 
     def deleteFriend(self, db_session: Session) -> None:
-        pass
+        db_session.delete(self)
+        db_session.commit()
 
 
 class Invitation(Base):
@@ -751,7 +805,8 @@ class Comment(Base):
     progressEntry: Mapped[ProgressEntry] = relationship("ProgressEntry", back_populates="comments")
 
     def deleteComment(self, db_session: Session) -> None:
-        pass
+        db_session.delete(self)
+        db_session.commit()
 
 
 __all__ = [ #do importów
