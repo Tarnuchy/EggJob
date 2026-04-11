@@ -16,17 +16,17 @@ def test_GroupMember_removeMember_take_progress(
         userID=GM_shoppingList_ghost.userID,
         groupID=GM_shoppingList_ghost.groupID,
     ).first()
-    task_cheese_before = db_session.query(OneTimeTask).filter(
-        OneTimeTask.id == task_shoppingList_cheese.id
+    task_cheese_before = db_session.query(OneTimeTask).filter_by(
+        id=task_shoppingList_cheese.id
     ).first()
-    cheese_progress_before = db_session.query(OneTimeTaskProgress).filter(
-        OneTimeTaskProgress.id == TaskProgress_shoppingList_cheese.id
+    cheese_progress_before = db_session.query(OneTimeTaskProgress).filter_by(
+        id=TaskProgress_shoppingList_cheese.id
     ).first()
-    owner_progress_before = db_session.query(OneTimeTaskProgress).filter(
-        OneTimeTaskProgress.id == TaskProgress_shoppingList_eggs.id
+    owner_progress_before = db_session.query(OneTimeTaskProgress).filter_by(
+        id=TaskProgress_shoppingList_eggs.id
     ).first()
-    entry_before = db_session.query(ProgressEntry).filter(
-        ProgressEntry.id == PE_shoppingList_eggs.id
+    entry_before = db_session.query(ProgressEntry).filter_by(
+        id=PE_shoppingList_eggs.id
     ).first()
     owner = db_session.query(User).filter_by(id=TaskProgress_shoppingList_eggs.userId).first()
 
@@ -47,17 +47,17 @@ def test_GroupMember_removeMember_take_progress(
         userID=GM_shoppingList_ghost.userID,
         groupID=GM_shoppingList_ghost.groupID,
     ).first()
-    task_cheese_after = db_session.query(OneTimeTask).filter(
-        OneTimeTask.id == task_shoppingList_cheese.id
+    task_cheese_after = db_session.query(OneTimeTask).filter_by(
+        id=task_shoppingList_cheese.id
     ).first()
-    cheese_progress_after = db_session.query(OneTimeTaskProgress).filter(
-        OneTimeTaskProgress.id == TaskProgress_shoppingList_cheese.id
+    cheese_progress_after = db_session.query(OneTimeTaskProgress).filter_by(
+        id=TaskProgress_shoppingList_cheese.id
     ).first()
-    owner_progress_after = db_session.query(OneTimeTaskProgress).filter(
-        OneTimeTaskProgress.id == TaskProgress_shoppingList_eggs.id
+    owner_progress_after = db_session.query(OneTimeTaskProgress).filter_by(
+        id=TaskProgress_shoppingList_eggs.id
     ).first()
-    entry_after = db_session.query(ProgressEntry).filter(
-        ProgressEntry.id == PE_shoppingList_eggs.id
+    entry_after = db_session.query(ProgressEntry).filter_by(
+        id=PE_shoppingList_eggs.id
     ).first()
 
     assert member_after is None
@@ -75,7 +75,7 @@ def test_GroupMember_removeMember_take_progress(
     admin_entries_before = eggChallenge_bundle["tasks"]["eating"]["entries"]["admin"]
     owner_progress_before = eggChallenge_bundle["tasks"]["eating"]["progress"]["owner"]
     
-    admin.removeMember(session=db_session, take_progress=True, punisher=admin.id)
+    admin.removeMember(session=db_session, take_progress=True, punisher=admin.userID)
     db_session.flush()#???
     assert db_session.query(GroupMember).filter_by(userID=admin.userID, groupID=eggChallenge_bundle["TG"].id).first() is None
     assert db_session.query(OneTimeTaskProgress).filter_by(userId=admin.userID, taskID=admin_progress_before.taskID).first() is not None
@@ -98,11 +98,11 @@ def test_GroupMember_removeMember_keep_progress(
         userID=GM_shoppingList_member.userID,
         groupID=GM_shoppingList_member.groupID,
     ).first()
-    progress_before = db_session.query(OneTimeTaskProgress).filter(
-        OneTimeTaskProgress.id == TaskProgress_shoppingList_bread.id
+    progress_before = db_session.query(OneTimeTaskProgress).filter_by(
+        id=TaskProgress_shoppingList_bread.id
     ).first()
-    entry_before = db_session.query(ProgressEntry).filter(
-        ProgressEntry.id == PE_shoppingList_bread.id
+    entry_before = db_session.query(ProgressEntry).filter_by(
+        id=PE_shoppingList_bread.id
     ).first()
 
     assert member_before is not None
@@ -110,18 +110,18 @@ def test_GroupMember_removeMember_keep_progress(
     assert progress_before is not None
     assert entry_before is not None
 
-    GM_shoppingList_member.removeMember(session=db_session, take_progress=False, punisher = GM_shoppingList_member.id)
+    GM_shoppingList_member.removeMember(session=db_session, take_progress=False, punisher = GM_shoppingList_member.userID)
     db_session.flush()
 
     member_after = db_session.query(GroupMember).filter_by(
         userID=GM_shoppingList_member.userID,
         groupID=GM_shoppingList_member.groupID,
     ).first()
-    progress_after = db_session.query(OneTimeTaskProgress).filter(
-        OneTimeTaskProgress.id == TaskProgress_shoppingList_bread.id
+    progress_after = db_session.query(OneTimeTaskProgress).filter_by(
+        id=TaskProgress_shoppingList_bread.id
     ).first()
-    entry_after = db_session.query(ProgressEntry).filter(
-        ProgressEntry.id == PE_shoppingList_bread.id
+    entry_after = db_session.query(ProgressEntry).filter_by(
+        id=PE_shoppingList_bread.id
     ).first()
 
     assert member_after is not None
@@ -132,11 +132,11 @@ def test_GroupMember_removeMember_keep_progress(
 
 def test_GroupMember_changePermissions(db_session, GM_shoppingList_member, GM_shoppingList_owner):
     # zmieniamy uprawnienia członka, sprawdzamy czy się zmieniły
-    GM_shoppingList_member.changePermissions(db_session, GroupRole.ADMIN, GM_shoppingList_owner.id)
+    GM_shoppingList_member.changePermissions(db_session, GroupRole.ADMIN, GM_shoppingList_owner.userID)
     assert db_session.query(GroupMember).filter_by(userID=GM_shoppingList_member.userID, groupID=GM_shoppingList_member.groupID).first().role == GroupRole.ADMIN
     # próbujemy zmienić uprawnienia nie mając do tego praw, powinno wywalić błąd
     with pytest.raises(Exception):
-        GM_shoppingList_member.changePermissions(db_session, GroupRole.ADMIN, GM_shoppingList_member.id)
+        GM_shoppingList_member.changePermissions(db_session, GroupRole.ADMIN, GM_shoppingList_member.userID)
     
     with pytest.raises(Exception):
-        GM_shoppingList_owner.changePermissions(db_session, GroupRole.ADMIN, GM_shoppingList_owner.id)
+        GM_shoppingList_owner.changePermissions(db_session, GroupRole.ADMIN, GM_shoppingList_owner.userID)
