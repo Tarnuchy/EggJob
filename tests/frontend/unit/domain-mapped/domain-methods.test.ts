@@ -109,19 +109,18 @@ describe("Domain-mapped frontend methods from diagram classes", () => {
 		if (!result.ok) return;
 
 		const withNotification = dispatch(result.value, {
-			type: "friends/invite",
-			invitationId: "inv-1",
-			fromUserId: "usr-a",
-			toUserId: "usr-b",
+			type: "notifications/add",
+			notificationId: "ntf-1",
+			userId: "usr-a",
+			message: "Masz nowe zaproszenie do znajomych",
 			date: new Date("2026-04-03T08:05:00.000Z"),
 		});
 
 		expect(withNotification.ok).toBe(true);
 		if (!withNotification.ok) return;
 
-		expect(Object.keys(withNotification.value.entities.invitations)).toContain(
-			"inv-1",
-		);
+		expect(withNotification.value.entities.notifications["ntf-1"]).toBeDefined();
+		expect(withNotification.value.entities.notifications["ntf-1"]?.active).toBe(true);
 	});
 
 	it("Notification.read can be represented by marking notification inactive in state", () => {
@@ -137,7 +136,25 @@ describe("Domain-mapped frontend methods from diagram classes", () => {
 		expect(result.ok).toBe(true);
 		if (!result.ok) return;
 
-		expect(result.value.entities.notifications).toEqual({});
+		const withNotification = dispatch(result.value, {
+			type: "notifications/add",
+			notificationId: "ntf-1",
+			userId: "usr-a",
+			message: "Nowe powiadomienie",
+			date: new Date("2026-04-03T08:05:00.000Z"),
+		});
+		expect(withNotification.ok).toBe(true);
+		if (!withNotification.ok) return;
+
+		const read = dispatch(withNotification.value, {
+			type: "notifications/read",
+			notificationId: "ntf-1",
+		});
+
+		expect(read.ok).toBe(true);
+		if (!read.ok) return;
+
+		expect(read.value.entities.notifications["ntf-1"]?.active).toBe(false);
 	});
 
 	it("TaskParams.edit updates task configuration", () => {
@@ -212,10 +229,19 @@ describe("Domain-mapped frontend methods from diagram classes", () => {
 		expect(commented.ok).toBe(true);
 		if (!commented.ok) return;
 
-		expect(commented.value.entities.comments["com-1"]).toBeDefined();
+		const deleted = dispatch(commented.value, {
+			type: "tasks/delete-comment",
+			commentId: "com-1",
+			progressEntryId: "ent-1",
+		});
+
+		expect(deleted.ok).toBe(true);
+		if (!deleted.ok) return;
+
+		expect(deleted.value.entities.comments["com-1"]).toBeUndefined();
 		expect(
-			commented.value.entities.progressEntries["ent-1"]?.commentIds,
-		).toContain("com-1");
+			deleted.value.entities.progressEntries["ent-1"]?.commentIds,
+		).not.toContain("com-1");
 	});
 
 	it("ProgressEntry.validate rejects invalid progress values", () => {
