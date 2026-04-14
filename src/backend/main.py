@@ -108,3 +108,9 @@ def demo_list_users(
         "count": len(items),
         "items": items,
     }
+
+# @app.get()
+# def costam(data, db: Session = Depends(get_db)):
+#     data costam
+#     metoda(db)
+#     db.commit()
