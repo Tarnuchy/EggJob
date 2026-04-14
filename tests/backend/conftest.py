@@ -20,8 +20,10 @@ def db_session():
     try:
         yield session
     finally:
-        session.rollback()
-        session.close()
+        try:
+            session.close()
+        finally:
+            Base.metadata.drop_all(bind=TEST_ENGINE)
 
 
 # =============================================
@@ -37,7 +39,7 @@ def account_a(db_session):
     account.registrationDate = datetime(2020, 4, 4, 12, 0, 0)
 
     db_session.add(account)
-    db_session.flush()
+    db_session.commit()
     return account
 
 @pytest.fixture
@@ -49,7 +51,7 @@ def user_a(db_session, account_a):
     user.photoUrl = "https://example.com/user_A.jpg"
 
     db_session.add(user)
-    db_session.flush()
+    db_session.commit()
     return user
 
 
@@ -63,7 +65,7 @@ def account_b(db_session):
     account.registrationDate = datetime(2020, 4, 4, 12, 5, 0)
 
     db_session.add(account)
-    db_session.flush()
+    db_session.commit()
     return account
 
 @pytest.fixture
@@ -75,7 +77,7 @@ def user_b(db_session, account_b):
     user.photoUrl = "https://example.com/user_B.jpg"
 
     db_session.add(user)
-    db_session.flush()
+    db_session.commit()
     return user
 
 
@@ -89,7 +91,7 @@ def account_c(db_session):
     account.registrationDate = datetime(2020, 4, 4, 12, 10, 0)
 
     db_session.add(account)
-    db_session.flush()
+    db_session.commit()
     return account
 
 @pytest.fixture
@@ -101,7 +103,7 @@ def user_c(db_session, account_c):
     user.photoUrl = "https://example.com/user_C.jpg"
     
     db_session.add(user)
-    db_session.flush()
+    db_session.commit()
     return user
 
 
@@ -115,7 +117,7 @@ def account_d(db_session):
     account.registrationDate = datetime(2020, 4, 4, 12, 15, 0)
 
     db_session.add(account)
-    db_session.flush()
+    db_session.commit()
     return account
 
 @pytest.fixture
@@ -127,7 +129,7 @@ def user_d(db_session, account_d):
     user.photoUrl = "https://example.com/user_D.jpg"
    
     db_session.add(user)
-    db_session.flush()
+    db_session.commit()
     return user
 
 # =============== ACCOUNTS+USERS ==============
@@ -148,7 +150,7 @@ def friendship_ab(db_session, user_a, user_b):
     friendship.acceptedAt = datetime(2021, 4, 4, 13, 0, 0)
     
     db_session.add(friendship)
-    db_session.flush()
+    db_session.commit()
     return friendship
 
 @pytest.fixture
@@ -159,7 +161,7 @@ def friendship_bc(db_session, user_b, user_c):
     friendship.acceptedAt = datetime(2021, 4, 4, 13, 0, 0)
     
     db_session.add(friendship)
-    db_session.flush()
+    db_session.commit()
     return friendship
 
 # ================ FRIENDSHIPS ================
@@ -178,7 +180,7 @@ def invitation_cd(db_session, user_c, user_d):
     invitation.date = datetime(2021, 4, 4, 12, 0, 0)
     
     db_session.add(invitation)
-    db_session.flush()
+    db_session.commit()
     return invitation
 
 @pytest.fixture
@@ -191,7 +193,7 @@ def notification_d(db_session, user_d, user_c):
     notification.active = True
     
     db_session.add(notification)
-    db_session.flush()
+    db_session.commit()
     return notification
 
 
@@ -222,7 +224,7 @@ def TG_shoppingList(db_session, user_a):
     taskGroup.createdAt = datetime(2025, 4, 4, 13, 0, 0)
 
     db_session.add(taskGroup)
-    db_session.flush()
+    db_session.commit()
     return taskGroup
 
 @pytest.fixture
@@ -235,7 +237,7 @@ def GM_shoppingList_owner(db_session, TG_shoppingList, user_a):
     groupMember.joinedAt = TG_shoppingList.createdAt
 
     db_session.add(groupMember)
-    db_session.flush()
+    db_session.commit()
     return groupMember
 
 @pytest.fixture
@@ -248,7 +250,7 @@ def GM_shoppingList_member(db_session, TG_shoppingList, user_b):
     groupMember.joinedAt = datetime(2025, 4, 4, 14, 0, 0)
 
     db_session.add(groupMember)
-    db_session.flush()
+    db_session.commit()
     return groupMember
 
 @pytest.fixture
@@ -261,7 +263,7 @@ def GM_shoppingList_ghost(db_session, TG_shoppingList, user_d):
     groupMember.joinedAt = datetime(2025, 4, 4, 15, 0, 0)
 
     db_session.add(groupMember)
-    db_session.flush()
+    db_session.commit()
     return groupMember
 
 
@@ -279,7 +281,7 @@ def task_shoppingList_eggs(db_session, TG_shoppingList, GM_shoppingList_owner):
     task.deadline = None
 
     db_session.add(task)
-    db_session.flush()
+    db_session.commit()
     return task
 
 @pytest.fixture
@@ -291,7 +293,7 @@ def TaskParams_shoppingList_eggs(db_session, task_shoppingList_eggs):
     taskParams.notifications = False
 
     db_session.add(taskParams)
-    db_session.flush()
+    db_session.commit()
     return taskParams
 
 @pytest.fixture
@@ -303,7 +305,7 @@ def TaskProgress_shoppingList_eggs(db_session, task_shoppingList_eggs):
     taskProgress.value = 10
 
     db_session.add(taskProgress)
-    db_session.flush()
+    db_session.commit()
     return taskProgress
 
 @pytest.fixture
@@ -318,7 +320,7 @@ def PE_shoppingList_eggs(db_session, TaskProgress_shoppingList_eggs, GM_shopping
     progressEntry.createdAt = datetime(2025, 4, 4, 16, 0, 0)
 
     db_session.add(progressEntry)
-    db_session.flush()
+    db_session.commit()
     return progressEntry
 
 @pytest.fixture
@@ -331,7 +333,7 @@ def comment_shoppingList_eggs(db_session, PE_shoppingList_eggs, user_a):
     comment.date = datetime(2025, 4, 4, 17, 0, 0)
 
     db_session.add(comment)
-    db_session.flush()
+    db_session.commit()
     return comment
 
 @pytest.fixture
@@ -364,7 +366,7 @@ def task_shoppingList_milk(db_session, TG_shoppingList, GM_shoppingList_owner):
     task.deadline = None
 
     db_session.add(task)
-    db_session.flush()
+    db_session.commit()
     return task
 
 @pytest.fixture
@@ -376,7 +378,7 @@ def TaskParams_shoppingList_milk(db_session, task_shoppingList_milk):
     taskParams.notifications = False
 
     db_session.add(taskParams)
-    db_session.flush()
+    db_session.commit()
     return taskParams
 
 @pytest.fixture
@@ -388,7 +390,7 @@ def TaskProgress_shoppingList_milk(db_session, task_shoppingList_milk):
     taskProgress.value = 0
 
     db_session.add(taskProgress)
-    db_session.flush()
+    db_session.commit()
     return taskProgress
 
 @pytest.fixture
@@ -419,7 +421,7 @@ def task_shoppingList_bread(db_session, TG_shoppingList, GM_shoppingList_member)
     task.deadline = None
 
     db_session.add(task)
-    db_session.flush()
+    db_session.commit()
     return task
 
 @pytest.fixture
@@ -431,7 +433,7 @@ def TaskParams_shoppingList_bread(db_session, task_shoppingList_bread):
     taskParams.notifications = False
 
     db_session.add(taskParams)
-    db_session.flush()
+    db_session.commit()
     return taskParams
 
 @pytest.fixture
@@ -443,7 +445,7 @@ def TaskProgress_shoppingList_bread(db_session, task_shoppingList_bread):
     taskProgress.value = 1
 
     db_session.add(taskProgress)
-    db_session.flush()
+    db_session.commit()
     return taskProgress
 
 @pytest.fixture
@@ -458,7 +460,7 @@ def PE_shoppingList_bread(db_session, TaskProgress_shoppingList_bread, GM_shoppi
     progressEntry.createdAt = datetime(2025, 4, 4, 16, 0, 0)
 
     db_session.add(progressEntry)
-    db_session.flush()
+    db_session.commit()
     return progressEntry
 
 @pytest.fixture
@@ -471,7 +473,7 @@ def comment_shoppingList_bread_1(db_session, PE_shoppingList_bread, user_a):
     comment.date = datetime(2025, 4, 4, 18, 0, 0)
 
     db_session.add(comment)
-    db_session.flush()
+    db_session.commit()
     return comment
 
 @pytest.fixture
@@ -484,7 +486,7 @@ def comment_shoppingList_bread_2(db_session, PE_shoppingList_bread, user_d):
     comment.date = datetime(2025, 4, 4, 18, 10, 0)
 
     db_session.add(comment)
-    db_session.flush()
+    db_session.commit()
     return comment
 
 @pytest.fixture
@@ -519,7 +521,7 @@ def task_shoppingList_cheese(db_session, TG_shoppingList, GM_shoppingList_ghost)
     task.deadline = None
 
     db_session.add(task)
-    db_session.flush()
+    db_session.commit()
     return task
 
 @pytest.fixture
@@ -531,7 +533,7 @@ def TaskParams_shoppingList_cheese(db_session, task_shoppingList_cheese):
     taskParams.notifications = False
 
     db_session.add(taskParams)
-    db_session.flush()
+    db_session.commit()
     return taskParams
 
 @pytest.fixture
@@ -543,7 +545,7 @@ def TaskProgress_shoppingList_cheese(db_session, task_shoppingList_cheese):
     taskProgress.value = 4
 
     db_session.add(taskProgress)
-    db_session.flush()
+    db_session.commit()
     return taskProgress
 
 @pytest.fixture
@@ -558,7 +560,7 @@ def PE_shoppingList_cheese_1(db_session, TaskProgress_shoppingList_cheese, GM_sh
     progressEntry.createdAt = datetime(2025, 4, 4, 16, 0, 0)
 
     db_session.add(progressEntry)
-    db_session.flush()
+    db_session.commit()
     return progressEntry
 
 @pytest.fixture
@@ -573,7 +575,7 @@ def PE_shoppingList_cheese_2(db_session, TaskProgress_shoppingList_cheese, GM_sh
     progressEntry.createdAt = datetime(2025, 4, 4, 16, 0, 0)
 
     db_session.add(progressEntry)
-    db_session.flush()
+    db_session.commit()
     return progressEntry
 
 @pytest.fixture
@@ -586,7 +588,7 @@ def comment_shoppingList_cheese_1(db_session, PE_shoppingList_cheese_1, user_d):
     comment.date = datetime(2025, 4, 4, 18, 0, 0)
 
     db_session.add(comment)
-    db_session.flush()
+    db_session.commit()
     return comment
 
 @pytest.fixture
@@ -599,7 +601,7 @@ def comment_shoppingList_cheese_2(db_session, PE_shoppingList_cheese_1, user_b):
     comment.date = datetime(2025, 4, 4, 18, 10, 0)
 
     db_session.add(comment)
-    db_session.flush()
+    db_session.commit()
     return comment
 
 @pytest.fixture
@@ -679,7 +681,7 @@ def TG_eggChallenge(db_session, user_b):
     taskGroup.createdAt = datetime(2025, 4, 4, 13, 0, 0)
 
     db_session.add(taskGroup)
-    db_session.flush()
+    db_session.commit()
     return taskGroup
 
 @pytest.fixture
@@ -692,7 +694,7 @@ def GM_eggChallenge_owner(db_session, TG_eggChallenge, user_b):
     groupMember.joinedAt = TG_eggChallenge.createdAt
 
     db_session.add(groupMember)
-    db_session.flush()
+    db_session.commit()
     return groupMember
 
 @pytest.fixture
@@ -705,7 +707,7 @@ def GM_eggChallenge_admin(db_session, TG_eggChallenge, user_c):
     groupMember.joinedAt = TG_eggChallenge.createdAt
 
     db_session.add(groupMember)
-    db_session.flush()
+    db_session.commit()
     return groupMember
 
 
@@ -724,7 +726,7 @@ def task_eggChallenge_eating(db_session, TG_eggChallenge, GM_eggChallenge_owner)
     task.deadline = datetime(2026, 4, 4, 13, 0, 0)
 
     db_session.add(task)
-    db_session.flush()
+    db_session.commit()
     return task
 
 @pytest.fixture
@@ -736,7 +738,7 @@ def TaskParams_eggChallenge_eating(db_session, task_eggChallenge_eating):
     taskParams.notifications = True
 
     db_session.add(taskParams)
-    db_session.flush()
+    db_session.commit()
     return taskParams
 
 @pytest.fixture
@@ -748,7 +750,7 @@ def TaskProgress_eggChallenge_eating_owner(db_session, GM_eggChallenge_owner, ta
     taskProgress.value = 67
 
     db_session.add(taskProgress)
-    db_session.flush()
+    db_session.commit()
     return taskProgress
 
 @pytest.fixture
@@ -760,7 +762,7 @@ def TaskProgress_eggChallenge_eating_admin(db_session, GM_eggChallenge_admin, ta
     taskProgress.value = 13
 
     db_session.add(taskProgress)
-    db_session.flush()
+    db_session.commit()
     return taskProgress
 
 @pytest.fixture
@@ -775,7 +777,7 @@ def PE_eggChallenge_eating_owner_1(db_session, TaskProgress_eggChallenge_eating_
     progressEntry.createdAt = datetime(2025, 4, 4, 16, 0, 0)
 
     db_session.add(progressEntry)
-    db_session.flush()
+    db_session.commit()
     return progressEntry
 
 @pytest.fixture
@@ -790,7 +792,7 @@ def PE_eggChallenge_eating_owner_2(db_session, TaskProgress_eggChallenge_eating_
     progressEntry.createdAt = datetime(2025, 4, 4, 20, 0, 0)
 
     db_session.add(progressEntry)
-    db_session.flush()
+    db_session.commit()
     return progressEntry
 
 @pytest.fixture
@@ -805,7 +807,7 @@ def PE_eggChallenge_eating_admin_1(db_session, TaskProgress_eggChallenge_eating_
     progressEntry.createdAt = datetime(2025, 4, 4, 20, 0, 0)
 
     db_session.add(progressEntry)
-    db_session.flush()
+    db_session.commit()
     return progressEntry
 
 @pytest.fixture
@@ -820,7 +822,7 @@ def PE_eggChallenge_eating_admin_2(db_session, TaskProgress_eggChallenge_eating_
     progressEntry.createdAt = datetime(2025, 4, 4, 21, 0, 0)
 
     db_session.add(progressEntry)
-    db_session.flush()
+    db_session.commit()
     return progressEntry
 
 @pytest.fixture
@@ -835,7 +837,7 @@ def PE_eggChallenge_eating_admin_3(db_session, TaskProgress_eggChallenge_eating_
     progressEntry.createdAt = datetime(2025, 4, 4, 21, 5, 0)
 
     db_session.add(progressEntry)
-    db_session.flush()
+    db_session.commit()
     return progressEntry
 
 @pytest.fixture
@@ -850,7 +852,7 @@ def PE_eggChallenge_eating_admin_4(db_session, TaskProgress_eggChallenge_eating_
     progressEntry.createdAt = datetime(2025, 4, 4, 22, 0, 0)
 
     db_session.add(progressEntry)
-    db_session.flush()
+    db_session.commit()
     return progressEntry
 
 @pytest.fixture
@@ -863,7 +865,7 @@ def comment_eggChallenge_eating_owner_1(db_session, PE_eggChallenge_eating_owner
     comment.date = datetime(2025, 4, 4, 17, 0, 0)
 
     db_session.add(comment)
-    db_session.flush()
+    db_session.commit()
     return comment
 
 @pytest.fixture
@@ -876,7 +878,7 @@ def comment_eggChallenge_eating_owner_2(db_session, PE_eggChallenge_eating_owner
     comment.date = datetime(2025, 4, 4, 20, 30, 0)
 
     db_session.add(comment)
-    db_session.flush()
+    db_session.commit()
     return comment
     
 @pytest.fixture
@@ -889,7 +891,7 @@ def comment_eggChallenge_eating_owner_3(db_session, PE_eggChallenge_eating_owner
     comment.date = datetime(2025, 4, 4, 20, 40, 0)
 
     db_session.add(comment)
-    db_session.flush()
+    db_session.commit()
     return comment
 
 @pytest.fixture
@@ -968,7 +970,7 @@ def TG_bingo(db_session, user_b):
     taskGroup.createdAt = datetime(2026, 4, 4, 13, 0, 0)
 
     db_session.add(taskGroup)
-    db_session.flush()
+    db_session.commit()
     return taskGroup
 
 @pytest.fixture
@@ -981,7 +983,7 @@ def GM_bingo_owner(db_session, TG_bingo, user_b):
     groupMember.joinedAt = TG_bingo.createdAt
 
     db_session.add(groupMember)
-    db_session.flush()
+    db_session.commit()
     return groupMember
 
 
@@ -1000,7 +1002,7 @@ def task_bingo_money(db_session, TG_bingo, GM_bingo_owner):
     #task.deadline = datetime(2027, 4, 4, 13, 0, 0) #endless nie ma deadline
 
     db_session.add(task)
-    db_session.flush()
+    db_session.commit()
     return task
 
 @pytest.fixture
@@ -1012,7 +1014,7 @@ def TaskParams_bingo_money(db_session, task_bingo_money):
     taskParams.notifications = False
 
     db_session.add(taskParams)
-    db_session.flush()
+    db_session.commit()
     return taskParams
 
 @pytest.fixture
@@ -1024,7 +1026,7 @@ def TaskProgress_bingo_money(db_session, task_bingo_money):
     taskProgress.value = 700
 
     db_session.add(taskProgress)
-    db_session.flush()
+    db_session.commit()
     return taskProgress
 
 @pytest.fixture
@@ -1039,7 +1041,7 @@ def PE_bingo_money_1(db_session, TaskProgress_bingo_money, GM_bingo_owner):
     progressEntry.createdAt = datetime(2026, 4, 4, 16, 0, 0)
 
     db_session.add(progressEntry)
-    db_session.flush()
+    db_session.commit()
     return progressEntry
 
 @pytest.fixture
@@ -1054,7 +1056,7 @@ def PE_bingo_money_2(db_session, TaskProgress_bingo_money, GM_bingo_owner):
     progressEntry.createdAt = datetime(2026, 4, 4, 16, 10, 0)
 
     db_session.add(progressEntry)
-    db_session.flush()
+    db_session.commit()
     return progressEntry
 
 @pytest.fixture
@@ -1069,7 +1071,7 @@ def PE_bingo_money_3(db_session, TaskProgress_bingo_money, GM_bingo_owner):
     progressEntry.createdAt = datetime(2026, 4, 4, 17, 0, 0)
 
     db_session.add(progressEntry)
-    db_session.flush()
+    db_session.commit()
     return progressEntry
 
 @pytest.fixture
@@ -1082,7 +1084,7 @@ def comment_bingo_money(db_session, PE_bingo_money_3, user_a):
     comment.date = datetime(2026, 4, 4, 17, 30, 0)
 
     db_session.add(comment)
-    db_session.flush()
+    db_session.commit()
     return comment
 
 @pytest.fixture
@@ -1120,7 +1122,7 @@ def task_bingo_running(db_session, TG_bingo, GM_bingo_owner):
     task.frequency = TimeInterval.MONTHLY
 
     db_session.add(task)
-    db_session.flush()
+    db_session.commit()
     return task
 
 @pytest.fixture
@@ -1132,7 +1134,7 @@ def TaskParams_bingo_running(db_session, task_bingo_running):
     taskParams.notifications = True
 
     db_session.add(taskParams)
-    db_session.flush()
+    db_session.commit()
     return taskParams
 
 @pytest.fixture
@@ -1146,7 +1148,7 @@ def TaskProgress_bingo_running(db_session, task_bingo_running):
     taskProgress.streak = 2 # current streak
 
     db_session.add(taskProgress)
-    db_session.flush()
+    db_session.commit()
     return taskProgress
 
 @pytest.fixture
@@ -1161,7 +1163,7 @@ def PE_bingo_running_1(db_session, TaskProgress_bingo_running, GM_bingo_owner):
     progressEntry.createdAt = datetime(2026, 3, 4, 16, 0, 0)
 
     db_session.add(progressEntry)
-    db_session.flush()
+    db_session.commit()
     return progressEntry
 
 @pytest.fixture
@@ -1176,7 +1178,7 @@ def PE_bingo_running_2(db_session, TaskProgress_bingo_running, GM_bingo_owner):
     progressEntry.createdAt = datetime(2026, 4, 10, 16, 0, 0) # moze datetime now -2 dni, potem -1 itp, zeby streak dzialal
 
     db_session.add(progressEntry)
-    db_session.flush()
+    db_session.commit()
     return progressEntry
 
 @pytest.fixture
@@ -1191,7 +1193,7 @@ def PE_bingo_running_3(db_session, TaskProgress_bingo_running, GM_bingo_owner):
     progressEntry.createdAt = datetime(2026, 4, 11, 16, 0, 0)
 
     db_session.add(progressEntry)
-    db_session.flush()
+    db_session.commit()
     return progressEntry
 
 
@@ -1205,7 +1207,7 @@ def comment_bingo_running(db_session, PE_bingo_running_3, user_c):
     comment.date = datetime(2026, 4, 11, 17, 0, 0)
 
     db_session.add(comment)
-    db_session.flush()
+    db_session.commit()
     return comment
 
 @pytest.fixture
@@ -1242,7 +1244,7 @@ def task_bingo_gym(db_session, TG_bingo, GM_bingo_owner):
     task.deadline = datetime(2027, 4, 4, 17, 0, 0)
 
     db_session.add(task)
-    db_session.flush()
+    db_session.commit()
     return task
 
 @pytest.fixture
@@ -1254,7 +1256,7 @@ def TaskParams_bingo_gym(db_session, task_bingo_gym):
     taskParams.notifications = True
 
     db_session.add(taskParams)
-    db_session.flush()
+    db_session.commit()
     return taskParams
 
 @pytest.fixture
@@ -1266,7 +1268,7 @@ def TaskProgress_bingo_gym(db_session, task_bingo_gym):
     taskProgress.value = 2
 
     db_session.add(taskProgress)
-    db_session.flush()
+    db_session.commit()
     return taskProgress
 
 @pytest.fixture
@@ -1281,7 +1283,7 @@ def PE_bingo_gym_1(db_session, TaskProgress_bingo_gym, GM_bingo_owner):
     progressEntry.createdAt = datetime(2026, 4, 4, 16, 0, 0)
 
     db_session.add(progressEntry)
-    db_session.flush()
+    db_session.commit()
     return progressEntry
 
 @pytest.fixture
@@ -1296,7 +1298,7 @@ def PE_bingo_gym_2(db_session, TaskProgress_bingo_gym, GM_bingo_owner):
     progressEntry.createdAt = datetime(2026, 4, 6, 16, 0, 0)
 
     db_session.add(progressEntry)
-    db_session.flush()
+    db_session.commit()
     return progressEntry
 
 
@@ -1331,7 +1333,7 @@ def task_bingo_president(db_session, TG_bingo, GM_bingo_owner):
     task.deadline = datetime(2027, 4, 4, 17, 0, 0)
 
     db_session.add(task)
-    db_session.flush()
+    db_session.commit()
     return task
 
 @pytest.fixture
@@ -1343,7 +1345,7 @@ def TaskParams_bingo_president(db_session, task_bingo_president):
     taskParams.notifications = True
 
     db_session.add(taskParams)
-    db_session.flush()
+    db_session.commit()
     return taskParams
 
 @pytest.fixture
@@ -1355,7 +1357,7 @@ def TaskProgress_bingo_president(db_session, task_bingo_president):
     taskProgress.value = 0
 
     db_session.add(taskProgress)
-    db_session.flush()
+    db_session.commit()
     return taskProgress
 
 @pytest.fixture
@@ -1457,7 +1459,7 @@ def ecosystem(
 #     assert saved is not None
     
 #     comment.deleteComment(db_session)
-#     db_session.flush()
+#     db_session.commit()
     
 #     deleted = db_session.query(Comment).filter_by(id=comment_id).first()
 #     assert deleted is None

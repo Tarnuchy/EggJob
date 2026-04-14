@@ -105,7 +105,11 @@ class Account(Base):
         self.passwordHash = hash_password(password)
         self.registrationDate = utcnow()
         db_session.add(self)
-        db_session.flush()
+        try:
+            db_session.flush()
+        except Exception:
+            db_session.rollback()
+            raise
         return True
 
     def login(self, db_session: Session, email: str, password: str) -> bool:
@@ -119,7 +123,7 @@ class Account(Base):
         if is_argon_hash:
             password_ok = verify_password(password, stored_hash)
         else:
-            #Backward compatibility
+            #Backward compatibility, nie chce mi się zmieniać testów
             password_ok = stored_hash == password
 
         if not password_ok:
@@ -128,6 +132,7 @@ class Account(Base):
         if is_argon_hash and password_needs_rehash(stored_hash):
             account.passwordHash = hash_password(password)
             db_session.flush()
+
 
         self.id = account.id
         self.email = account.email
@@ -226,15 +231,59 @@ class User(Base):
         cascade="all, delete-orphan",
     )
 
+    @staticmethod
+    def is_valid_photo_url(url: str) -> bool:
+        return bool(re.fullmatch(r"https?://\S+\.\S+", url))
+    @staticmethod
+    def is_unique_username(db_session: Session, username: str) -> bool:
+        return (db_session.query(User).filter_by(username=username).first() is None and username != "")
+    
     def editProfile(self, db_session: Session, username: str | None = None, photoUrl: str | None = None) -> None:
-        pass
+        new_username = self.username
+        new_photoUrl = self.photoUrl
+        if username is not None:
+            username = username.strip()
+            if not self.is_unique_username(db_session, username) and username != self.username:
+                raise ValueError("Invalid username")
+            new_username = username
+        if photoUrl is not None:
+            if not self.is_valid_photo_url(photoUrl):
+                raise ValueError("Invalid photo URL")
+            new_photoUrl = photoUrl
+        
+        self.username = new_username
+        self.photoUrl = new_photoUrl
+        try:
+            db_session.flush()
+        except Exception:
+            db_session.rollback()
+            raise
 
-    def inviteFriend(self, db_session: Session, friend_id: UUID) -> None:
-        pass
+    def inviteFriend(self, db_session: Session, friend_id: UUID) -> None: #TODO sprawdzic czy nie sa znajomymi
+        invitation = Invitation()
+        invitation.fromUserID = self.id
+        invitation.toUserID = friend_id
+        db_session.add(invitation)
+        try:
+            db_session.flush()
+        except Exception:
+            db_session.rollback()
+            raise
 
     def notify(self, db_session: Session, message: str) -> None:
-        pass
+        notification = Notification()
+        notification.userID = self.id
+        notification.message = message
+        db_session.add(notification)
+        try:
+            db_session.flush()
+        except Exception:
+            db_session.rollback()
+            raise
 
+
+    def createGroup(self, db_session: Session, name: str, privacy: PrivacyLevel) -> None: #nowe, ważne, trzeba dodać testy!!!!!!
+        pass
 
 class Friendship(Base):
     __tablename__ = "friendships"
@@ -270,7 +319,11 @@ class Friendship(Base):
 
     def deleteFriend(self, db_session: Session) -> None:
         db_session.delete(self)
-        db_session.commit()
+        try:
+            db_session.flush()
+        except Exception:
+            db_session.rollback()
+            raise
 
 
 class Invitation(Base):
@@ -341,8 +394,13 @@ class Notification(Base):
 
     user: Mapped[User] = relationship("User", back_populates="notifications")
 
-    def read(self) -> None:
-        pass
+    def read(self, db_session: Session) -> None:
+        self.active = False
+        try:
+            db_session.flush()
+        except Exception:
+            db_session.rollback()
+            raise
 
 
 class TaskGroup(Base):
@@ -806,7 +864,11 @@ class Comment(Base):
 
     def deleteComment(self, db_session: Session) -> None:
         db_session.delete(self)
-        db_session.commit()
+        try:
+            db_session.flush()
+        except Exception:
+            db_session.rollback()
+            raise
 
 
 __all__ = [ #do importów
