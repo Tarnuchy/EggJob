@@ -29,7 +29,7 @@ def test_TaskGroup_edit(ecosystem):
         
     db_session.flush()
     # Sprawdzamy w bazie ATOMOWO że błąd odrzucił próbę i wartości pozostały domyślne
-    saved_tg = db_session.query(TaskGroup).filter(TaskGroup.id == tg.id).first()
+    saved_tg = db_session.query(TaskGroup).filter_by(id=tg.id).first()
     assert saved_tg is not None
     assert saved_tg.name == initial_name
     assert saved_tg.privacy == initial_privacy
@@ -39,7 +39,7 @@ def test_TaskGroup_edit(ecosystem):
         tg.edit(user_id=member.userID, db_session=db_session, **new_data)
         
     db_session.flush()
-    saved_tg = db_session.query(TaskGroup).filter(TaskGroup.id == tg.id).first()
+    saved_tg = db_session.query(TaskGroup).filter_by(id=tg.id).first()
     assert saved_tg is not None
     assert saved_tg.name == initial_name 
     assert saved_tg.privacy == initial_privacy
@@ -48,7 +48,7 @@ def test_TaskGroup_edit(ecosystem):
     tg.edit(user_id=owner.userID, db_session=db_session, **new_data)
     db_session.flush()
     
-    saved_tg = db_session.query(TaskGroup).filter(TaskGroup.id == tg.id).first()
+    saved_tg = db_session.query(TaskGroup).filter_by(id=tg.id).first()
     assert saved_tg is not None
     assert saved_tg.name == new_data["new_name"]
     assert saved_tg.privacy == new_data["new_privacy"]
@@ -60,7 +60,7 @@ def test_TaskGroup_edit(ecosystem):
 
     db_session.flush()
     # Weryfikujemy w bazie, czy zachowała się poprzednia, działająca wartość, a pusta nazwa została zablokowana
-    saved_tg = db_session.query(TaskGroup).filter(TaskGroup.id == tg.id).first()
+    saved_tg = db_session.query(TaskGroup).filter_by(id=tg.id).first()
     assert saved_tg.name == new_data["new_name"]
 
 
@@ -76,7 +76,7 @@ def test_TaskGroup_delete(ecosystem):
     member = ecosystem["TG"]["shopping"]["GM"]["member"]
 
     # Przed usunięciem pobieramy listę wszystkich powiązanych rekordów (podrzędnych)
-    tasks_before = db_session.query(Task).filter(Task.groupID == tg_id).all()
+    tasks_before = db_session.query(Task).filter_by(groupID=tg_id).all()
     task_ids = [t.id for t in tasks_before]
     
     # Skoro to SQLAlchemy-like, bezpiecznie jest pobrać listę przez all i odfiltrować za pomocą list comprehension
@@ -93,11 +93,11 @@ def test_TaskGroup_delete(ecosystem):
         
     db_session.flush()
     # Sprawdzamy atomowo, że błąd odrzucił akcję i grupa nadal istnieje
-    saved_tg = db_session.query(TaskGroup).filter(TaskGroup.id == tg_id).first()
+    saved_tg = db_session.query(TaskGroup).filter_by(id=tg_id).first()
     assert saved_tg is not None
 
     # Upewniamy się, że obiekty podrzędne po rzuceniu błędu także nadal bez naruszenia istnieją
-    members_check = db_session.query(GroupMember).filter(GroupMember.groupID == tg_id).all()
+    members_check = db_session.query(GroupMember).filter_by(groupID=tg_id).all()
     assert len(members_check) > 0
 
 
@@ -106,17 +106,17 @@ def test_TaskGroup_delete(ecosystem):
     db_session.flush()
     
     # Sprawdzamy atomowo, że grupa faktycznie zniknęła z bazy (główny obiekt usunięto)
-    deleted_tg = db_session.query(TaskGroup).filter(TaskGroup.id == tg_id).first()
+    deleted_tg = db_session.query(TaskGroup).filter_by(id=tg_id).first()
     assert deleted_tg is None
 
     # ====== SPRAWDZANIE USUWANA KASKADOWEGO (CASCADE DELETE) ======
     
     # 2.1 Członkowie grupy (GroupMember)
-    deleted_members = db_session.query(GroupMember).filter(GroupMember.groupID == tg_id).all()
+    deleted_members = db_session.query(GroupMember).filter_by(groupID=tg_id).all()
     assert len(deleted_members) == 0
 
     # 2.2 Same Zadania (Task)
-    deleted_tasks = db_session.query(Task).filter(Task.groupID == tg_id).all()
+    deleted_tasks = db_session.query(Task).filter_by(groupID=tg_id).all()
     assert len(deleted_tasks) == 0
     
     # 2.3 Postęp zadań i ich parametry (TaskProgress, TaskParams)
@@ -176,20 +176,20 @@ def test_TaskGroup_addFriend(ecosystem):
     
     # 4. PRZYPADEK: SUKCES - OWNER dodaje poprawnego znajomego (grupa egg challenge)
     # B (owner w challenge) dodaje A (B i A są znajomymi, a A jeszcze nie ma w challenge)
-    previous_members_count = len(db_session.query(GroupMember).filter(GroupMember.groupID == challenge_tg.id).all())
+    previous_members_count = len(db_session.query(GroupMember).filter_by(groupID=challenge_tg.id).all())
     
     challenge_tg.addFriend(db_session=db_session, user_id=challenge_owner.userID, friend_id=user_a.id)
     db_session.flush()
     
-    new_member_record = db_session.query(GroupMember).filter(
-        GroupMember.groupID == challenge_tg.id, 
-        GroupMember.userID == user_a.id
+    new_member_record = db_session.query(GroupMember).filter_by(
+        groupID=challenge_tg.id,
+        userID=user_a.id,
     ).first()
     
     assert new_member_record is not None
     assert new_member_record.active is True
     
-    current_members_count = len(db_session.query(GroupMember).filter(GroupMember.groupID == challenge_tg.id).all())
+    current_members_count = len(db_session.query(GroupMember).filter_by(groupID=challenge_tg.id).all())
     assert current_members_count == previous_members_count + 1
 
     # 5. PRZYPADEK: Dodanie znajomego, który uprzednio był członkiem i zostawił ducha
@@ -197,9 +197,9 @@ def test_TaskGroup_addFriend(ecosystem):
     shopping_tg.addFriend(db_session=db_session, user_id=shopping_owner.userID, friend_id=shopping_ghost.userID)
     db_session.flush()
     
-    ghost_record = db_session.query(GroupMember).filter(
-        GroupMember.groupID == shopping_tg.id, 
-        GroupMember.userID == shopping_ghost.userID
+    ghost_record = db_session.query(GroupMember).filter_by(
+        groupID=shopping_tg.id,
+        userID=shopping_ghost.userID,
     ).first()
     
     # Duch obudzony, ale id zostaje to samo (chroni historię jego postępów)
@@ -242,7 +242,7 @@ def test_TaskGroup_createTask(ecosystem):
     db_session.flush()
     # Weryfikacja ze obiekt nie trafil do bazy 
     assert coop_tg.taskCount == coop_task_count_before
-    assert db_session.query(Task).filter(Task.name == "Ghost_Task").first() is None
+    assert db_session.query(Task).filter_by(name="Ghost_Task").first() is None
 
 
     # -------------------------------------------------------------------
@@ -264,18 +264,18 @@ def test_TaskGroup_createTask(ecosystem):
     db_session.flush()
     
     assert coop_tg.taskCount == coop_task_count_before + 1
-    created_coop_task = db_session.query(Task).filter(Task.name == "Member_Task_OneTime").first()
+    created_coop_task = db_session.query(Task).filter_by(name="Member_Task_OneTime").first()
     assert created_coop_task is not None
     assert isinstance(created_coop_task, OneTimeTask)
     assert created_coop_task.goal == 50.0
     
     # Parametry
-    coop_params = db_session.query(TaskParams).filter(TaskParams.taskID == created_coop_task.id).first()
+    coop_params = db_session.query(TaskParams).filter_by(taskID=created_coop_task.id).first()
     assert coop_params is not None
     assert coop_params.photoRequired is True
     
     # TaskProgress dla COOP: powstaje tylko JEDEN (userID to None)
-    coop_progresses = db_session.query(TaskProgress).filter(TaskProgress.taskID == created_coop_task.id).all()
+    coop_progresses = db_session.query(TaskProgress).filter_by(taskID=created_coop_task.id).all()
     assert len(coop_progresses) == 1
     assert coop_progresses[0].userID is None
 
@@ -297,26 +297,26 @@ def test_TaskGroup_createTask(ecosystem):
     comp_task_count_before = comp_tg.taskCount
     
     # Pobieramy wszystkich AKTYWNYCH członków competitive do sprawdzenia ilości TaskProgress
-    active_comp_members = db_session.query(GroupMember).filter(
-        GroupMember.groupID == comp_tg.id,
-        GroupMember.active == True,
+    active_comp_members = db_session.query(GroupMember).filter_by(
+        groupID=comp_tg.id,
+        active=True,
     ).all()
     
     comp_tg.createTask(user_id=comp_admin.userID, db_session=db_session, **admin_data)
     db_session.flush()
     
     assert comp_tg.taskCount == comp_task_count_before + 1
-    created_comp_task = db_session.query(Task).filter(Task.name == "Admin_Task_Repeatable").first()
+    created_comp_task = db_session.query(Task).filter_by(name="Admin_Task_Repeatable").first()
     assert created_comp_task is not None
     assert isinstance(created_comp_task, RepeatableTask)
     assert created_comp_task.goal == -10.0
     
     # Parametry
-    comp_params = db_session.query(TaskParams).filter(TaskParams.taskID == created_comp_task.id).first()
+    comp_params = db_session.query(TaskParams).filter_by(taskID=created_comp_task.id).first()
     assert comp_params is not None
     
     # TaskProgress dla COMP: tworzony dla każdego aktywnego użytkownika
-    comp_progresses = db_session.query(TaskProgress).filter(TaskProgress.taskID == created_comp_task.id).all()
+    comp_progresses = db_session.query(TaskProgress).filter_by(taskID=created_comp_task.id).all()
     assert len(comp_progresses) == len(active_comp_members)
     
     users_with_progress = {p.userID for p in comp_progresses}
@@ -342,7 +342,7 @@ def test_TaskGroup_createTask(ecosystem):
     db_session.flush()
     
     assert comp_tg.taskCount == comp_owner_tasks_count + 1
-    owner_created_task = db_session.query(Task).filter(Task.name == "Owner_Challenge_Task").first()
+    owner_created_task = db_session.query(Task).filter_by(name="Owner_Challenge_Task").first()
     assert isinstance(owner_created_task, ChallengeTask)
 
 
@@ -361,7 +361,7 @@ def test_TaskGroup_createTask(ecosystem):
         
     db_session.flush()
     assert comp_tg.taskCount == tasks_count_before_err
-    assert db_session.query(Task).filter(Task.name == "").first() is None
+    assert db_session.query(Task).filter_by(name="").first() is None
     assert len(db_session.query(TaskParams).all()) == params_count_before_err
     assert len(db_session.query(TaskProgress).all()) == progress_count_before_err
 
@@ -380,7 +380,7 @@ def test_TaskGroup_createTask(ecosystem):
         
     db_session.flush()
     assert comp_tg.taskCount == tasks_count_before_err
-    assert db_session.query(Task).filter(Task.name == "NeverCreated").first() is None
+    assert db_session.query(Task).filter_by(name="NeverCreated").first() is None
     assert len(db_session.query(TaskParams).all()) == params_count_before_err
     assert len(db_session.query(TaskProgress).all()) == progress_count_before_err
 
