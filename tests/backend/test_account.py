@@ -15,7 +15,7 @@ def test_Account_register(ecosystem):
     valid_form = {
         "email": "nowy_super_user@eggjob.com",
         "username": "SuperUser_123",
-        "password": "StrongPassword123!"
+        "passwordHash": "StrongPassword123!"
     }
 
     new_account = Account()
@@ -83,7 +83,7 @@ def test_Account_register(ecosystem):
     # PRZYPADEK 5: BŁĄD (ValueError) - Za słabe hasło
     # -------------------------------------------------------------------
     weak_password_form = valid_form.copy()
-    weak_password_form["password"] = "123"
+    weak_password_form["passwordHash"] = "123"
 
     accounts_before_err = len(db_session.query(Account).all())
     with pytest.raises(ValueError):
@@ -102,7 +102,7 @@ def test_Account_login(ecosystem):
     # -------------------------------------------------------------------
     valid_login_form = {
         "email": existing_acc_a.email,
-        "password": "P@ssw0rd_A" # Zgodne z conftest.py
+        "passwordHash": "P@ssw0rd_A" # Zgodne z conftest.py
     }
 
     result = existing_acc_a.login(db_session=db_session, **valid_login_form)
@@ -113,7 +113,7 @@ def test_Account_login(ecosystem):
     # PRZYPADEK 2: BŁĄD (ValueError) - błędne hasło dla istniejącego konta
     # -------------------------------------------------------------------
     invalid_password_form = valid_login_form.copy()
-    invalid_password_form["password"] = "ZleHaslo123!"
+    invalid_password_form["passwordHash"] = "ZleHaslo123!"
 
     with pytest.raises(ValueError):
         existing_acc_a.login(db_session=db_session, **invalid_password_form)
@@ -123,7 +123,7 @@ def test_Account_login(ecosystem):
     # -------------------------------------------------------------------
     non_existent_email_form = {
         "email": "nieistniejacy_mail@eggjob.com",
-        "password": "AnyPassword123!"
+        "passwordHash": "AnyPassword123!"
     }
 
     # Wywołujemy na "nieistniejącym", pustym koncie (odpowiednik braku konta w bazie)
@@ -182,7 +182,7 @@ def test_Account_deleteAccount(ecosystem):
     # -------------------------------------------------------------------
     # Wywołanie funkcji: usunięcie konta i wszystkich encji z nim związanych
     # -------------------------------------------------------------------
-    account_a.deleteAccount(db_session=db_session)
+    account_a.deleteAccount(db_session=db_session, password="P@ssw0rd_A") # Hasło z conftest.py
     db_session.flush()
 
     # -------------------------------------------------------------------

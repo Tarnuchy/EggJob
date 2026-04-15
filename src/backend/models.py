@@ -105,6 +105,7 @@ class Account(Base):
         self.passwordHash = hash_password(password)
         self.registrationDate = utcnow()
         db_session.add(self)
+        #self.createUser(db_session, username)
         try:
             db_session.flush()
         except Exception:
@@ -140,14 +141,48 @@ class Account(Base):
         self.registrationDate = account.registrationDate
         return True
 
-    def deleteAccount(self, db_session: Session) -> None:
-        pass
+    def deleteAccount(self, password: str, db_session: Session) -> None:
+        hash = self.passwordHash
+        if not verify_password(password, hash):
+            raise ValueError("Invalid password")
+        db_session.delete(self)
+        try:
+            db_session.flush()
+        except Exception:
+            db_session.rollback()
+            raise
 
     def createUser(self, db_session: Session, username: str, photoUrl: str | None = None) -> bool:
-        pass
+        if db_session.query(User).filter_by(username=username).first() is not None:
+            raise ValueError("Username already in use")
+        if photoUrl is not None and not User.is_valid_photo_url(photoUrl):
+            raise ValueError("Invalid photo URL")
+
+        user = User()
+        user.accountID = self.id
+        user.username = username
+        user.photoUrl = photoUrl
+        db_session.add(user)
+        try:
+            db_session.flush()
+        except Exception:
+            db_session.rollback()
+            raise
+        return True #???
 
     def changePassword(self, db_session: Session, old_password: str, new_password: str) -> bool:
-        pass
+        hash = self.passwordHash
+        if not verify_password(old_password, hash):
+            raise ValueError("Invalid current password")
+        if not self._is_strong_password(new_password):
+            raise ValueError("Weak new password")
+        
+        self.passwordHash = hash_password(new_password)
+        try:
+            db_session.flush()
+        except Exception:
+            db_session.rollback()
+            raise
 
 
 class User(Base):
@@ -259,7 +294,13 @@ class User(Base):
             db_session.rollback()
             raise
 
-    def inviteFriend(self, db_session: Session, friend_id: UUID) -> None: #TODO sprawdzic czy nie sa znajomymi
+    def inviteFriend(self, db_session: Session, friend_id: UUID) -> None:
+        if db_session.query(User).filter_by(id=friend_id).first() is None or db_session.query(Friendship).filter(
+            ((Friendship.userOneID == self.id) & (Friendship.userTwoID == friend_id)) |
+            ((Friendship.userOneID == friend_id) & (Friendship.userTwoID == self.id))
+        ).first() is not None:
+            raise ValueError("Invalid friend ID") #TODO przejrzeć typy exception
+        
         invitation = Invitation()
         invitation.fromUserID = self.id
         invitation.toUserID = friend_id
@@ -282,7 +323,7 @@ class User(Base):
             raise
 
 
-    def createGroup(self, db_session: Session, name: str, privacy: PrivacyLevel) -> None: #nowe, ważne, trzeba dodać testy!!!!!!
+    def createGroup(self, db_session: Session, name: str, privacy: PrivacyLevel) -> None: #nowe, ważne, trzeba dodać testy!!!!!! TODO
         pass
 
 class Friendship(Base):
@@ -358,17 +399,36 @@ class Invitation(Base):
         back_populates="invitationsReceived",
     )
 
-    def accept(self, db_session: Session | None = None) -> None:
-        pass
+    def accept(self, db_session: Session) -> None:
+        friendship = Friendship()
+        friendship.userOneID = self.fromUserID
+        friendship.userTwoID = self.toUserID
+        db_session.add(friendship)
+        db_session.delete(self)
+        try:
+            db_session.flush()
+        except Exception:
+            db_session.rollback()
+            raise
 
-    def reject(self, db_session: Session | None = None) -> None:
-        pass
+    def reject(self, db_session: Session) -> None:
+        db_session.delete(self)
+        try:
+            db_session.flush()
+        except Exception:
+            db_session.rollback()
+            raise
 
-    def cancel(self, db_session: Session | None = None) -> None:
-        pass
+    def cancel(self, db_session: Session) -> None: 
+        db_session.delete(self)
+        try:
+            db_session.flush()
+        except Exception:
+            db_session.rollback()
+            raise
 
-    def notify(self, db_session: Session | None = None) -> None:
-        pass
+    def notify(self, db_session: Session) -> None: #TODO do wywalenia XD
+        self.toUser.notify(db_session, f"You have a new friend invitation from {self.fromUser.username}!")
 
 
 class Notification(Base):
