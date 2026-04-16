@@ -9,7 +9,8 @@
 		"noEmit": true,
 		"allowJs": false,
 		"resolveJsonModule": true,
-		"isolatedModules": true
+		"isolatedModules": true,
+		"jsx": "react-jsx"
 	},
 	"include": [
 		"tests/**/*.ts",
