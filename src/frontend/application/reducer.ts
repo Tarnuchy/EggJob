@@ -2,6 +2,7 @@ import type { FrontendState } from "./state";
 import { handleAuth } from "./handlers/auth";
 import { handleProfile } from "./handlers/profile";
 import { handleSocial } from "./handlers/social";
+import { handleTaskGroups } from "./handlers/task-groups";
 
 type Action = { type: string; [key: string]: unknown };
 export type ReducerResult =
@@ -37,7 +38,7 @@ export function reduceFrontendState(
     case "task-groups/add-member":
     case "task-groups/remove-member":
     case "task-groups/leave":
-      return notImplemented();
+      return handleTaskGroups(state, action);
 
     case "task-groups/invite-friend":
     case "task-groups/cancel-invitation":
