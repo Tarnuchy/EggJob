@@ -1,5 +1,5 @@
 import react from 'react';
-import { View, Text, StyleSheet, Button, ViewStyle } from 'react-native';
+import { View, StyleSheet, ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface Props {
@@ -15,15 +15,15 @@ export const ScreenContainer = ({ children, style }: Props) => {
             </View>
         </SafeAreaView>
     );
-}
+};
 
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
-        backgroundColor: '#fff' // to do zmiany potem
+        backgroundColor: '#fff',
     },
     container: {
         flex: 1,
-        paddingHorizontal: 20
-    }
+        paddingHorizontal: 20,
+    },
 });

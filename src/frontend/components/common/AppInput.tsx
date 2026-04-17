@@ -4,9 +4,9 @@ import { View, Text, StyleSheet, TextInput, StyleProp, TextStyle } from 'react-n
 interface Props {
     label?: string;
     touched?: boolean;
-    error?: string; // jakby ktos chcial jakis slop wpisywal 
+    error?: string;
     message?: string;
-    placeholder?: string; // zawsze musi byc taka konwencja w sumie
+    placeholder?: string;
     style?: StyleProp<TextStyle>;
     onChangeText?: (text: string) => void;
     secureTextEntry?: boolean;
@@ -59,26 +59,22 @@ export const AppInput = ({
     return (
         <View style={styles.container}>
             <Text style={styles.label}>{label}</Text>
-            <TextInput style={[styles.input, touched && error && styles.inputError, style]}
-            placeholder={placeholder}
-            value={displayValue}
-            onChangeText={handleChange}
-            secureTextEntry={false}
-            autoCapitalize={useAsteriskMask ? 'none' : 'sentences'}
-            autoCorrect={useAsteriskMask ? false : undefined}
-            /> 
+            <TextInput
+                style={[styles.input, touched && error && styles.inputError, style]}
+                placeholder={placeholder}
+                value={displayValue}
+                onChangeText={handleChange}
+                secureTextEntry={false}
+                autoCapitalize={useAsteriskMask ? 'none' : 'sentences'}
+                autoCorrect={useAsteriskMask ? false : undefined}
+            />
         </View>
     );
 };
-//Do ustalenia jak to ma wygladac 
-const styles = StyleSheet.create({
-    container: {
-    },
-    label: {
-    },
-    input: {
-    },
-    inputError: {
 
-    },
+const styles = StyleSheet.create({
+    container: {},
+    label: {},
+    input: {},
+    inputError: {},
 });

@@ -1,7 +1,4 @@
-import react from 'react';
-import { View, Text, StyleSheet, Button } from 'react-native';
-
-// to do jakis malych bledow do wiekszych bledow ze wyskoczy okienko bedzie GlobalModal
+import { Text, StyleSheet } from 'react-native';
 
 interface Props {
     message?: string;
@@ -13,8 +10,6 @@ export const ErrorMessage = ({ message, visible }: Props) => {
   return <Text style={styles.errorText}>{message}</Text>;
 };
 
-// Do ustalenia jak to ma wygladac
 const styles = StyleSheet.create({
-  errorText: {
-  },
+  errorText: {},
 });

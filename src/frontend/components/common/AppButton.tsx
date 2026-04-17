@@ -1,5 +1,4 @@
-import react from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Button, ViewStyle } from 'react-native';
+import { Text, StyleSheet, TouchableOpacity, ViewStyle } from 'react-native';
 
 interface Props {
     title?: string;
@@ -15,11 +14,7 @@ export const AppButton = ({ title, onPress, style }: Props) => {
     );
 };
 
-// Do ustalenia jak to ma wygladac
 const styles = StyleSheet.create({
-    button: {
-    },
-    text: {
-    }
+    button: {},
+    text: {},
 });
-    
