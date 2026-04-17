@@ -1,6 +1,7 @@
 import type { FrontendState } from "./state";
 import { handleAuth } from "./handlers/auth";
 import { handleProfile } from "./handlers/profile";
+import { handleSocial } from "./handlers/social";
 
 type Action = { type: string; [key: string]: unknown };
 export type ReducerResult =
@@ -28,7 +29,7 @@ export function reduceFrontendState(
     case "friends/accept-invite":
     case "friends/reject-invite":
     case "friends/remove":
-      return notImplemented();
+      return handleSocial(state, action);
 
     case "task-groups/create":
     case "task-groups/edit":
