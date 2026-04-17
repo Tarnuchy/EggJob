@@ -1,5 +1,6 @@
 import type { FrontendState } from "./state";
 import { handleAuth } from "./handlers/auth";
+import { handleProfile } from "./handlers/profile";
 
 type Action = { type: string; [key: string]: unknown };
 export type ReducerResult =
@@ -21,7 +22,7 @@ export function reduceFrontendState(
 
     case "profile/edit":
     case "account/delete":
-      return notImplemented();
+      return handleProfile(state, action);
 
     case "friends/invite":
     case "friends/accept-invite":
