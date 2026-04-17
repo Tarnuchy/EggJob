@@ -158,4 +158,20 @@ describe("Friend invitations and friendships (UC-05..UC-11)", () => {
 			accepted.value.entities.friendships["fr-1"]?.friendUserId,
 		).toBeDefined();
 	});
+
+	it("rejects accepting invitation that does not exist", () => {
+		const state = seedTwoUsers();
+
+		const accepted = dispatch(state, {
+			type: "friends/accept-invite",
+			invitationId: "inv-missing",
+			friendshipId: "fr-missing",
+			date: new Date("2026-04-03T11:05:00.000Z"),
+		});
+
+		expect(accepted.ok).toBe(false);
+		if (accepted.ok) return;
+
+		expect(accepted.error.code).toBe("not-found");
+	});
 });

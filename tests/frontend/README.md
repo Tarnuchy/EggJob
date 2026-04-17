@@ -34,6 +34,15 @@ a dopiero potem dopisujemy implementację w `src/frontend`.
   `TaskParams.edit`, `TaskGroup.changePermissions`, `Comment.deleteComment`,
   `ProgressEntry.validate`: `unit/domain-mapped/domain-methods.test.ts`
 
+### Integralnosc stanu i kontrakty mock API
+
+- integralnosc usuwania encji i edge-case invitation:
+  `unit/social/friendships.test.ts`,
+  `unit/task-groups/task-groups.test.ts`,
+  `unit/tasks/task-lifecycle-comments.test.ts`
+- kontrakt logowania mock auth (weryfikacja hasla):
+  `unit/services/mock-auth-service.test.ts`
+
 ### Zakres klasy domenowej (zadanie 4)
 
 Testy pokrywają metody/funkcjonalności odpowiadające diagramowi klas:
