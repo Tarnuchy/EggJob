@@ -1,4 +1,5 @@
 import type { FrontendState } from "./state";
+import { handleAuth } from "./handlers/auth";
 
 type Action = { type: string; [key: string]: unknown };
 export type ReducerResult =
@@ -16,7 +17,7 @@ export function reduceFrontendState(
     case "auth/register":
     case "auth/login":
     case "auth/logout":
-      return notImplemented();
+      return handleAuth(state, action);
 
     case "profile/edit":
     case "account/delete":
