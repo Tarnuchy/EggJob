@@ -12,9 +12,6 @@ export type ReducerResult =
   | { ok: true; value: FrontendState }
   | { ok: false; error: { code: string; field?: string } };
 
-const notImplemented = (): ReducerResult =>
-  ({ ok: false, error: { code: "not-implemented" } });
-
 export function reduceFrontendState(
   state: FrontendState,
   action: Action

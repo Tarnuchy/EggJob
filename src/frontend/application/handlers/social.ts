@@ -32,6 +32,15 @@ export function handleSocial(
     const friendshipId = action.friendshipId as string;
 
     const invitation = state.entities.invitations[invitationId];
+    if (
+      !invitation ||
+      invitation.kind !== "friend" ||
+      !invitation.fromUserId ||
+      !invitation.toUserId
+    ) {
+      return { ok: false, error: { code: "not-found" } };
+    }
+
     const { [invitationId]: _inv, ...remainingInvitations } =
       state.entities.invitations;
 
@@ -45,8 +54,8 @@ export function handleSocial(
           friendships: {
             ...state.entities.friendships,
             [friendshipId]: {
-              userId: invitation?.fromUserId ?? "",
-              friendUserId: invitation?.toUserId ?? "",
+              userId: invitation.fromUserId,
+              friendUserId: invitation.toUserId,
             },
           },
         },

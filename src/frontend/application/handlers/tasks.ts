@@ -92,6 +92,7 @@ export function handleTasks(
 
   if (action.type === "tasks/delete") {
     const taskId = action.taskId as string;
+    const task = state.entities.tasks[taskId];
     const { [taskId]: _task, ...remainingTasks } = state.entities.tasks;
 
     const updatedGroups = Object.fromEntries(
@@ -99,6 +100,52 @@ export function handleTasks(
         groupId,
         { ...group, taskIds: group.taskIds.filter((id) => id !== taskId) },
       ])
+    );
+
+    if (!task) {
+      return {
+        ok: true,
+        value: {
+          ...state,
+          entities: {
+            ...state.entities,
+            tasks: remainingTasks,
+            taskGroups: updatedGroups,
+          },
+        },
+      };
+    }
+
+    const { [task.progressId]: _progress, ...remainingTaskProgresses } =
+      state.entities.taskProgresses;
+
+    const entryIdsToDelete = new Set(
+      Object.entries(state.entities.progressEntries)
+        .filter(([, entry]) => entry.taskId === taskId)
+        .map(([entryId]) => entryId)
+    );
+
+    const commentIdsToDelete = new Set<string>();
+    for (const entryId of entryIdsToDelete) {
+      const entry = state.entities.progressEntries[entryId];
+      if (!entry) {
+        continue;
+      }
+      for (const commentId of entry.commentIds) {
+        commentIdsToDelete.add(commentId);
+      }
+    }
+
+    const remainingProgressEntries = Object.fromEntries(
+      Object.entries(state.entities.progressEntries).filter(
+        ([entryId]) => !entryIdsToDelete.has(entryId)
+      )
+    );
+
+    const remainingComments = Object.fromEntries(
+      Object.entries(state.entities.comments).filter(
+        ([commentId]) => !commentIdsToDelete.has(commentId)
+      )
     );
 
     return {
@@ -109,6 +156,9 @@ export function handleTasks(
           ...state.entities,
           tasks: remainingTasks,
           taskGroups: updatedGroups,
+          taskProgresses: remainingTaskProgresses,
+          progressEntries: remainingProgressEntries,
+          comments: remainingComments,
         },
       },
     };
@@ -144,7 +194,7 @@ export function handleTasks(
           ...state.entities,
           progressEntries: {
             ...state.entities.progressEntries,
-            [entryId]: { value, commentIds: [] },
+            [entryId]: { taskId, value, commentIds: [] },
           },
           taskProgresses: {
             ...state.entities.taskProgresses,

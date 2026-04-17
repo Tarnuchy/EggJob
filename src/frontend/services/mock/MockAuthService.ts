@@ -56,6 +56,13 @@ class MockAuthService implements IAuthService {
       return { ok: false, error: { code: "not-found" } };
     }
 
+    const isValidPassword =
+      account.passwordHash === `hash-${input.password}` ||
+      account.passwordHash === `seed-hash-${input.password}`;
+    if (!isValidPassword) {
+      return { ok: false, error: { code: "unauthorized" } };
+    }
+
     return {
       ok: true,
       value: { accountId: account.accountId, userId: account.userId },

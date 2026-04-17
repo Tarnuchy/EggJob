@@ -32,6 +32,7 @@ type TaskProgress = {
 };
 
 type ProgressEntry = {
+  taskId: string;
   value: number;
   commentIds: string[];
 };
