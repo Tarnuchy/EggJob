@@ -1,8 +1,8 @@
 import react from 'react';
 import { View, StyleSheet } from 'react-native';
-import { ScreenContainer } from '../components/ScreenContainer';
-import { TopBar } from '../components/TopBar';
-import { AppText } from '../components/AppText';
+import { ScreenContainer } from '../../components/common/ScreenContainer';
+import { TopBar } from '../../components/common/TopBar';
+import { AppText } from '../../components/common/AppText';
 
 export const HomeScreen = () => {
 	return (

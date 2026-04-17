@@ -2,14 +2,14 @@ import react from 'react';
 import { View, Text, StyleSheet, Button, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../navigation/types';
+import { RootStackParamList } from '../../navigation/types';
 
-import { ScreenContainer } from '../components/ScreenContainer';
-import { AppButton } from '../components/AppButton';
-import { AppInput } from '../components/AppInput';
-import { AppText } from '../components/AppText';
-import { ErrorMessage } from '../components/ErrorMessage';
-import { Spacer } from '../components/Spacer';
+import { ScreenContainer } from '../../components/common/ScreenContainer';
+import { AppButton } from '../../components/common/AppButton';
+import { AppInput } from '../../components/common/AppInput';
+import { AppText } from '../../components/common/AppText';
+import { ErrorMessage } from '../../components/common/ErrorMessage';
+import { Spacer } from '../../components/common/Spacer';
 // LoadingIndicator
 
 export const LoginScreen = () => {
