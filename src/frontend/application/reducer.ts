@@ -1,5 +1,6 @@
 import type { FrontendState } from "./state";
 import { handleAuth } from "./handlers/auth";
+import { handleNotifications } from "./handlers/notifications";
 import { handleProfile } from "./handlers/profile";
 import { handleSocial } from "./handlers/social";
 import { handleTaskGroupAccess } from "./handlers/task-group-access";
@@ -60,7 +61,7 @@ export function reduceFrontendState(
 
     case "notifications/add":
     case "notifications/read":
-      return notImplemented();
+      return handleNotifications(state, action);
 
     default:
       return { ok: false, error: { code: "unknown-action" } };
