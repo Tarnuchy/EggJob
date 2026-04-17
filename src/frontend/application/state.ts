@@ -19,6 +19,7 @@ type TaskGroup = {
 type Task = {
   name: string;
   goal: number;
+  progressId: string;
   params: {
     photoRequired: boolean;
     color: string;
@@ -41,6 +42,9 @@ type Comment = {
 
 type Invitation = {
   kind: string;
+  fromUserId?: string;
+  toUserId?: string;
+  groupId?: string;
 };
 
 type Friendship = {
