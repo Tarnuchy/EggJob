@@ -6,6 +6,7 @@ from sqlalchemy.orm import sessionmaker
 
 from src.backend.database import Base, build_engine, get_test_database_url
 from src.backend.models import *
+from src.backend.security import *
 
 TEST_ENGINE = build_engine(get_test_database_url())
 TestingSessionLocal = sessionmaker(bind=TEST_ENGINE, autoflush=False, autocommit=False)
@@ -35,7 +36,7 @@ def account_a(db_session):
 
     account.id = uuid4()
     account.email = "user_A@example.com"
-    account.passwordHash = "P@ssw0rd_A"
+    account.passwordHash = hash_password("P@ssw0rd_A")
     account.registrationDate = datetime(2020, 4, 4, 12, 0, 0)
 
     db_session.add(account)
@@ -61,7 +62,7 @@ def account_b(db_session):
 
     account.id = uuid4()
     account.email = "user_B@example.com"
-    account.passwordHash = "P@ssw0rd_B"
+    account.passwordHash = hash_password("P@ssw0rd_B")
     account.registrationDate = datetime(2020, 4, 4, 12, 5, 0)
 
     db_session.add(account)
@@ -87,7 +88,7 @@ def account_c(db_session):
 
     account.id = uuid4()
     account.email = "user_C@example.com"
-    account.passwordHash = "P@ssw0rd_C"
+    account.passwordHash = hash_password("P@ssw0rd_C")
     account.registrationDate = datetime(2020, 4, 4, 12, 10, 0)
 
     db_session.add(account)
@@ -113,7 +114,7 @@ def account_d(db_session):
 
     account.id = uuid4()
     account.email = "user_D@example.com"
-    account.passwordHash = "P@ssw0rd_D"
+    account.passwordHash = hash_password("P@ssw0rd_D")
     account.registrationDate = datetime(2020, 4, 4, 12, 15, 0)
 
     db_session.add(account)
