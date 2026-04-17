@@ -2,9 +2,9 @@ import react from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Button, ViewStyle } from 'react-native';
 
 interface Props {
-    title: string;
+    title?: string;
     onPress: () => void;
-    style: ViewStyle;
+    style?: ViewStyle;
 }
 
 export const AppButton = ({ title, onPress, style }: Props) => {

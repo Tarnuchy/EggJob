@@ -4,8 +4,8 @@ import { View, Text, StyleSheet, Button } from 'react-native';
 // to do jakis malych bledow do wiekszych bledow ze wyskoczy okienko bedzie GlobalModal
 
 interface Props {
-    message: string;
-    visible: boolean;
+    message?: string;
+    visible?: boolean;
 }
 
 export const ErrorMessage = ({ message, visible }: Props) => {

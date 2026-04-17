@@ -1,2 +1,6 @@
 *cache*
 node_modules/
+.expo/
+dist/
+npm-debug.*
+yarn-error.*

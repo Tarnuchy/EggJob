@@ -4,12 +4,12 @@ import { ScreenContainer } from '../components/ScreenContainer';
 import { TopBar } from '../components/TopBar';
 import { AppText } from '../components/AppText';
 
-export const HomeScreen = () => {
+export const FriendsScreen = () => {
 	return (
 		<View style={styles.wrapper}>
-			<TopBar title='Home' showIcons={true} />
+			<TopBar title='Friends' showIcons={true} />
 			<ScreenContainer style={styles.container}>
-				<AppText color='black' children='Home Placeholder' variant='default'></AppText>
+				<AppText color='black' children='Friends Placeholder' variant='default'></AppText>
 			</ScreenContainer>
 		</View>
 	);

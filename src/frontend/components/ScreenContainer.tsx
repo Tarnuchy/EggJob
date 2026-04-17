@@ -3,8 +3,8 @@ import { View, Text, StyleSheet, Button, ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface Props {
-    children: React.ReactNode;
-    style: ViewStyle;
+    children?: React.ReactNode;
+    style?: ViewStyle;
 }
 
 export const ScreenContainer = ({ children, style }: Props) => {

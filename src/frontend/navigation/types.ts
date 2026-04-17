@@ -3,6 +3,7 @@ export type RootStackParamList = {
     Register: undefined;
     Notifications: undefined;
     Settings: undefined;    
+    BottomBar: undefined;
 }
 
 export type TabParamList = {
