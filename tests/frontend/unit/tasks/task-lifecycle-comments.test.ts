@@ -130,4 +130,45 @@ describe("Task lifecycle and comments (UC-29..UC-31 + Comment)", () => {
 			commented.value.entities.progressEntries["ent-1"]?.commentIds,
 		).toContain("com-1");
 	});
+
+	it("deletes task with related progress timeline entities", () => {
+		const state = seedTask();
+		const progress = dispatch(state, {
+			type: "tasks/add-progress",
+			entryId: "ent-1",
+			taskId: "tsk-1",
+			authorUserId: "usr-1",
+			value: 2,
+			note: "Start",
+			createdAt: new Date("2026-04-03T08:20:00.000Z"),
+		});
+
+		expect(progress.ok).toBe(true);
+		if (!progress.ok) return;
+
+		const commented = dispatch(progress.value, {
+			type: "tasks/add-comment",
+			commentId: "com-1",
+			progressEntryId: "ent-1",
+			authorUserId: "usr-1",
+			message: "Komentarz przed usunieciem taska",
+			date: new Date("2026-04-03T08:21:00.000Z"),
+		});
+
+		expect(commented.ok).toBe(true);
+		if (!commented.ok) return;
+
+		const deleted = dispatch(commented.value, {
+			type: "tasks/delete",
+			taskId: "tsk-1",
+		});
+
+		expect(deleted.ok).toBe(true);
+		if (!deleted.ok) return;
+
+		expect(deleted.value.entities.tasks["tsk-1"]).toBeUndefined();
+		expect(deleted.value.entities.taskProgresses["prg-1"]).toBeUndefined();
+		expect(deleted.value.entities.progressEntries["ent-1"]).toBeUndefined();
+		expect(deleted.value.entities.comments["com-1"]).toBeUndefined();
+	});
 });
