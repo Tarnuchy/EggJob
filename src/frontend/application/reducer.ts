@@ -2,6 +2,7 @@ import type { FrontendState } from "./state";
 import { handleAuth } from "./handlers/auth";
 import { handleProfile } from "./handlers/profile";
 import { handleSocial } from "./handlers/social";
+import { handleTaskGroupAccess } from "./handlers/task-group-access";
 import { handleTaskGroups } from "./handlers/task-groups";
 
 type Action = { type: string; [key: string]: unknown };
@@ -46,7 +47,7 @@ export function reduceFrontendState(
     case "task-groups/request-join":
     case "task-groups/accept-request":
     case "task-groups/reject-request":
-      return notImplemented();
+      return handleTaskGroupAccess(state, action);
 
     case "tasks/create":
     case "tasks/edit":
