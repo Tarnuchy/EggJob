@@ -141,6 +141,7 @@ class Account(Base):
         self.registrationDate = account.registrationDate
         return True
 
+#TODO: powinno usuwac wszystko czego wlascicielem jest ten user, POZA TASKAMI, TASKPROGRESS, GROUPMEMBER oraz zamieniac GroupRole na ghost w kazdej TG, poza tymi, której jest ownerem, wtedy delete wszystko.
     def deleteAccount(self, password: str, db_session: Session) -> None:
         hash = self.passwordHash
         if not verify_password(password, hash):
@@ -152,6 +153,7 @@ class Account(Base):
             db_session.rollback()
             raise
 
+#TODO: XD trzeba tez zrobic ze jak konto ma juz usera to nie mozna drugiego usera zrobic
     def createUser(self, db_session: Session, username: str, photoUrl: str | None = None) -> bool:
         if db_session.query(User).filter_by(username=username).first() is not None:
             raise ValueError("Username already in use")
@@ -240,9 +242,11 @@ class User(Base):
         back_populates="user",
         cascade="all, delete-orphan",
     )
+    #TODO: problematic
     ownedGroups: Mapped[list[TaskGroup]] = relationship(
         "TaskGroup",
         back_populates="owner",
+        cascade="all, delete-orphan",
     )
 
     ownedTasks: Mapped[list[Task]] = relationship(
