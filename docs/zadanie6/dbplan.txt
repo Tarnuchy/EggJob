@@ -1,0 +1,24 @@
+Plan: PostgreSQL + SQLAlchemy dla backendu
+Celem jest pełne uruchomienie warstwy danych PostgreSQL pod obecny backend i testy: mapowanie modeli do SQLAlchemy, migracje Alembic, osobna baza testowa i integracja sesji DB z FastAPI.
+
+Steps
+
+Faza A: Baseline środowiska. Dodać zależności backendowe (FastAPI, SQLAlchemy 2.x, psycopg, Alembic, python-dotenv), ustalić zmienne DATABASE_URL i TEST_DATABASE_URL dla lokalnej instalacji PostgreSQL.
+Faza A: Konfiguracja połączenia. Przygotować moduł DB (engine, sessionmaker, Base, get_db) i podłączyć sesję do API w main.py. Zależy od kroku 1.
+Faza B: Mapowanie kont i użytkowników. Przekształcić Account/User/Friendship/Invitation/Notification na modele declarative z UUID PK, FK, indeksami i relacjami. Zależy od kroku 2.
+Faza B: Mapowanie grup i członkostwa. Zaimplementować joined-table inheritance dla TaskGroup oraz tabelę GroupMember z active i constraintami unikalności. Zależy od kroku 2.
+Faza B: Mapowanie zadań i postępu. Zaimplementować joined-table inheritance dla Task i TaskProgress oraz relacje dla TaskParams/ProgressEntry/Comment z ON DELETE CASCADE. Zależy od kroków 3 i 4.
+Faza C: Enumy i integralność. Odwzorować PrivacyLevel, GroupRole, TaskStatus, TimeInterval jako PostgreSQL ENUM, dodać check constraints i indeksy pod najczęstsze zapytania. Zależy od kroku 5.
+Faza C: Migracje Alembic. Zainicjalizować Alembic, ustawić target_metadata, wygenerować i skorygować pierwszą migrację pod joined-table inheritance oraz ENUM, uruchomić upgrade head. Zależy od kroków 5 i 6.
+Faza D: Integracja testów. Zastąpić MockDBSession prawdziwą sesją testową PostgreSQL w conftest.py, dodać fixture resetującą schemat/transakcje. Zależy od kroków 2 i 7.
+Faza D: Dostosowanie metod domenowych. Uzupełnić metody używane przez testy (register, login, delete, updateProgress, validate) bez zmiany publicznych sygnatur. Zależy od kroku 8; częściowo równolegle z końcówką kroku 7 po ustabilizowaniu mapowania.
+Faza E: Weryfikacja i dokumentacja. Uruchomić testy backendowe, sprawdzić cykl migracji i rollback transakcji, opisać setup lokalny PostgreSQL i migracje w README.md. Zależy od kroków 8 i 9.
+Relevant files
+
+models.py — główne mapowanie ORM, relacje, dziedziczenie joined-table, enumy.
+main.py — integracja sesji DB z warstwą API.
+conftest.py — fixture sesji testowej i lifecycle bazy.
+test_account.py — oczekiwane zachowania register/login.
+test_task.py — kasowanie kaskadowe i spójność relacji.
+wymagania.md — wymagania PostgreSQL i ACID.
+README.md — instrukcja uruchomienia i testowania.
