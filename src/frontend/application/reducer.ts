@@ -4,6 +4,7 @@ import { handleProfile } from "./handlers/profile";
 import { handleSocial } from "./handlers/social";
 import { handleTaskGroupAccess } from "./handlers/task-group-access";
 import { handleTaskGroups } from "./handlers/task-groups";
+import { handleTasks } from "./handlers/tasks";
 
 type Action = { type: string; [key: string]: unknown };
 export type ReducerResult =
@@ -55,7 +56,7 @@ export function reduceFrontendState(
     case "tasks/add-progress":
     case "tasks/add-comment":
     case "tasks/delete-comment":
-      return notImplemented();
+      return handleTasks(state, action);
 
     case "notifications/add":
     case "notifications/read":
