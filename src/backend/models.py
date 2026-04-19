@@ -329,7 +329,7 @@ class User(Base):
     def createGroup(self, db_session: Session, name: str, privacy: PrivacyLevel = PrivacyLevel.PUBLIC, isBingo: bool = False, type: TaskGroupType = TaskGroupType.TASK_GROUP) -> None: #nowe, ważne, trzeba dodać testy!!!!!! TODO
         if name.strip() == "": #TODO mogą być dwie grupy o tej samej nazwie?
             raise ValueError("Group name cannot be empty")
-        group = TaskGroup()
+        group = CooperativeTaskGroup() if type == TaskGroupType.COOPERATIVE else CompetetiveTaskGroup()
         group.ownerID = self.id
         group.name = name
         group.privacy = privacy
@@ -338,7 +338,13 @@ class User(Base):
         group.taskCount = 0
         group.inviteCode = str(uuid4()) #TODO przemyśleć ale ja bym zostawił dla ułatwienia
         db_session.add(group)
-        group.addFriend(db_session, None, self.id, GroupRole.OWNER) #TODO git?
+        
+        member = GroupMember()
+        member.groupID = group.id
+        member.userID = self.id
+        member.role = GroupRole.OWNER
+        db_session.add(member)
+        
         try:
             db_session.flush()
         except Exception:
@@ -533,19 +539,42 @@ class TaskGroup(Base):
         "polymorphic_on": type,
         "with_polymorphic": "*",
     }
+    
+    def checkPerms(self, db_session: Session, user_id: UUID, required_role: GroupRole) -> bool:
+        member = db_session.query(GroupMember).filter_by(groupID=self.id, userID=user_id, active=True).first()
+        if member is None:
+            return False
+        if required_role == GroupRole.MEMBER:
+            return True
+        if required_role == GroupRole.ADMIN:
+            return member.role in (GroupRole.ADMIN, GroupRole.OWNER)
+        if required_role == GroupRole.OWNER:
+            return member.role == GroupRole.OWNER
+        return False
 
-    def edit(
-        self,
-        db_session: Session,
-        user_id: UUID,
-        new_name: str | None = None,
-        new_privacy: PrivacyLevel | None = None,
-    ) -> None:
-        pass
+    def edit(self, db_session: Session, user_id: UUID, name: str | None = None, privacy: PrivacyLevel | None = None,) -> None:
+        if not self.checkPerms(db_session, user_id, GroupRole.ADMIN):
+            raise ValueError("User does not have permission to edit this group")
+        new_name = self.name
+        new_privacy = self.privacy
+        
+        if name is not None:
+            if name.strip() == "":
+                raise ValueError("Group name cannot be empty")
+            new_name = name
+        if privacy is not None:
+            new_privacy = privacy
+        self.name = new_name
+        self.privacy = new_privacy
+        try:
+            db_session.flush()
+        except Exception:
+            db_session.rollback()
+            raise
 
     def delete(self, db_session: Session, user_id: UUID) -> None:
-        if db_session.query(GroupMember).filter_by(groupID=self.id, userID=user_id, role=GroupRole.OWNER).first() is None:
-            raise ValueError("Only group owner can delete the group")
+        if not self.checkPerms(db_session, user_id, GroupRole.OWNER):
+            raise ValueError("User does not have permission to delete this group")
         db_session.delete(self)
         try:
             db_session.flush()
@@ -554,13 +583,13 @@ class TaskGroup(Base):
             raise
 
     def addFriend(self, db_session: Session, user_id: UUID, friend_id: UUID, role: GroupRole) -> None: #TODO zmieniłbym nazwę na addMember
-        pass
+        pass #różne implementacje w zależności od typu grupy
 
     def createTask(self, db_session: Session, user_id: UUID, **task_data: Any) -> None:
-        pass
+        pass #też różne
 
     def changeGroupType(self, db_session: Session, user_id: UUID) -> None:
-        pass
+        pass #💀💀💀
 
 
 class CompetetiveTaskGroup(TaskGroup):
@@ -575,7 +604,107 @@ class CompetetiveTaskGroup(TaskGroup):
     __mapper_args__ = {
         "polymorphic_identity": TaskGroupType.COMPETITIVE.value,
     }
+    
+    def addFriend(self, db_session: Session, user_id: UUID, friend_id: UUID, role: GroupRole) -> None: #TODO zmieniłbym nazwę na addMember
+        if role == GroupRole.OWNER:
+            raise ValueError("Insufficient permissions")
+        elif role == GroupRole.ADMIN and not self.checkPerms(db_session, user_id, GroupRole.OWNER):
+            raise ValueError("Insufficient permissions")
+        elif role == GroupRole.MEMBER and not self.checkPerms(db_session, user_id, GroupRole.ADMIN):
+            raise ValueError("Insufficient permissions")
+        member = db_session.query(GroupMember).filter_by(groupID=self.id, userID=friend_id).first()
+        if member is not None:
+            if member.active:
+                raise ValueError("User is already a member of this group")
+            else:
+                member.active = True
+                member.role = role
+                for task in self.tasks:
+                    if not db_session.query(TaskProgress).filter_by(userID=friend_id, taskID=task.id).first():
+                        progress = EndlessTaskProgress() if task.type == TaskType.ENDLESS.value else (OneTimeTaskProgress() if task.type == TaskType.ONE_TIME.value else (RepeatableTaskProgress() if task.type == TaskType.REPEATABLE.value else ChallengeTaskProgress())) #TODO za długie XD
+                        progress.userID = friend_id
+                        progress.taskID = task.id
+                        progress.type = task.type if isinstance(task.type, TaskType) else TaskType(task.type)
+                        db_session.add(progress)
+        else:
+            new_member = GroupMember()
+            new_member.groupID = self.id
+            new_member.userID = friend_id
+            new_member.role = role
+            db_session.add(new_member)
+            for task in self.tasks:
+                progress = EndlessTaskProgress() if task.type == TaskType.ENDLESS.value else (OneTimeTaskProgress() if task.type == TaskType.ONE_TIME.value else (RepeatableTaskProgress() if task.type == TaskType.REPEATABLE.value else ChallengeTaskProgress())) #TODO za długie XD
+                progress.userID = friend_id
+                progress.taskID = task.id
+                progress.type = task.type if isinstance(task.type, TaskType) else TaskType(task.type)
+                db_session.add(progress)
+            
+        try:
+            db_session.flush()
+        except Exception:
+            db_session.rollback()
+            raise
+        
+    def createTask(self, db_session: Session, user_id: UUID, type: TaskType, **taskparams) -> None:
+        if not self.checkPerms(db_session, user_id, GroupRole.ADMIN):
+            raise ValueError("User does not have permission to create tasks in this group")
+        new_task = None
+        new_progress = None
+        if type == TaskType.ENDLESS:
+            new_task = EndlessTask()
+            for member in self.members:
+                progress = EndlessTaskProgress()
+                progress.userID = member.userID
+                progress.taskID = new_task.id
+                progress.type = type
+                db_session.add(progress)
+        elif type == TaskType.ONE_TIME:
+            new_task = OneTimeTask()
+            new_task.deadline = taskparams.get("deadline")
+            for member in self.members:
+                progress = OneTimeTaskProgress()
+                progress.userID = member.userID
+                progress.taskID = new_task.id
+                progress.type = type
+                db_session.add(progress)
+        elif type == TaskType.REPEATABLE:
+            new_task = RepeatableTask()
+            new_task.frequency = taskparams.get("frequency") 
+            for member in self.members:
+                progress = RepeatableTaskProgress()
+                progress.userID = member.userID
+                progress.taskID = new_task.id
+                progress.type = type
+                db_session.add(progress)
+        elif type == TaskType.CHALLENGE:
+            new_task = ChallengeTask()
+            new_task.deadline = taskparams.get("deadline")
+            for member in self.members:
+                progress = ChallengeTaskProgress()
+                progress.userID = member.userID
+                progress.taskID = new_task.id
+                progress.type = type
+                db_session.add(progress)
+        else:
+            raise ValueError("Invalid task type")
 
+        new_task.groupID = self.id
+        new_task.ownerID = user_id
+        new_task.type = type.value
+        db_session.add(new_task)
+        
+        new_params = TaskParams()
+        new_params.taskID = new_task.id
+        new_params.color = taskparams.get("color")
+        new_params.photoRequired = taskparams.get("photoRequired", False)
+        new_params.notifications = taskparams.get("notifications", False)
+        db_session.add(new_params)
+        
+        try:
+            db_session.flush()
+        except Exception:
+            db_session.rollback()
+            raise
 
 class CooperativeTaskGroup(TaskGroup):
     __tablename__ = "cooperative_task_groups"
@@ -589,7 +718,80 @@ class CooperativeTaskGroup(TaskGroup):
     __mapper_args__ = {
         "polymorphic_identity": TaskGroupType.COOPERATIVE.value,
     }
+    
+    def addFriend(self, db_session: Session, user_id: UUID, friend_id: UUID, role: GroupRole) -> None: #TODO zmieniłbym nazwę na addMember
+        if role == GroupRole.OWNER:
+            raise ValueError("Insufficient permissions")
+        elif role == GroupRole.ADMIN and not self.checkPerms(db_session, user_id, GroupRole.OWNER):
+            raise ValueError("Insufficient permissions")
+        elif role == GroupRole.MEMBER and not self.checkPerms(db_session, user_id, GroupRole.ADMIN):
+            raise ValueError("Insufficient permissions")
+        member = db_session.query(GroupMember).filter_by(groupID=self.id, userID=friend_id).first()
+        if member is not None:
+            if member.active:
+                raise ValueError("User is already a member of this group")
+            else:
+                member.active = True
+                member.role = role
+        else:
+            new_member = GroupMember()
+            new_member.groupID = self.id
+            new_member.userID = friend_id
+            new_member.role = role
+            db_session.add(new_member)
+            
+        try:
+            db_session.flush()
+        except Exception:
+            db_session.rollback()
+            raise
+        
+    def createTask(self, db_session: Session, user_id: UUID, type: TaskType, **taskparams) -> None:
+        if not self.checkPerms(db_session, user_id, GroupRole.ADMIN):
+            raise ValueError("User does not have permission to create tasks in this group")
+        new_task = None
+        new_progress = None
+        if type == TaskType.ENDLESS:
+            new_task = EndlessTask()
+            new_progress = EndlessTaskProgress()
+        elif type == TaskType.ONE_TIME:
+            new_task = OneTimeTask()
+            new_task.deadline = taskparams.get("deadline")
+            new_progress = OneTimeTaskProgress()
+        elif type == TaskType.REPEATABLE:
+            new_task = RepeatableTask()
+            new_task.frequency = taskparams.get("frequency") 
+            new_progress = RepeatableTaskProgress()
+            #new_progress.counter = 0
+        elif type == TaskType.CHALLENGE:
+            new_task = ChallengeTask()
+            new_task.deadline = taskparams.get("deadline")
+            new_progress = ChallengeTaskProgress()
+        else:
+            raise ValueError("Invalid task type")
 
+        new_task.groupID = self.id
+        new_task.ownerID = user_id
+        new_task.type = type.value
+        db_session.add(new_task)
+        
+        new_params = TaskParams()
+        new_params.taskID = new_task.id
+        new_params.color = taskparams.get("color")
+        new_params.photoRequired = taskparams.get("photoRequired", False)
+        new_params.notifications = taskparams.get("notifications", False)
+        db_session.add(new_params)
+        
+        new_progress.taskID = new_task.id
+        new_progress.userID = self.ownerID
+        new_progress.type = type
+        db_session.add(new_progress)
+        
+        try:
+            db_session.flush()
+        except Exception:
+            db_session.rollback()
+            raise
 
 class GroupMember(Base):
     __tablename__ = "group_members"
@@ -659,7 +861,15 @@ class Task(Base):
         nullable=False,
         default=TaskStatus.TODO,
     )
-    type: Mapped[str] = mapped_column(String(32), nullable=False)
+    type: Mapped[TaskType] = mapped_column(
+        SAEnum(
+            TaskType,
+            name="task_type",
+            native_enum=True,
+            values_callable=lambda enum_cls: [member.value for member in enum_cls],
+        ),
+        nullable=False,
+    )
 
     owner: Mapped[User | None] = relationship("User", back_populates="ownedTasks")
     group: Mapped[TaskGroup] = relationship("TaskGroup", back_populates="tasks")
