@@ -60,6 +60,12 @@ class TaskType(Enum):
     CHALLENGE = "challenge"
 
 
+class TaskGroupType(Enum):
+    TASK_GROUP = "task_group" #co to wgl za typ XD
+    COMPETITIVE = "competitive"
+    COOPERATIVE = "cooperative"
+
+
 class Account(Base):
     __tablename__ = "accounts"
     __table_args__ = (
@@ -320,8 +326,18 @@ class User(Base):
             raise
 
 
-    def createGroup(self, db_session: Session, name: str, privacy: PrivacyLevel) -> None: #nowe, ważne, trzeba dodać testy!!!!!! TODO
-        pass
+    def createGroup(self, db_session: Session, name: str, privacy: PrivacyLevel = PrivacyLevel.PUBLIC, isBingo: bool = False, type: TaskGroupType = TaskGroupType.TASK_GROUP) -> None: #nowe, ważne, trzeba dodać testy!!!!!! TODO
+        if name.strip() == "":
+            raise ValueError("Group name cannot be empty")
+        group = TaskGroup()
+        group.ownerID = self.id
+        group.name = name
+        group.privacy = privacy
+        group.isBingo = isBingo
+        group.type = type
+        group.taskCount = 0
+        group.inviteCode = str(uuid4())[:8] #TODO 
+        
 
 class Friendship(Base):
     __tablename__ = "friendships"
@@ -465,6 +481,7 @@ class TaskGroup(Base):
     __table_args__ = (
         CheckConstraint("name <> ''", name="ck_task_groups_name_not_empty"),
         CheckConstraint('"taskCount" >= 0', name="ck_task_groups_task_count_non_negative"),
+        UniqueConstraint("inviteCode", name="uq_task_groups_invite_code"),
         Index("ix_task_groups_owner_created", "ownerID", "createdAt"),
     )
 
@@ -485,7 +502,10 @@ class TaskGroup(Base):
     )
     inviteCode: Mapped[str | None] = mapped_column(String(64), nullable=True)
     createdAt: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=utcnow)
-    type: Mapped[str] = mapped_column(String(32), nullable=False)
+    type: Mapped[TaskGroupType] = mapped_column(
+        SAEnum(TaskGroupType, name="task_group_type", native_enum=True),
+        nullable=False,
+    )
 
     date = synonym("createdAt")
 
@@ -502,7 +522,7 @@ class TaskGroup(Base):
     )
 
     __mapper_args__ = {
-        "polymorphic_identity": "task_group",
+        "polymorphic_identity": TaskGroupType.TASK_GROUP.value,
         "polymorphic_on": type,
         "with_polymorphic": "*",
     }
@@ -539,7 +559,7 @@ class CompetetiveTaskGroup(TaskGroup):
     )
 
     __mapper_args__ = {
-        "polymorphic_identity": "competitive",
+        "polymorphic_identity": TaskGroupType.COMPETITIVE.value,
     }
 
 
@@ -553,7 +573,7 @@ class CooperativeTaskGroup(TaskGroup):
     )
 
     __mapper_args__ = {
-        "polymorphic_identity": "cooperative",
+        "polymorphic_identity": TaskGroupType.COOPERATIVE.value,
     }
 
 
@@ -934,6 +954,7 @@ __all__ = [ #do importów
     "TaskStatus",
     "TimeInterval",
     "TaskType",
+    "TaskGroupType",
     "User",
     "Account",
     "Friendship",
