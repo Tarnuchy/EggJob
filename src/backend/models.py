@@ -327,7 +327,7 @@ class User(Base):
 
 
     def createGroup(self, db_session: Session, name: str, privacy: PrivacyLevel = PrivacyLevel.PUBLIC, isBingo: bool = False, type: TaskGroupType = TaskGroupType.TASK_GROUP) -> None: #nowe, ważne, trzeba dodać testy!!!!!! TODO
-        if name.strip() == "":
+        if name.strip() == "": #TODO mogą być dwie grupy o tej samej nazwie?
             raise ValueError("Group name cannot be empty")
         group = TaskGroup()
         group.ownerID = self.id
@@ -336,7 +336,14 @@ class User(Base):
         group.isBingo = isBingo
         group.type = type
         group.taskCount = 0
-        group.inviteCode = str(uuid4())[:8] #TODO 
+        group.inviteCode = str(uuid4()) #TODO przemyśleć ale ja bym zostawił dla ułatwienia
+        db_session.add(group)
+        group.addFriend(db_session, None, self.id, GroupRole.OWNER) #TODO git?
+        try:
+            db_session.flush()
+        except Exception:
+            db_session.rollback()
+            raise
         
 
 class Friendship(Base):
@@ -537,9 +544,16 @@ class TaskGroup(Base):
         pass
 
     def delete(self, db_session: Session, user_id: UUID) -> None:
-        pass
+        if db_session.query(GroupMember).filter_by(groupID=self.id, userID=user_id, role=GroupRole.OWNER).first() is None:
+            raise ValueError("Only group owner can delete the group")
+        db_session.delete(self)
+        try:
+            db_session.flush()
+        except Exception:
+            db_session.rollback()
+            raise
 
-    def addFriend(self, db_session: Session, user_id: UUID, friend_id: UUID) -> None:
+    def addFriend(self, db_session: Session, user_id: UUID, friend_id: UUID, role: GroupRole) -> None: #TODO zmieniłbym nazwę na addMember
         pass
 
     def createTask(self, db_session: Session, user_id: UUID, **task_data: Any) -> None:
