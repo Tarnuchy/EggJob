@@ -105,7 +105,7 @@ class Account(Base):
         self.passwordHash = hash_password(password)
         self.registrationDate = utcnow()
         db_session.add(self)
-        #self.createUser(db_session, username)
+        #self.createUser(db_session, username) #TODO to tworzymy usera tu czy ręcznie ?????
         try:
             db_session.flush()
         except Exception:
@@ -118,19 +118,10 @@ class Account(Base):
         if account is None:
             raise ValueError("Account does not exist")
 
-        stored_hash = account.passwordHash
-        is_argon_hash = isinstance(stored_hash, str) and stored_hash.startswith("$argon2")
-
-        if is_argon_hash:
-            password_ok = verify_password(password, stored_hash)
-        else:
-            #Backward compatibility, nie chce mi się zmieniać testów
-            password_ok = stored_hash == password
-
-        if not password_ok:
+        if not verify_password(password, account.passwordHash):
             raise ValueError("Invalid credentials")
 
-        if is_argon_hash and password_needs_rehash(stored_hash):
+        if password_needs_rehash(account.passwordHash):
             account.passwordHash = hash_password(password)
             db_session.flush()
 
@@ -153,8 +144,9 @@ class Account(Base):
             db_session.rollback()
             raise
 
-#TODO: XD trzeba tez zrobic ze jak konto ma juz usera to nie mozna drugiego usera zrobic
-    def createUser(self, db_session: Session, username: str, photoUrl: str | None = None) -> bool:
+    def createUser(self, db_session: Session, username: str, photoUrl: str | None = None) -> None:
+        if self.user is not None:
+            raise ValueError("User already exists for this account")
         if db_session.query(User).filter_by(username=username).first() is not None:
             raise ValueError("Username already in use")
         if photoUrl is not None and not User.is_valid_photo_url(photoUrl):
@@ -170,7 +162,6 @@ class Account(Base):
         except Exception:
             db_session.rollback()
             raise
-        return True #???
 
     def changePassword(self, db_session: Session, old_password: str, new_password: str) -> bool:
         hash = self.passwordHash
@@ -242,7 +233,7 @@ class User(Base):
         back_populates="user",
         cascade="all, delete-orphan",
     )
-    #TODO: problematic
+    #TODO: problematic | co ty gadasz git jest
     ownedGroups: Mapped[list[TaskGroup]] = relationship(
         "TaskGroup",
         back_populates="owner",
@@ -271,7 +262,7 @@ class User(Base):
     )
 
     @staticmethod
-    def is_valid_photo_url(url: str) -> bool:
+    def is_valid_photo_url(url: str) -> bool: #TODO jak my wgl chcemy zdjecia obsługiwać?
         return bool(re.fullmatch(r"https?://\S+\.\S+", url))
     @staticmethod
     def is_unique_username(db_session: Session, username: str) -> bool:
@@ -299,7 +290,8 @@ class User(Base):
             raise
 
     def inviteFriend(self, db_session: Session, friend_id: UUID) -> None:
-        if db_session.query(User).filter_by(id=friend_id).first() is None or db_session.query(Friendship).filter(
+        friend = db_session.query(User).filter_by(id=friend_id).first()
+        if friend is None or db_session.query(Friendship).filter(
             ((Friendship.userOneID == self.id) & (Friendship.userTwoID == friend_id)) |
             ((Friendship.userOneID == friend_id) & (Friendship.userTwoID == self.id))
         ).first() is not None:
@@ -309,6 +301,7 @@ class User(Base):
         invitation.fromUserID = self.id
         invitation.toUserID = friend_id
         db_session.add(invitation)
+        friend.notify(db_session, f"You have a new friend invitation from {self.username}!")
         try:
             db_session.flush()
         except Exception:
