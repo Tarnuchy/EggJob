@@ -4,4 +4,8 @@ node_modules/
 dist/
 npm-debug.*
 yarn-error.*
+
+# Environment files
 .env
+.env.*
+!.env.example
