@@ -5,6 +5,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
 
 import { AppText } from './AppText';
+import { colors } from '../../theme/colors';
 
 interface TopBarProps {
 	title?: string;
@@ -26,15 +27,15 @@ export const TopBar = ({ title = '', showIcons = true }: TopBarProps) => {
 	return (
 		<SafeAreaView style={[styles.safeArea, { paddingTop: androidTopInset }]}>
 			<View style={styles.topBar}>
-				<AppText color='black' children={title} variant='default' style={styles.title}></AppText>
+				<AppText color={colors.textPrimary} children={title} variant='default' style={styles.title}></AppText>
 
 				{showIcons && (
 					<View style={styles.iconContainer}>
 						<TouchableOpacity onPress={handleNotifications} style={styles.iconButton}>
-							<AppText color='black' children='🔔' variant='default' style={styles.icon}></AppText>
+							<AppText color={colors.textPrimary} children='🔔' variant='default' style={styles.icon}></AppText>
 						</TouchableOpacity>
 						<TouchableOpacity onPress={handleSettings} style={styles.iconButton}>
-							<AppText color='black' children='⚙️' variant='default' style={styles.icon}></AppText>
+							<AppText color={colors.textPrimary} children='⚙️' variant='default' style={styles.icon}></AppText>
 						</TouchableOpacity>
 					</View>
 				)}
@@ -45,7 +46,7 @@ export const TopBar = ({ title = '', showIcons = true }: TopBarProps) => {
 
 const styles = StyleSheet.create({
 	safeArea: {
-		backgroundColor: '#fff',
+		backgroundColor: colors.surface,
 	},
 	topBar: {
 		flexDirection: 'row',
@@ -53,9 +54,9 @@ const styles = StyleSheet.create({
 		alignItems: 'center',
 		paddingHorizontal: 20,
 		paddingVertical: 15,
-		backgroundColor: '#fff',
+		backgroundColor: colors.surface,
 		borderBottomWidth: 1,
-		borderBottomColor: '#f0f0f0',
+		borderBottomColor: colors.border,
 	},
 	title: {
 		fontSize: 20,

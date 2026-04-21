@@ -3,13 +3,14 @@ import { View, StyleSheet } from 'react-native';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
 import { TopBar } from '../../components/common/TopBar';
 import { AppText } from '../../components/common/AppText';
+import { colors } from '../../theme/colors';
 
 export const ProfileScreen = () => {
 	return (
 		<View style={styles.wrapper}>
 			<TopBar title='Profile' showIcons={true} />
 			<ScreenContainer style={styles.container}>
-				<AppText color='black' children='Profile Placeholder' variant='default'></AppText>
+				<AppText color={colors.textPrimary} children='Profile Placeholder' variant='default'></AppText>
 			</ScreenContainer>
 		</View>
 	);

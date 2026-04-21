@@ -1,5 +1,5 @@
 import react from 'react';
-import { View, Text, StyleSheet, Button, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
@@ -10,6 +10,7 @@ import { AppInput } from '../../components/common/AppInput';
 import { AppText } from '../../components/common/AppText';
 import { ErrorMessage } from '../../components/common/ErrorMessage';
 import { Spacer } from '../../components/common/Spacer';
+import { colors } from '../../theme/colors';
 // LoadingIndicator
 
 export const LoginScreen = () => {
@@ -25,7 +26,7 @@ export const LoginScreen = () => {
 
     return (
         <ScreenContainer style={styles.container}>
-            <AppText style={styles.title} color='black' children='EggJob🥚' variant='default'></AppText>
+            <AppText style={styles.title} color={colors.textPrimary} children='EggJob🥚' variant='default'></AppText>
             <Spacer height={50} width={50}></Spacer>
 
             {/* Formularz logowania */}
@@ -35,9 +36,9 @@ export const LoginScreen = () => {
             <AppButton title='Login' onPress={handleLogin} style={styles.button} />
             <Spacer height={20} width={20}></Spacer>
             <View style={styles.registerContainer}>
-                <AppText color='black' children="Don't have an account?" variant='default' style={styles.registerText}></AppText>
+                <AppText color={colors.textPrimary} children="Don't have an account?" variant='default' style={styles.registerText}></AppText>
                 <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-                    <AppText color='#007AFF' children='Register' variant='default' style={styles.registerLinkText}></AppText>
+                    <AppText color={colors.primary} children='Register' variant='default' style={styles.registerLinkText}></AppText>
                 </TouchableOpacity>
             </View>
         </ScreenContainer>
@@ -59,6 +60,7 @@ const styles = StyleSheet.create({
     container: {
         justifyContent: 'center',
         alignItems: 'center',
+        width: '100%',
     },
     title: {
         fontSize: 32,
@@ -66,19 +68,9 @@ const styles = StyleSheet.create({
     },
     input: {
         width: '80%',
-        height: 50,
-        borderColor: 'gray',
-        borderWidth: 1,
-        borderRadius: 5,
-        paddingHorizontal: 10,
-        marginBottom: 15,
+        marginBottom: 12,
     },
     button: {
         width: '80%',
-        height: 50,
-        backgroundColor: '#007AFF',
-        borderRadius: 5,
-        justifyContent: 'center',
-        alignItems: 'center',
     },
 });

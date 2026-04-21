@@ -1,6 +1,7 @@
 import react from 'react';
 import { View, StyleSheet, ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { colors } from '../../theme/colors';
 
 interface Props {
     children?: React.ReactNode;
@@ -20,7 +21,7 @@ export const ScreenContainer = ({ children, style }: Props) => {
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
-        backgroundColor: '#fff',
+        backgroundColor: colors.background,
     },
     container: {
         flex: 1,

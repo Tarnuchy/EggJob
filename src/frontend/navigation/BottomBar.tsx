@@ -6,12 +6,24 @@ import { TasksScreen } from '../screens/tasks/TasksScreen';
 import { FriendsScreen } from '../screens/social/FriendsScreen';
 import { ProfileScreen } from '../screens/profile/ProfileScreen';
 import { TabParamList } from './types';
+import { colors } from '../theme/colors';
 
 const Tab = createBottomTabNavigator<TabParamList>();
 
 export const BottomBar = () => {
 	return (
-		<Tab.Navigator screenOptions={{ headerShown: false }}>
+		<Tab.Navigator
+			screenOptions={{
+				headerShown: false,
+				tabBarStyle: {
+					backgroundColor: colors.surface,
+					borderTopColor: colors.border,
+				},
+				tabBarActiveTintColor: colors.primary,
+				tabBarInactiveTintColor: colors.textSecondary,
+				sceneStyle: { backgroundColor: colors.background },
+			}}
+		>
 			<Tab.Screen
 				name="Home"
 				component={HomeScreen}

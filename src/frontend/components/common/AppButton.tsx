@@ -1,9 +1,10 @@
-import { Text, StyleSheet, TouchableOpacity, ViewStyle } from 'react-native';
+import { Text, StyleProp, StyleSheet, TouchableOpacity, ViewStyle } from 'react-native';
+import { colors } from '../../theme/colors';
 
 interface Props {
     title?: string;
     onPress: () => void;
-    style?: ViewStyle;
+    style?: StyleProp<ViewStyle>;
 }
 
 export const AppButton = ({ title, onPress, style }: Props) => {
@@ -15,6 +16,19 @@ export const AppButton = ({ title, onPress, style }: Props) => {
 };
 
 const styles = StyleSheet.create({
-    button: {},
-    text: {},
+    button: {
+        width: '100%',
+        minHeight: 48,
+        borderRadius: 12,
+        backgroundColor: colors.primary,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+    },
+    text: {
+        color: colors.textOnPrimary,
+        fontSize: 16,
+        fontWeight: '700',
+    },
 });

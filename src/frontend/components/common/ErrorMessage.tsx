@@ -1,4 +1,5 @@
 import { Text, StyleSheet } from 'react-native';
+import { colors } from '../../theme/colors';
 
 interface Props {
     message?: string;
@@ -11,5 +12,10 @@ export const ErrorMessage = ({ message, visible }: Props) => {
 };
 
 const styles = StyleSheet.create({
-  errorText: {},
+  errorText: {
+    marginTop: 6,
+    color: colors.danger,
+    fontSize: 13,
+    fontWeight: '500',
+  },
 });

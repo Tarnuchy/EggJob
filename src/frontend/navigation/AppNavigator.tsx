@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+import { DefaultTheme, NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import { LoginScreen } from '../screens/auth/LoginScreen';
@@ -8,12 +8,25 @@ import { SettingsScreen } from '../screens/profile/SettingsScreen';
 import { NotificationScreen } from '../screens/social/NotificationScreen';
 import { MainTabs } from './MainTabs';
 import { RootStackParamList } from './types';
+import { colors } from '../theme/colors';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
+const navigationTheme = {
+  ...DefaultTheme,
+  colors: {
+    ...DefaultTheme.colors,
+    primary: colors.primary,
+    background: colors.background,
+    card: colors.surface,
+    text: colors.textPrimary,
+    border: colors.border,
+  },
+};
+
 export function AppNavigator() {
   return (
-    <NavigationContainer>
+    <NavigationContainer theme={navigationTheme}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Register" component={RegisterScreen} />
@@ -21,12 +34,22 @@ export function AppNavigator() {
         <Stack.Screen
           name="Settings"
           component={SettingsScreen}
-          options={{ headerShown: true, title: 'Settings' }}
+          options={{
+            headerShown: true,
+            title: 'Settings',
+            headerStyle: { backgroundColor: colors.surface },
+            headerTintColor: colors.textPrimary,
+          }}
         />
         <Stack.Screen
           name="Notifications"
           component={NotificationScreen}
-          options={{ headerShown: true, title: 'Notifications' }}
+          options={{
+            headerShown: true,
+            title: 'Notifications',
+            headerStyle: { backgroundColor: colors.surface },
+            headerTintColor: colors.textPrimary,
+          }}
         />
       </Stack.Navigator>
     </NavigationContainer>

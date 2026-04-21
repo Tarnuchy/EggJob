@@ -1,5 +1,6 @@
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { AppText } from './AppText';
+import { colors } from '../../theme/colors';
 
 interface Props {
     message?: string;
@@ -10,7 +11,7 @@ interface Props {
 
 export const LoadingIndicator = ({
     message = 'Loading...',
-    color = '#007AFF',
+    color = colors.primary,
     size = 'large',
     fullscreen = false,
 }: Props) => {
@@ -18,7 +19,7 @@ export const LoadingIndicator = ({
         <View style={[styles.container, fullscreen && styles.fullscreen]}>
             <ActivityIndicator size={size} color={color} />
             {message ? (
-                <AppText color='black' variant='default' style={styles.message}>
+                <AppText color={colors.textPrimary} variant='default' style={styles.message}>
                     {message}
                 </AppText>
             ) : null}
