@@ -253,8 +253,10 @@ class User(Base):
 
     taskProgresses: Mapped[list[TaskProgress]] = relationship(
         "TaskProgress",
-        back_populates="user",
-        cascade="all, delete-orphan",
+        secondary="group_members",
+        primaryjoin="User.id == GroupMember.userID",
+        secondaryjoin="GroupMember.id == TaskProgress.groupMemberID",
+        viewonly=True,
     )
     progressEntries: Mapped[list[ProgressEntry]] = relationship(
         "ProgressEntry",
@@ -340,7 +342,7 @@ class User(Base):
         db_session.add(group)
         
         member = GroupMember()
-        member.groupID = group.id
+        member.group = group
         member.userID = self.id
         member.role = GroupRole.OWNER
         db_session.add(member)
@@ -582,14 +584,14 @@ class TaskGroup(Base):
             db_session.rollback()
             raise
 
-    def addFriend(self, db_session: Session, user_id: UUID, friend_id: UUID, role: GroupRole) -> None: #TODO zmieniłbym nazwę na addMember
+    def addFriend(self, db_session: Session, user_id: UUID, friend_id: UUID, role: GroupRole) -> None:
         pass #różne implementacje w zależności od typu grupy
 
     def createTask(self, db_session: Session, user_id: UUID, **task_data: Any) -> None:
         pass #też różne
 
     def changeGroupType(self, db_session: Session, user_id: UUID) -> None:
-        pass #💀💀💀
+        pass #💀💀💀 TODO
 
 
 class CompetetiveTaskGroup(TaskGroup):
@@ -605,7 +607,7 @@ class CompetetiveTaskGroup(TaskGroup):
         "polymorphic_identity": TaskGroupType.COMPETITIVE.value,
     }
     
-    def addFriend(self, db_session: Session, user_id: UUID, friend_id: UUID, role: GroupRole) -> None: #TODO zmieniłbym nazwę na addMember
+    def addFriend(self, db_session: Session, user_id: UUID, friend_id: UUID, role: GroupRole) -> None:
         if role == GroupRole.OWNER:
             raise ValueError("Insufficient permissions")
         elif role == GroupRole.ADMIN and not self.checkPerms(db_session, user_id, GroupRole.OWNER):
@@ -620,9 +622,9 @@ class CompetetiveTaskGroup(TaskGroup):
                 member.active = True
                 member.role = role
                 for task in self.tasks:
-                    if not db_session.query(TaskProgress).filter_by(userID=friend_id, taskID=task.id).first():
+                    if not db_session.query(TaskProgress).filter_by(groupMemberID=member.id, taskID=task.id).first():
                         progress = EndlessTaskProgress() if task.type == TaskType.ENDLESS.value else (OneTimeTaskProgress() if task.type == TaskType.ONE_TIME.value else (RepeatableTaskProgress() if task.type == TaskType.REPEATABLE.value else ChallengeTaskProgress())) #TODO za długie XD
-                        progress.userID = friend_id
+                        progress.groupMemberID = member.id
                         progress.taskID = task.id
                         progress.type = task.type if isinstance(task.type, TaskType) else TaskType(task.type)
                         db_session.add(progress)
@@ -632,9 +634,10 @@ class CompetetiveTaskGroup(TaskGroup):
             new_member.userID = friend_id
             new_member.role = role
             db_session.add(new_member)
+            db_session.flush()
             for task in self.tasks:
                 progress = EndlessTaskProgress() if task.type == TaskType.ENDLESS.value else (OneTimeTaskProgress() if task.type == TaskType.ONE_TIME.value else (RepeatableTaskProgress() if task.type == TaskType.REPEATABLE.value else ChallengeTaskProgress())) #TODO za długie XD
-                progress.userID = friend_id
+                progress.groupMemberID = new_member.id
                 progress.taskID = task.id
                 progress.type = task.type if isinstance(task.type, TaskType) else TaskType(task.type)
                 db_session.add(progress)
@@ -654,7 +657,7 @@ class CompetetiveTaskGroup(TaskGroup):
             new_task = EndlessTask()
             for member in self.members:
                 progress = EndlessTaskProgress()
-                progress.userID = member.userID
+                progress.groupMemberID = member.id
                 progress.taskID = new_task.id
                 progress.type = type
                 db_session.add(progress)
@@ -663,7 +666,7 @@ class CompetetiveTaskGroup(TaskGroup):
             new_task.deadline = taskparams.get("deadline")
             for member in self.members:
                 progress = OneTimeTaskProgress()
-                progress.userID = member.userID
+                progress.groupMemberID = member.id
                 progress.taskID = new_task.id
                 progress.type = type
                 db_session.add(progress)
@@ -672,7 +675,7 @@ class CompetetiveTaskGroup(TaskGroup):
             new_task.frequency = taskparams.get("frequency") 
             for member in self.members:
                 progress = RepeatableTaskProgress()
-                progress.userID = member.userID
+                progress.groupMemberID = member.id
                 progress.taskID = new_task.id
                 progress.type = type
                 db_session.add(progress)
@@ -681,7 +684,7 @@ class CompetetiveTaskGroup(TaskGroup):
             new_task.deadline = taskparams.get("deadline")
             for member in self.members:
                 progress = ChallengeTaskProgress()
-                progress.userID = member.userID
+                progress.groupMemberID = member.id
                 progress.taskID = new_task.id
                 progress.type = type
                 db_session.add(progress)
@@ -695,7 +698,7 @@ class CompetetiveTaskGroup(TaskGroup):
         
         new_params = TaskParams()
         new_params.taskID = new_task.id
-        new_params.color = taskparams.get("color")
+        new_params.color = taskparams.get("color", None)
         new_params.photoRequired = taskparams.get("photoRequired", False)
         new_params.notifications = taskparams.get("notifications", False)
         db_session.add(new_params)
@@ -719,7 +722,7 @@ class CooperativeTaskGroup(TaskGroup):
         "polymorphic_identity": TaskGroupType.COOPERATIVE.value,
     }
     
-    def addFriend(self, db_session: Session, user_id: UUID, friend_id: UUID, role: GroupRole) -> None: #TODO zmieniłbym nazwę na addMember
+    def addFriend(self, db_session: Session, user_id: UUID, friend_id: UUID, role: GroupRole) -> None:
         if role == GroupRole.OWNER:
             raise ValueError("Insufficient permissions")
         elif role == GroupRole.ADMIN and not self.checkPerms(db_session, user_id, GroupRole.OWNER):
@@ -777,13 +780,16 @@ class CooperativeTaskGroup(TaskGroup):
         
         new_params = TaskParams()
         new_params.taskID = new_task.id
-        new_params.color = taskparams.get("color")
+        new_params.color = taskparams.get("color", None)
         new_params.photoRequired = taskparams.get("photoRequired", False)
         new_params.notifications = taskparams.get("notifications", False)
         db_session.add(new_params)
         
         new_progress.taskID = new_task.id
-        new_progress.userID = self.ownerID
+        owner_member = db_session.query(GroupMember).filter_by(groupID=self.id, userID=self.ownerID).first()
+        if owner_member is None:
+            raise ValueError("Owner is not a member of this group")
+        new_progress.groupMemberID = owner_member.id
         new_progress.type = type
         db_session.add(new_progress)
         
@@ -796,21 +802,22 @@ class CooperativeTaskGroup(TaskGroup):
 class GroupMember(Base):
     __tablename__ = "group_members"
     __table_args__ = (
+        UniqueConstraint("userID", "groupID", name="uq_group_member_user_group"),
         Index("ix_group_members_group_active", "groupID", "active"),
         Index("ix_group_members_user_active", "userID", "active"),
     )
 
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+
     userID: Mapped[UUID] = mapped_column(
         Uuid(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),
-        primary_key=True,
         nullable=False,
         index=True,
     )
     groupID: Mapped[UUID] = mapped_column(
         Uuid(as_uuid=True),
         ForeignKey("task_groups.id", ondelete="CASCADE"),
-        primary_key=True,
         nullable=False,
         index=True,
     )
@@ -824,12 +831,49 @@ class GroupMember(Base):
 
     user: Mapped[User] = relationship("User", back_populates="groupMemberships")
     group: Mapped[TaskGroup] = relationship("TaskGroup", back_populates="members")
+    taskProgresses: Mapped[list[TaskProgress]] = relationship(
+        "TaskProgress",
+        back_populates="groupMember",
+    )
 
     def changePermissions(self, db_session: Session, new_role: GroupRole, by_user_id: UUID) -> None:
-        pass
+        if new_role == GroupRole.OWNER:
+            raise ValueError("Insufficient permissions")
+        elif new_role == GroupRole.ADMIN and not self.group.checkPerms(db_session, by_user_id, GroupRole.OWNER):
+            raise ValueError("Insufficient permissions")
+        elif new_role == GroupRole.MEMBER and not self.group.checkPerms(db_session, by_user_id, GroupRole.ADMIN):
+            raise ValueError("Insufficient permissions")
+        
+        self.role=new_role
+        try:
+            db_session.flush()
+        except Exception:
+            db_session.rollback()
+            raise
 
-    def removeMember(self, session: Session, take_progress: bool, punisher: UUID) -> None:
-        pass
+    def removeMember(self, db_session: Session, take_progress: bool, punisher: UUID) -> None:
+        if self.role == GroupRole.OWNER:
+            raise ValueError("Can't remove owner")
+        elif self.role == GroupRole.ADMIN and not self.group.checkPerms(db_session, punisher, GroupRole.OWNER):
+            raise ValueError("Insufficient permissions")
+        elif self.role == GroupRole.MEMBER and not self.group.checkPerms(db_session, punisher, GroupRole.ADMIN):
+            raise ValueError("Insufficient permissions")
+        
+        if not take_progress:
+            self.active = False
+        else:
+            for progress in self.taskProgresses:
+                db_session.delete(progress)
+            db_session.delete(self)
+            
+        try:
+            db_session.flush()
+        except Exception:
+            db_session.rollback()
+            raise
+            
+        
+            
 
 
 class Task(Base):
@@ -966,15 +1010,15 @@ class ChallengeTask(Task):
 class TaskProgress(Base):
     __tablename__ = "task_progresses"
     __table_args__ = (
-        UniqueConstraint("userID", "taskID", name="uq_task_progress_user_task"),
+        UniqueConstraint("groupMemberID", "taskID", name="uq_task_progress_group_member_task"),
         Index("ix_task_progresses_task_type", "taskID", "type"),
-        Index("ix_task_progresses_user_task", "userID", "taskID"),
+        Index("ix_task_progresses_group_member_task", "groupMemberID", "taskID"),
     )
 
     id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
-    userID: Mapped[UUID | None] = mapped_column(
+    groupMemberID: Mapped[UUID | None] = mapped_column(
         Uuid(as_uuid=True),
-        ForeignKey("users.id", ondelete="SET NULL"),
+        ForeignKey("group_members.id", ondelete="SET NULL"),
         nullable=True,
         index=True,
     )
@@ -987,15 +1031,21 @@ class TaskProgress(Base):
     value: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
     type: Mapped[str] = mapped_column(String(32), nullable=False)
 
-    userId = synonym("userID")
-
-    user: Mapped[User | None] = relationship("User", back_populates="taskProgresses")
+    groupMember: Mapped[GroupMember | None] = relationship("GroupMember", back_populates="taskProgresses")
     task: Mapped[Task] = relationship("Task", back_populates="progresses")
     entries: Mapped[list[ProgressEntry]] = relationship(
         "ProgressEntry",
         back_populates="taskProgress",
         cascade="all, delete-orphan",
     )
+
+    @property
+    def userID(self) -> UUID | None:
+        return self.groupMember.userID if self.groupMember is not None else None
+
+    @property
+    def userId(self) -> UUID | None:
+        return self.userID
 
     __mapper_args__ = {
         "polymorphic_on": type,
