@@ -298,10 +298,10 @@ def TaskParams_shoppingList_eggs(db_session, task_shoppingList_eggs):
     return taskParams
 
 @pytest.fixture
-def TaskProgress_shoppingList_eggs(db_session, task_shoppingList_eggs):
+def TaskProgress_shoppingList_eggs(db_session, task_shoppingList_eggs, GM_shoppingList_owner):
     taskProgress = OneTimeTaskProgress()
     taskProgress.id = uuid4()
-    taskProgress.userID = task_shoppingList_eggs.ownerID
+    taskProgress.groupMemberID = GM_shoppingList_owner.id
     taskProgress.taskID = task_shoppingList_eggs.id
     taskProgress.value = 10
 
@@ -383,10 +383,10 @@ def TaskParams_shoppingList_milk(db_session, task_shoppingList_milk):
     return taskParams
 
 @pytest.fixture
-def TaskProgress_shoppingList_milk(db_session, task_shoppingList_milk):
+def TaskProgress_shoppingList_milk(db_session, task_shoppingList_milk, GM_shoppingList_owner):
     taskProgress = OneTimeTaskProgress()
     taskProgress.id = uuid4()
-    taskProgress.userID = task_shoppingList_milk.ownerID
+    taskProgress.groupMemberID = GM_shoppingList_owner.id
     taskProgress.taskID = task_shoppingList_milk.id
     taskProgress.value = 0
 
@@ -438,10 +438,10 @@ def TaskParams_shoppingList_bread(db_session, task_shoppingList_bread):
     return taskParams
 
 @pytest.fixture
-def TaskProgress_shoppingList_bread(db_session, task_shoppingList_bread):
+def TaskProgress_shoppingList_bread(db_session, task_shoppingList_bread, GM_shoppingList_member):
     taskProgress = OneTimeTaskProgress()
     taskProgress.id = uuid4()
-    taskProgress.userID = task_shoppingList_bread.ownerID
+    taskProgress.groupMemberID = GM_shoppingList_member.id
     taskProgress.taskID = task_shoppingList_bread.id
     taskProgress.value = 1
 
@@ -538,10 +538,10 @@ def TaskParams_shoppingList_cheese(db_session, task_shoppingList_cheese):
     return taskParams
 
 @pytest.fixture
-def TaskProgress_shoppingList_cheese(db_session, task_shoppingList_cheese):
+def TaskProgress_shoppingList_cheese(db_session, task_shoppingList_cheese, GM_shoppingList_ghost):
     taskProgress = OneTimeTaskProgress()
     taskProgress.id = uuid4()
-    taskProgress.userID = task_shoppingList_cheese.ownerID
+    taskProgress.groupMemberID = GM_shoppingList_ghost.id
     taskProgress.taskID = task_shoppingList_cheese.id
     taskProgress.value = 4
 
@@ -746,7 +746,7 @@ def TaskParams_eggChallenge_eating(db_session, task_eggChallenge_eating):
 def TaskProgress_eggChallenge_eating_owner(db_session, GM_eggChallenge_owner, task_eggChallenge_eating):
     taskProgress = ChallengeTaskProgress()
     taskProgress.id = uuid4()
-    taskProgress.userID = GM_eggChallenge_owner.userID
+    taskProgress.groupMemberID = GM_eggChallenge_owner.id
     taskProgress.taskID = task_eggChallenge_eating.id
     taskProgress.value = 67
 
@@ -758,7 +758,7 @@ def TaskProgress_eggChallenge_eating_owner(db_session, GM_eggChallenge_owner, ta
 def TaskProgress_eggChallenge_eating_admin(db_session, GM_eggChallenge_admin, task_eggChallenge_eating):
     taskProgress = ChallengeTaskProgress()
     taskProgress.id = uuid4()
-    taskProgress.userID = GM_eggChallenge_admin.userID
+    taskProgress.groupMemberID = GM_eggChallenge_admin.id
     taskProgress.taskID = task_eggChallenge_eating.id
     taskProgress.value = 13
 
@@ -1019,10 +1019,10 @@ def TaskParams_bingo_money(db_session, task_bingo_money):
     return taskParams
 
 @pytest.fixture
-def TaskProgress_bingo_money(db_session, task_bingo_money):
+def TaskProgress_bingo_money(db_session, task_bingo_money, GM_bingo_owner):
     taskProgress = EndlessTaskProgress()
     taskProgress.id = uuid4()
-    taskProgress.userID = task_bingo_money.ownerID
+    taskProgress.groupMemberID = GM_bingo_owner.id
     taskProgress.taskID = task_bingo_money.id
     taskProgress.value = 700
 
@@ -1139,10 +1139,10 @@ def TaskParams_bingo_running(db_session, task_bingo_running):
     return taskParams
 
 @pytest.fixture
-def TaskProgress_bingo_running(db_session, task_bingo_running):
+def TaskProgress_bingo_running(db_session, task_bingo_running, GM_bingo_owner):
     taskProgress = RepeatableTaskProgress()
     taskProgress.id = uuid4()
-    taskProgress.userID = task_bingo_running.ownerID
+    taskProgress.groupMemberID = GM_bingo_owner.id
     taskProgress.taskID = task_bingo_running.id
     taskProgress.value = 0 # dzis nie biegalem
     taskProgress.counter = 3 # total completions
@@ -1261,10 +1261,10 @@ def TaskParams_bingo_gym(db_session, task_bingo_gym):
     return taskParams
 
 @pytest.fixture
-def TaskProgress_bingo_gym(db_session, task_bingo_gym):
+def TaskProgress_bingo_gym(db_session, task_bingo_gym, GM_bingo_owner):
     taskProgress = OneTimeTaskProgress()
     taskProgress.id = uuid4()
-    taskProgress.userID = task_bingo_gym.ownerID
+    taskProgress.groupMemberID = GM_bingo_owner.id
     taskProgress.taskID = task_bingo_gym.id
     taskProgress.value = 2
 
@@ -1350,10 +1350,10 @@ def TaskParams_bingo_president(db_session, task_bingo_president):
     return taskParams
 
 @pytest.fixture
-def TaskProgress_bingo_president(db_session, task_bingo_president):
+def TaskProgress_bingo_president(db_session, task_bingo_president, GM_bingo_owner):
     taskProgress = OneTimeTaskProgress()
     taskProgress.id = uuid4()
-    taskProgress.userID = task_bingo_president.ownerID
+    taskProgress.groupMemberID = GM_bingo_owner.id
     taskProgress.taskID = task_bingo_president.id
     taskProgress.value = 0
 

@@ -78,10 +78,16 @@ def test_GroupMember_removeMember_take_progress(
     admin.removeMember(session=db_session, take_progress=True, punisher=admin.userID)
     db_session.flush()#???
     assert db_session.query(GroupMember).filter_by(userID=admin.userID, groupID=eggChallenge_bundle["TG"].id).first() is None
-    assert db_session.query(OneTimeTaskProgress).filter_by(userId=admin.userID, taskID=admin_progress_before.taskID).first() is not None
+    assert db_session.query(OneTimeTaskProgress).join(GroupMember).filter(
+        GroupMember.userID == admin.userID,
+        OneTimeTaskProgress.taskID == admin_progress_before.taskID,
+    ).first() is not None
     for entry in admin_entries_before:
         assert db_session.query(ProgressEntry).filter_by(id=entry.id).first() is None
-    assert db_session.query(OneTimeTaskProgress).filter_by(userId=eggChallenge_bundle["GM"]["owner"].userID, taskID=admin_progress_before.taskID).first().value == owner_progress_before.value
+    assert db_session.query(OneTimeTaskProgress).join(GroupMember).filter(
+        GroupMember.userID == eggChallenge_bundle["GM"]["owner"].userID,
+        OneTimeTaskProgress.taskID == admin_progress_before.taskID,
+    ).first().value == owner_progress_before.value
     
     with pytest.raises(Exception):
         owner.removeMember(session=db_session, take_progress=True, punisher=owner.id)
