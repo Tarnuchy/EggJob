@@ -537,7 +537,7 @@ class TaskGroup(Base):
     )
 
     __mapper_args__ = {
-        "polymorphic_identity": TaskGroupType.TASK_GROUP.value,
+        "polymorphic_identity": TaskGroupType.TASK_GROUP,
         "polymorphic_on": type,
         "with_polymorphic": "*",
     }
@@ -604,7 +604,7 @@ class CompetetiveTaskGroup(TaskGroup):
     )
 
     __mapper_args__ = {
-        "polymorphic_identity": TaskGroupType.COMPETITIVE.value,
+        "polymorphic_identity": TaskGroupType.COMPETITIVE,
     }
     
     def addFriend(self, db_session: Session, user_id: UUID, friend_id: UUID, role: GroupRole) -> None:
@@ -623,10 +623,11 @@ class CompetetiveTaskGroup(TaskGroup):
                 member.role = role
                 for task in self.tasks:
                     if not db_session.query(TaskProgress).filter_by(groupMemberID=member.id, taskID=task.id).first():
-                        progress = EndlessTaskProgress() if task.type == TaskType.ENDLESS.value else (OneTimeTaskProgress() if task.type == TaskType.ONE_TIME.value else (RepeatableTaskProgress() if task.type == TaskType.REPEATABLE.value else ChallengeTaskProgress())) #TODO za długie XD
+                        task_type = task.type if isinstance(task.type, TaskType) else TaskType(task.type)
+                        progress = EndlessTaskProgress() if task_type == TaskType.ENDLESS else (OneTimeTaskProgress() if task_type == TaskType.ONE_TIME else (RepeatableTaskProgress() if task_type == TaskType.REPEATABLE else ChallengeTaskProgress())) #TODO za długie XD
                         progress.groupMemberID = member.id
                         progress.taskID = task.id
-                        progress.type = task.type if isinstance(task.type, TaskType) else TaskType(task.type)
+                        progress.type = task_type.value
                         db_session.add(progress)
         else:
             new_member = GroupMember()
@@ -636,10 +637,11 @@ class CompetetiveTaskGroup(TaskGroup):
             db_session.add(new_member)
             db_session.flush()
             for task in self.tasks:
-                progress = EndlessTaskProgress() if task.type == TaskType.ENDLESS.value else (OneTimeTaskProgress() if task.type == TaskType.ONE_TIME.value else (RepeatableTaskProgress() if task.type == TaskType.REPEATABLE.value else ChallengeTaskProgress())) #TODO za długie XD
+                task_type = task.type if isinstance(task.type, TaskType) else TaskType(task.type)
+                progress = EndlessTaskProgress() if task_type == TaskType.ENDLESS else (OneTimeTaskProgress() if task_type == TaskType.ONE_TIME else (RepeatableTaskProgress() if task_type == TaskType.REPEATABLE else ChallengeTaskProgress())) #TODO za długie XD
                 progress.groupMemberID = new_member.id
                 progress.taskID = task.id
-                progress.type = task.type if isinstance(task.type, TaskType) else TaskType(task.type)
+                progress.type = task_type.value
                 db_session.add(progress)
             
         try:
@@ -719,7 +721,7 @@ class CooperativeTaskGroup(TaskGroup):
     )
 
     __mapper_args__ = {
-        "polymorphic_identity": TaskGroupType.COOPERATIVE.value,
+        "polymorphic_identity": TaskGroupType.COOPERATIVE,
     }
     
     def addFriend(self, db_session: Session, user_id: UUID, friend_id: UUID, role: GroupRole) -> None:
@@ -961,7 +963,7 @@ class EndlessTask(Task):
     )
 
     __mapper_args__ = {
-        "polymorphic_identity": TaskType.ENDLESS.value,
+        "polymorphic_identity": TaskType.ENDLESS,
     }
 
 
@@ -976,7 +978,7 @@ class OneTimeTask(Task):
     deadline: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     __mapper_args__ = {
-        "polymorphic_identity": TaskType.ONE_TIME.value,
+        "polymorphic_identity": TaskType.ONE_TIME,
     }
 
 
@@ -994,7 +996,7 @@ class RepeatableTask(Task):
     )
 
     __mapper_args__ = {
-        "polymorphic_identity": TaskType.REPEATABLE.value,
+        "polymorphic_identity": TaskType.REPEATABLE,
     }
 
 
@@ -1009,7 +1011,7 @@ class ChallengeTask(Task):
     deadline: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     __mapper_args__ = {
-        "polymorphic_identity": TaskType.CHALLENGE.value,
+        "polymorphic_identity": TaskType.CHALLENGE,
     }
 
 
