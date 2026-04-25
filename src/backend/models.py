@@ -837,6 +837,11 @@ class GroupMember(Base):
     )
 
     def changePermissions(self, db_session: Session, new_role: GroupRole, by_user_id: UUID) -> None:
+        if self.role == GroupRole.OWNER:
+            raise ValueError("Can't change owner's permissions")
+        if self.role == new_role:
+            return #a może error?
+        
         if new_role == GroupRole.OWNER:
             raise ValueError("Insufficient permissions")
         elif new_role == GroupRole.ADMIN and not self.group.checkPerms(db_session, by_user_id, GroupRole.OWNER):
@@ -854,10 +859,11 @@ class GroupMember(Base):
     def removeMember(self, db_session: Session, take_progress: bool, punisher: UUID) -> None:
         if self.role == GroupRole.OWNER:
             raise ValueError("Can't remove owner")
-        elif self.role == GroupRole.ADMIN and not self.group.checkPerms(db_session, punisher, GroupRole.OWNER):
-            raise ValueError("Insufficient permissions")
-        elif self.role == GroupRole.MEMBER and not self.group.checkPerms(db_session, punisher, GroupRole.ADMIN):
-            raise ValueError("Insufficient permissions")
+        if self.userID != punisher:
+            if self.role == GroupRole.ADMIN and not self.group.checkPerms(db_session, punisher, GroupRole.OWNER):
+                raise ValueError("Insufficient permissions")
+            elif self.role == GroupRole.MEMBER and not self.group.checkPerms(db_session, punisher, GroupRole.ADMIN):
+                raise ValueError("Insufficient permissions")
         
         if not take_progress:
             self.active = False

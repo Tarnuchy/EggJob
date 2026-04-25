@@ -216,6 +216,7 @@ def TG_shoppingList(db_session, user_a):
     taskGroup.isBingo = False
     taskGroup.privacy = PrivacyLevel.PRIVATE
     taskGroup.inviteCode = "TEST-CODE-1" # ??
+    taskGroup.type = TaskGroupType.COOPERATIVE
     """
     from hashids import Hashids
     hashids = Hashids(salt="twoja_tajna_sol", min_length=6, alphabet="ABCDEFGHJKLMNPQRSTUVWXYZ23456789")
@@ -520,6 +521,7 @@ def task_shoppingList_cheese(db_session, TG_shoppingList, GM_shoppingList_ghost)
     task.goal = 3
     task.status = TaskStatus.DONE
     task.deadline = None
+    task.type = TaskType.ONE_TIME
 
     db_session.add(task)
     db_session.commit()
@@ -680,6 +682,7 @@ def TG_eggChallenge(db_session, user_b):
     taskGroup.privacy = PrivacyLevel.PUBLIC
     taskGroup.inviteCode = "TEST-CODE-2"
     taskGroup.createdAt = datetime(2025, 4, 4, 13, 0, 0)
+    taskGroup.type = TaskGroupType.COMPETITIVE
 
     db_session.add(taskGroup)
     db_session.commit()
@@ -969,6 +972,7 @@ def TG_bingo(db_session, user_b):
     taskGroup.privacy = PrivacyLevel.PUBLIC
     taskGroup.inviteCode = "TEST-CODE-3"
     taskGroup.createdAt = datetime(2026, 4, 4, 13, 0, 0)
+    taskGroup.type = TaskGroupType.COOPERATIVE
 
     db_session.add(taskGroup)
     db_session.commit()
