@@ -1081,21 +1081,16 @@ class TaskProgress(Base):
         "polymorphic_abstract": True,
     }
 
-    def updateProgress(
-        self,
-        db_session: Session,
-        delta_value: float,
-        message: str,
-        photoUrl: str | None = None,
-    ) -> None:
+    def updateProgress(self,db_session: Session,delta_value: float, message: str, photoUrl: str | None = None) -> None:
         pass
     
-    def silentUpdateProgress(
-        self,
-        db_session: Session,
-        delta_value: float,
-    ) -> None:
-        pass #nowe, idk czy testy
+    def silentUpdateProgress(self,db_session: Session,delta_value: float,) -> None: #nowe, idk czy testy
+        self.value += delta_value
+        try:
+            db_session.flush()
+        except Exception:
+            db_session.rollback()
+            raise
 
 
 class EndlessTaskProgress(TaskProgress):
@@ -1248,6 +1243,8 @@ class ProgressEntry(Base):
     def addComment(self, db_session: Session, user_id: UUID, message: str) -> None:
         if message.strip() == "":
             raise ValueError("Comment message cannot be empty")
+        if self.taskProgress.task.group.privacy == PrivacyLevel.PRIVATE and not db_session.query(GroupMember).filter_by(groupID=self.taskProgress.task.groupID, userID=user_id, active=True).first():
+            raise ValueError("User is not a member of the task's group") #TODO za długie query, nieefektywne imo
         comment = Comment()
         comment.userID = user_id
         comment.progressEntryID = self.id
