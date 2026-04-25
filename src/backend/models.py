@@ -908,6 +908,8 @@ class Task(Base):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False, default="")
     goal: Mapped[float | None] = mapped_column(Float, nullable=True)
+    #TODO dodać jednostkę
+    #TODO status do taskprogressu
     status: Mapped[TaskStatus] = mapped_column(
         SAEnum(TaskStatus, name="task_status", native_enum=True),
         nullable=False,
@@ -942,15 +944,33 @@ class Task(Base):
         "with_polymorphic": "*",
         "polymorphic_abstract": True,
     }
-
+    #new_data: name, description, goal
     def edit(self, db_session: Session, user_id: UUID, **new_data: Any) -> None:
-        pass
+        if not self.group.checkPerms(db_session, user_id, GroupRole.ADMIN):
+            raise ValueError("User does not have permission to edit this task")
+        new_name = self.name
+        new_description = self.description
+        new_goal = self.goal
+        if "name" in new_data:
+            if new_data["name"].strip() == "":
+                raise ValueError("Task name cannot be empty")
+            new_name = new_data["name"]
+        if "description" in new_data:
+            new_description = new_data["description"]
+        if "goal" in new_data:
+            new_goal = new_data["goal"]
+            #TODO dokończyć
 
     def delete(self, db_session: Session, user_id: UUID) -> None:
-        pass
+        db_session.delete(self)
+        try:
+            db_session.flush()
+        except Exception:
+            db_session.rollback()
+            raise
 
     def changeTaskType(self, db_session: Session, user_id: UUID, new_type: TaskType) -> None:
-        pass
+        pass #inne w każdym TODO
 
 
 class EndlessTask(Task):
@@ -1069,6 +1089,13 @@ class TaskProgress(Base):
         photoUrl: str | None = None,
     ) -> None:
         pass
+    
+    def silentUpdateProgress(
+        self,
+        db_session: Session,
+        delta_value: float,
+    ) -> None:
+        pass #nowe, idk czy testy
 
 
 class EndlessTaskProgress(TaskProgress):
@@ -1146,14 +1173,28 @@ class TaskParams(Base):
 
     task: Mapped[Task] = relationship("Task", back_populates="params")
 
-    def edit(
-        self,
-        db_session: Session,
-        photoRequired: bool | None = None,
-        color: str | None = None,
-        notifications: bool | None = None,
-    ) -> None:
-        pass
+    def edit(self, db_session: Session, photoRequired: bool | None = None, color: str | None = None, notifications: bool | None = None) -> None:
+        if not self.task.group.checkPerms(db_session, self.task.ownerID, GroupRole.ADMIN):
+            raise ValueError("User does not have permission to edit this task's parameters")
+        new_PhotoRequired = self.photoRequired
+        new_color = self.color
+        new_notifications = self.notifications
+        if photoRequired is not None:
+            new_PhotoRequired = photoRequired
+        if color is not None:
+            new_color = color
+        if notifications is not None:
+            new_notifications = notifications
+        self.photoRequired = new_PhotoRequired
+        self.color = new_color
+        self.notifications = new_notifications
+        try:
+            db_session.flush()
+        except Exception:
+            db_session.rollback()
+            raise
+
+    
 
 
 class ProgressEntry(Base):
@@ -1187,14 +1228,36 @@ class ProgressEntry(Base):
         cascade="all, delete-orphan",
     )
 
-    def validate(self) -> bool:
+    def validate(self, db_session: Session) -> bool:
+        params = db_session.query(TaskParams).filter(TaskParams.taskID == self.taskProgress.taskID).first()
+        if not params:
+            raise ValueError("no to niemożliwe akurat")
+        if params.photoRequired and not self.photoUrl:
+            return False
         return True
 
-    def delete(self, db_session: Session | None = None) -> None:
-        pass
+    def delete(self, db_session: Session) -> None:
+        self.taskProgress.silentUpdateProgress(db_session, -self.value)
+        db_session.delete(self)
+        try:
+            db_session.flush()
+        except Exception:
+            db_session.rollback()
+            raise
 
     def addComment(self, db_session: Session, user_id: UUID, message: str) -> None:
-        pass
+        if message.strip() == "":
+            raise ValueError("Comment message cannot be empty")
+        comment = Comment()
+        comment.userID = user_id
+        comment.progressEntryID = self.id
+        comment.message = message
+        db_session.add(comment)
+        try:
+            db_session.flush()
+        except Exception:
+            db_session.rollback()
+            raise
 
 
 class Comment(Base):
