@@ -12,6 +12,7 @@ def test_GroupMember_removeMember_take_progress(
     eggChallenge_bundle
 ):
     #30 minut z codexem siedziałem, chyba git ten test # kuźwa jaki syf, ale nie mogę się już wycofać 💀
+    #TODO fix, coś się wywala
     member_before = db_session.query(GroupMember).filter_by(
         userID=GM_shoppingList_ghost.userID,
         groupID=GM_shoppingList_ghost.groupID,
