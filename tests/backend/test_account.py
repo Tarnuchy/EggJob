@@ -272,11 +272,13 @@ def test_Account_createUser(ecosystem):
         "photoUrl": "https://example.com/avatar.jpg"
     }
 
-    result = new_account.createUser(db_session=db_session, **valid_form)
+    new_account.createUser(db_session=db_session, **valid_form)
     db_session.flush()
 
-    assert result is True
+    #assert result is True
     assert len(db_session.query(User).all()) == users_before + 1
+    assert new_account.user is not None
+    assert new_account.user.username == valid_form["username"]
     
     saved_user = db_session.query(User).filter_by(username=valid_form["username"]).first()
     assert saved_user is not None

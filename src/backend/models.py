@@ -162,13 +162,14 @@ class Account(Base):
         user.accountID = self.id
         user.username = username
         user.photoUrl = photoUrl
+        self.user = user
         db_session.add(user)
         try:
             db_session.flush()
         except Exception:
             db_session.rollback()
             raise
-
+        
     def changePassword(self, db_session: Session, old_password: str, new_password: str) -> bool:
         hash = self.passwordHash
         if not verify_password(old_password, hash):
@@ -1081,9 +1082,30 @@ class TaskProgress(Base):
         "polymorphic_abstract": True,
     }
 
-    def updateProgress(self,db_session: Session,delta_value: float, message: str, photoUrl: str | None = None) -> None:
-        pass
-    
+    def updateProgress(self,db_session: Session,delta_value: float, user_id: UUID, message: str, photoUrl: str | None = None) -> None:
+        #TODO update troche zalezny od typu, trzeba dorobic
+        group = self.task.group
+        if not group.checkPerms(db_session, user_id, GroupRole.MEMBER):
+            raise ValueError("User does not have permission to update progress for this task")
+        elif self.userID != user_id and group.type == TaskGroupType.COMPETITIVE:
+            raise ValueError("User does not have permission to update progress for this task")
+        elif self.task.params and self.task.params.photoRequired and not photoUrl:
+            raise ValueError("Photo is required to update progress for this task")
+        
+        self.value += delta_value
+        entry = ProgressEntry()
+        entry.taskProgress = self
+        entry.user_id = user_id
+        entry.message = message
+        entry.photoUrl = photoUrl
+        db_session.add(entry)
+        try:
+            db_session.flush()
+        except Exception:
+            self.value -= delta_value
+            db_session.rollback()
+            raise
+        
     def silentUpdateProgress(self,db_session: Session,delta_value: float,) -> None: #nowe, idk czy testy
         self.value += delta_value
         try:
