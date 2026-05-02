@@ -889,7 +889,6 @@ class Task(Base):
     __tablename__ = "tasks"
     __table_args__ = (
         CheckConstraint("name <> ''", name="ck_tasks_name_not_empty"),
-        Index("ix_tasks_group_status", "groupID", "status"),
         Index("ix_tasks_owner_group", "ownerID", "groupID"),
     )
 
@@ -909,13 +908,7 @@ class Task(Base):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False, default="")
     goal: Mapped[float | None] = mapped_column(Float, nullable=True)
-    #TODO dodać jednostkę
-    #TODO status do taskprogressu
-    status: Mapped[TaskStatus] = mapped_column(
-        SAEnum(TaskStatus, name="task_status", native_enum=True),
-        nullable=False,
-        default=TaskStatus.TODO,
-    )
+    unit: Mapped[str | None] = mapped_column(String(32), nullable=True)
     type: Mapped[TaskType] = mapped_column(
         SAEnum(
             TaskType,
@@ -1057,6 +1050,11 @@ class TaskProgress(Base):
         nullable=False,
         index=True,
     )
+    status: Mapped[TaskStatus] = mapped_column(
+        SAEnum(TaskStatus, name="task_status", native_enum=True),
+        nullable=False,
+        default=TaskStatus.TODO,
+    )
     value: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
     type: Mapped[str] = mapped_column(String(32), nullable=False)
 
@@ -1082,7 +1080,7 @@ class TaskProgress(Base):
         "polymorphic_abstract": True,
     }
 
-    def updateProgress(self,db_session: Session,delta_value: float, user_id: UUID, message: str, photoUrl: str | None = None) -> None:
+    def updateProgress(self, db_session: Session, delta_value: float, user_id: UUID, message: str, photoUrl: str | None = None) -> None:
         #TODO update troche zalezny od typu, trzeba dorobic
         group = self.task.group
         if not group.checkPerms(db_session, user_id, GroupRole.MEMBER):
@@ -1091,18 +1089,43 @@ class TaskProgress(Base):
             raise ValueError("User does not have permission to update progress for this task")
         elif self.task.params and self.task.params.photoRequired and not photoUrl:
             raise ValueError("Photo is required to update progress for this task")
+        elif not isinstance(delta_value, (int, float)):
+            raise ValueError("Invalid progress value")
         
-        self.value += delta_value
+        old_value = self.value
+        old_status = self.status
+        counter_was_set = isinstance(self, RepeatableTaskProgress)
+        old_counter = self.counter if counter_was_set else None
+
+        self.value = self.value + float(delta_value)
+        if isinstance(self, RepeatableTaskProgress):
+            if self.status != TaskStatus.DONE:
+                self.counter += 1
+            if self.task.goal is not None and self.value >= self.task.goal:
+                self.status = TaskStatus.DONE
+            else:
+                self.status = TaskStatus.IN_PROGRESS
+        elif isinstance(self, (OneTimeTaskProgress, ChallengeTaskProgress)):
+            if self.task.goal is not None and self.value >= self.task.goal:
+                self.status = TaskStatus.DONE
+            else:
+                self.status = TaskStatus.IN_PROGRESS
+        else:
+            self.status = TaskStatus.IN_PROGRESS if self.value != 0 else TaskStatus.TODO
+
         entry = ProgressEntry()
         entry.taskProgress = self
-        entry.user_id = user_id
+        entry.userID = user_id
         entry.message = message
         entry.photoUrl = photoUrl
         db_session.add(entry)
         try:
             db_session.flush()
         except Exception:
-            self.value -= delta_value
+            self.value = old_value
+            self.status = old_status
+            if counter_was_set:
+                self.counter = old_counter
             db_session.rollback()
             raise
         
