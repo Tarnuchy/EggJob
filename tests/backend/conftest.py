@@ -279,7 +279,6 @@ def task_shoppingList_eggs(db_session, TG_shoppingList, GM_shoppingList_owner):
     task.name = "eggs"
     task.description = ""
     task.goal = 20
-    task.status = TaskStatus.IN_PROGRESS
     task.deadline = None
 
     db_session.add(task)
@@ -305,6 +304,7 @@ def TaskProgress_shoppingList_eggs(db_session, task_shoppingList_eggs, GM_shoppi
     taskProgress.groupMemberID = GM_shoppingList_owner.id
     taskProgress.taskID = task_shoppingList_eggs.id
     taskProgress.value = 10
+    taskProgress.status = TaskStatus.IN_PROGRESS
 
     db_session.add(taskProgress)
     db_session.commit()
@@ -364,7 +364,6 @@ def task_shoppingList_milk(db_session, TG_shoppingList, GM_shoppingList_owner):
     task.name = "milk"
     task.description = "mleko krowie 2%"
     task.goal = 2
-    task.status = TaskStatus.TODO
     task.deadline = None
 
     db_session.add(task)
@@ -390,6 +389,7 @@ def TaskProgress_shoppingList_milk(db_session, task_shoppingList_milk, GM_shoppi
     taskProgress.groupMemberID = GM_shoppingList_owner.id
     taskProgress.taskID = task_shoppingList_milk.id
     taskProgress.value = 0
+    taskProgress.status = TaskStatus.TODO
 
     db_session.add(taskProgress)
     db_session.commit()
@@ -419,7 +419,6 @@ def task_shoppingList_bread(db_session, TG_shoppingList, GM_shoppingList_member)
     task.name = "bread"
     task.description = ""
     task.goal = 1
-    task.status = TaskStatus.DONE
     task.deadline = None
 
     db_session.add(task)
@@ -445,6 +444,7 @@ def TaskProgress_shoppingList_bread(db_session, task_shoppingList_bread, GM_shop
     taskProgress.groupMemberID = GM_shoppingList_member.id
     taskProgress.taskID = task_shoppingList_bread.id
     taskProgress.value = 1
+    taskProgress.status = TaskStatus.DONE
 
     db_session.add(taskProgress)
     db_session.commit()
@@ -519,7 +519,6 @@ def task_shoppingList_cheese(db_session, TG_shoppingList, GM_shoppingList_ghost)
     task.name = "cheese"
     task.description = "jakies dwa rozne rodzaje najlepiej"
     task.goal = 3
-    task.status = TaskStatus.DONE
     task.deadline = None
     task.type = TaskType.ONE_TIME
 
@@ -546,6 +545,7 @@ def TaskProgress_shoppingList_cheese(db_session, task_shoppingList_cheese, GM_sh
     taskProgress.groupMemberID = GM_shoppingList_ghost.id
     taskProgress.taskID = task_shoppingList_cheese.id
     taskProgress.value = 4
+    taskProgress.status = TaskStatus.DONE
 
     db_session.add(taskProgress)
     db_session.commit()
@@ -726,7 +726,6 @@ def task_eggChallenge_eating(db_session, TG_eggChallenge, GM_eggChallenge_owner)
     task.name = "eating eggs"
     task.description = "who eats most eggs wins"
     task.goal = None # ??
-    task.status = TaskStatus.IN_PROGRESS # ????? co to znaczy? co jak jeden zaczal a drugi nie? moze jak ktokolwiek zaczal to jest IN PROGRESS?
     task.deadline = datetime(2026, 4, 4, 13, 0, 0)
 
     db_session.add(task)
@@ -752,6 +751,7 @@ def TaskProgress_eggChallenge_eating_owner(db_session, GM_eggChallenge_owner, ta
     taskProgress.groupMemberID = GM_eggChallenge_owner.id
     taskProgress.taskID = task_eggChallenge_eating.id
     taskProgress.value = 67
+    taskProgress.status = TaskStatus.IN_PROGRESS
 
     db_session.add(taskProgress)
     db_session.commit()
@@ -764,6 +764,7 @@ def TaskProgress_eggChallenge_eating_admin(db_session, GM_eggChallenge_admin, ta
     taskProgress.groupMemberID = GM_eggChallenge_admin.id
     taskProgress.taskID = task_eggChallenge_eating.id
     taskProgress.value = 13
+    taskProgress.status = TaskStatus.IN_PROGRESS
 
     db_session.add(taskProgress)
     db_session.commit()
@@ -1003,7 +1004,6 @@ def task_bingo_money(db_session, TG_bingo, GM_bingo_owner):
     task.name = "have over 1000 USD on my account"
     task.description = ""
     task.goal = 1000
-    task.status = TaskStatus.IN_PROGRESS
     #task.deadline = datetime(2027, 4, 4, 13, 0, 0) #endless nie ma deadline
 
     db_session.add(task)
@@ -1029,6 +1029,7 @@ def TaskProgress_bingo_money(db_session, task_bingo_money, GM_bingo_owner):
     taskProgress.groupMemberID = GM_bingo_owner.id
     taskProgress.taskID = task_bingo_money.id
     taskProgress.value = 700
+    taskProgress.status = TaskStatus.IN_PROGRESS
 
     db_session.add(taskProgress)
     db_session.commit()
@@ -1123,7 +1124,6 @@ def task_bingo_running(db_session, TG_bingo, GM_bingo_owner):
     task.name = "biegac 3 razy w miesiacu"
     task.description = ""
     task.goal = 3
-    task.status = TaskStatus.IN_PROGRESS
     task.frequency = TimeInterval.MONTHLY
 
     db_session.add(task)
@@ -1151,6 +1151,7 @@ def TaskProgress_bingo_running(db_session, task_bingo_running, GM_bingo_owner):
     taskProgress.value = 0 # dzis nie biegalem
     taskProgress.counter = 3 # total completions
     taskProgress.streak = 2 # current streak
+    taskProgress.status = TaskStatus.IN_PROGRESS
 
     db_session.add(taskProgress)
     db_session.commit()
@@ -1245,7 +1246,6 @@ def task_bingo_gym(db_session, TG_bingo, GM_bingo_owner):
     task.name = "workout 3 times"
     task.description = "3 razy chce byc na silowni w tym roku"
     task.goal = 3
-    task.status = TaskStatus.IN_PROGRESS
     task.deadline = datetime(2027, 4, 4, 17, 0, 0)
 
     db_session.add(task)
@@ -1271,6 +1271,7 @@ def TaskProgress_bingo_gym(db_session, task_bingo_gym, GM_bingo_owner):
     taskProgress.groupMemberID = GM_bingo_owner.id
     taskProgress.taskID = task_bingo_gym.id
     taskProgress.value = 2
+    taskProgress.status = TaskStatus.IN_PROGRESS
 
     db_session.add(taskProgress)
     db_session.commit()
@@ -1334,7 +1335,6 @@ def task_bingo_president(db_session, TG_bingo, GM_bingo_owner):
     task.name = "become president"
     task.description = "of the world"
     task.goal = 1
-    task.status = TaskStatus.IN_PROGRESS
     task.deadline = datetime(2027, 4, 4, 17, 0, 0)
 
     db_session.add(task)
@@ -1360,6 +1360,7 @@ def TaskProgress_bingo_president(db_session, task_bingo_president, GM_bingo_owne
     taskProgress.groupMemberID = GM_bingo_owner.id
     taskProgress.taskID = task_bingo_president.id
     taskProgress.value = 0
+    taskProgress.status = TaskStatus.IN_PROGRESS
 
     db_session.add(taskProgress)
     db_session.commit()
