@@ -315,7 +315,7 @@ def PE_shoppingList_eggs(db_session, TaskProgress_shoppingList_eggs, GM_shopping
     progressEntry = ProgressEntry()
     progressEntry.id = uuid4()
     progressEntry.TaskProgressID = TaskProgress_shoppingList_eggs.id
-    progressEntry.userID = GM_shoppingList_ghost.userID
+    progressEntry.memberID = GM_shoppingList_ghost.id
     progressEntry.value = 10
     progressEntry.message = "bylo tylko 10 jaj"
     progressEntry.photoUrl = None
@@ -455,7 +455,7 @@ def PE_shoppingList_bread(db_session, TaskProgress_shoppingList_bread, GM_shoppi
     progressEntry = ProgressEntry()
     progressEntry.id = uuid4()
     progressEntry.TaskProgressID = TaskProgress_shoppingList_bread.id
-    progressEntry.userID = GM_shoppingList_member.userID
+    progressEntry.memberID = GM_shoppingList_member.id
     progressEntry.value = 1
     progressEntry.message = ""
     progressEntry.photoUrl = None
@@ -556,7 +556,7 @@ def PE_shoppingList_cheese_1(db_session, TaskProgress_shoppingList_cheese, GM_sh
     progressEntry = ProgressEntry()
     progressEntry.id = uuid4()
     progressEntry.TaskProgressID = TaskProgress_shoppingList_cheese.id
-    progressEntry.userID = GM_shoppingList_owner.userID
+    progressEntry.memberID = GM_shoppingList_owner.id
     progressEntry.value = 2
     progressEntry.message = "ser gouda"
     progressEntry.photoUrl = None
@@ -571,7 +571,7 @@ def PE_shoppingList_cheese_2(db_session, TaskProgress_shoppingList_cheese, GM_sh
     progressEntry = ProgressEntry()
     progressEntry.id = uuid4()
     progressEntry.TaskProgressID = TaskProgress_shoppingList_cheese.id
-    progressEntry.userID = GM_shoppingList_member.userID
+    progressEntry.memberID = GM_shoppingList_member.id
     progressEntry.value = 2
     progressEntry.message = "ser cheddar"
     progressEntry.photoUrl = None
@@ -775,7 +775,7 @@ def PE_eggChallenge_eating_owner_1(db_session, TaskProgress_eggChallenge_eating_
     progressEntry = ProgressEntry()
     progressEntry.id = uuid4()
     progressEntry.TaskProgressID = TaskProgress_eggChallenge_eating_owner.id
-    progressEntry.userID = GM_eggChallenge_owner.userID
+    progressEntry.memberID = GM_eggChallenge_owner.id
     progressEntry.value = 12
     progressEntry.message = "jajecznica 12 jaj"
     progressEntry.photoUrl = "https://example.com/jajecznica-12-jaj.png"
@@ -790,7 +790,7 @@ def PE_eggChallenge_eating_owner_2(db_session, TaskProgress_eggChallenge_eating_
     progressEntry = ProgressEntry()
     progressEntry.id = uuid4()
     progressEntry.TaskProgressID = TaskProgress_eggChallenge_eating_owner.id
-    progressEntry.userID = GM_eggChallenge_owner.userID
+    progressEntry.memberID = GM_eggChallenge_owner.id
     progressEntry.value = 55
     progressEntry.message = "jajecznica 55 jaj"
     progressEntry.photoUrl = "https://stockphotos.com/scrambled-eggs-huge-portion-free-stock-photo.png"
@@ -805,7 +805,7 @@ def PE_eggChallenge_eating_admin_1(db_session, TaskProgress_eggChallenge_eating_
     progressEntry = ProgressEntry()
     progressEntry.id = uuid4()
     progressEntry.TaskProgressID = TaskProgress_eggChallenge_eating_admin.id
-    progressEntry.userID = GM_eggChallenge_admin.userID
+    progressEntry.memberID = GM_eggChallenge_admin.id
     progressEntry.value = 4
     progressEntry.message = "jajecznica 4 jaja"
     progressEntry.photoUrl = "https://example.com/jajecznica-4-jaja.png"
@@ -820,7 +820,7 @@ def PE_eggChallenge_eating_admin_2(db_session, TaskProgress_eggChallenge_eating_
     progressEntry = ProgressEntry()
     progressEntry.id = uuid4()
     progressEntry.TaskProgressID = TaskProgress_eggChallenge_eating_admin.id
-    progressEntry.userID = GM_eggChallenge_admin.userID
+    progressEntry.memberID = GM_eggChallenge_admin.id
     progressEntry.value = 3
     progressEntry.message = "sadzone 3 jaja"
     progressEntry.photoUrl = "https://example.com/sadzone-3-jaja.png"
@@ -835,7 +835,7 @@ def PE_eggChallenge_eating_admin_3(db_session, TaskProgress_eggChallenge_eating_
     progressEntry = ProgressEntry()
     progressEntry.id = uuid4()
     progressEntry.TaskProgressID = TaskProgress_eggChallenge_eating_admin.id
-    progressEntry.userID = GM_eggChallenge_admin.userID
+    progressEntry.memberID = GM_eggChallenge_admin.id
     progressEntry.value = 2
     progressEntry.message = "na twardo 2 jaja"
     progressEntry.photoUrl = "https://example.com/na-twardo-2-jaja.png"
@@ -850,7 +850,7 @@ def PE_eggChallenge_eating_admin_4(db_session, TaskProgress_eggChallenge_eating_
     progressEntry = ProgressEntry()
     progressEntry.id = uuid4()
     progressEntry.TaskProgressID = TaskProgress_eggChallenge_eating_admin.id
-    progressEntry.userID = GM_eggChallenge_admin.userID
+    progressEntry.memberID = GM_eggChallenge_admin.id
     progressEntry.value = 4
     progressEntry.message = "jajecznica 4 jaja"
     progressEntry.photoUrl = "https://example.com/jajecznica-4-jaja.png"
@@ -1015,7 +1015,7 @@ def TaskParams_bingo_money(db_session, task_bingo_money):
     taskParams = TaskParams()
     taskParams.taskID = task_bingo_money.id
     taskParams.photoRequired = False
-    taskParams.color = "green"
+    taskParams.color = "#00ff00"
     taskParams.notifications = False
 
     db_session.add(taskParams)
@@ -1040,7 +1040,7 @@ def PE_bingo_money_1(db_session, TaskProgress_bingo_money, GM_bingo_owner):
     progressEntry = ProgressEntry()
     progressEntry.id = uuid4()
     progressEntry.TaskProgressID = TaskProgress_bingo_money.id
-    progressEntry.userID = GM_bingo_owner.userID
+    progressEntry.memberID = GM_bingo_owner.id
     progressEntry.value = 800
     progressEntry.message = "wyplata"
     progressEntry.photoUrl =  None
@@ -1055,7 +1055,7 @@ def PE_bingo_money_2(db_session, TaskProgress_bingo_money, GM_bingo_owner):
     progressEntry = ProgressEntry()
     progressEntry.id = uuid4()
     progressEntry.TaskProgressID = TaskProgress_bingo_money.id
-    progressEntry.userID = GM_bingo_owner.userID
+    progressEntry.memberID = GM_bingo_owner.id
     progressEntry.value = 400
     progressEntry.message = "kieszonkowe od babci"
     progressEntry.photoUrl =  None
@@ -1070,7 +1070,7 @@ def PE_bingo_money_3(db_session, TaskProgress_bingo_money, GM_bingo_owner):
     progressEntry = ProgressEntry()
     progressEntry.id = uuid4()
     progressEntry.TaskProgressID = TaskProgress_bingo_money.id
-    progressEntry.userID = GM_bingo_owner.userID
+    progressEntry.memberID = GM_bingo_owner.id
     progressEntry.value = -500
     progressEntry.message = "rick owens"
     progressEntry.photoUrl =  None
@@ -1162,7 +1162,7 @@ def PE_bingo_running_1(db_session, TaskProgress_bingo_running, GM_bingo_owner):
     progressEntry = ProgressEntry()
     progressEntry.id = uuid4()
     progressEntry.TaskProgressID = TaskProgress_bingo_running.id
-    progressEntry.userID = GM_bingo_owner.userID
+    progressEntry.memberID = GM_bingo_owner.id
     progressEntry.value = 1
     progressEntry.message = "pierwszy bieg"
     progressEntry.photoUrl =  None
@@ -1177,7 +1177,7 @@ def PE_bingo_running_2(db_session, TaskProgress_bingo_running, GM_bingo_owner):
     progressEntry = ProgressEntry()
     progressEntry.id = uuid4()
     progressEntry.TaskProgressID = TaskProgress_bingo_running.id
-    progressEntry.userID = GM_bingo_owner.userID
+    progressEntry.memberID = GM_bingo_owner.id
     progressEntry.value = 1
     progressEntry.message = "drugi bieg"
     progressEntry.photoUrl =  None
@@ -1192,7 +1192,7 @@ def PE_bingo_running_3(db_session, TaskProgress_bingo_running, GM_bingo_owner):
     progressEntry = ProgressEntry()
     progressEntry.id = uuid4()
     progressEntry.TaskProgressID = TaskProgress_bingo_running.id
-    progressEntry.userID = GM_bingo_owner.userID
+    progressEntry.memberID = GM_bingo_owner.id
     progressEntry.value = 1
     progressEntry.message = "trzeci bieg"
     progressEntry.photoUrl =  None
@@ -1282,7 +1282,7 @@ def PE_bingo_gym_1(db_session, TaskProgress_bingo_gym, GM_bingo_owner):
     progressEntry = ProgressEntry()
     progressEntry.id = uuid4()
     progressEntry.TaskProgressID = TaskProgress_bingo_gym.id
-    progressEntry.userID = GM_bingo_owner.userID
+    progressEntry.memberID = GM_bingo_owner.id
     progressEntry.value = 1
     progressEntry.message = "pierwszy trening"
     progressEntry.photoUrl =  None
@@ -1297,7 +1297,7 @@ def PE_bingo_gym_2(db_session, TaskProgress_bingo_gym, GM_bingo_owner):
     progressEntry = ProgressEntry()
     progressEntry.id = uuid4()
     progressEntry.TaskProgressID = TaskProgress_bingo_gym.id
-    progressEntry.userID = GM_bingo_owner.userID
+    progressEntry.memberID = GM_bingo_owner.id
     progressEntry.value = 1
     progressEntry.message = "drugi trening"
     progressEntry.photoUrl =  None
@@ -1346,7 +1346,7 @@ def TaskParams_bingo_president(db_session, task_bingo_president):
     taskParams = TaskParams()
     taskParams.taskID = task_bingo_president.id
     taskParams.photoRequired = True
-    taskParams.color = "gold"
+    taskParams.color = "#ffd700"
     taskParams.notifications = True
 
     db_session.add(taskParams)

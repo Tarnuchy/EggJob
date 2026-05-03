@@ -20,7 +20,7 @@ from sqlalchemy import (
     UniqueConstraint,
     Uuid,
 )
-from sqlalchemy.orm import Mapped, Session, mapped_column, relationship, synonym
+from sqlalchemy.orm import Mapped, Session, mapped_column, relationship, synonym, validates
 
 from src.backend.database import Base
 from src.backend.security import hash_password, password_needs_rehash, verify_password
@@ -28,6 +28,9 @@ from src.backend.security import hash_password, password_needs_rehash, verify_pa
 
 def utcnow() -> datetime:
     return datetime.utcnow()
+
+
+_COLOR_HEX_RE = re.compile(r"^#[0-9a-fA-F]+$")
 
 
 class PrivacyLevel(Enum):
@@ -261,8 +264,10 @@ class User(Base):
     )
     progressEntries: Mapped[list[ProgressEntry]] = relationship(
         "ProgressEntry",
-        back_populates="user",
-        cascade="all, delete-orphan",
+        secondary="group_members",
+        primaryjoin="User.id == GroupMember.userID",
+        secondaryjoin="GroupMember.id == ProgressEntry.memberID",
+        viewonly=True,
     )
     comments: Mapped[list[Comment]] = relationship(
         "Comment",
@@ -591,7 +596,7 @@ class TaskGroup(Base):
     def createTask(self, db_session: Session, user_id: UUID, **task_data: Any) -> None:
         pass #też różne
 
-    def changeGroupType(self, db_session: Session, user_id: UUID) -> None:
+    def changeGroupType(self, db_session: Session, user_id: UUID, new_type: TaskGroupType) -> None:
         pass #💀💀💀 TODO
 
 
@@ -711,6 +716,40 @@ class CompetetiveTaskGroup(TaskGroup):
         except Exception:
             db_session.rollback()
             raise
+        
+    def changeGroupType(self, db_session: Session, user_id: UUID, new_type: TaskGroupType) -> None:
+        if not self.checkPerms(db_session, user_id, GroupRole.OWNER):
+            raise ValueError("User does not have permission to change group type")
+        if new_type == TaskGroupType.COMPETITIVE:
+            return
+        elif new_type == TaskGroupType.COOPERATIVE:
+            owner_member = db_session.query(GroupMember).filter_by(groupID=self.id, userID=self.ownerID).first()
+            if owner_member is None:
+                raise ValueError("Owner is not a member of this group")
+
+            for task in self.tasks:
+                owner_progress = db_session.query(TaskProgress).filter_by(groupMemberID=owner_member.id, taskID=task.id).first()
+                for progress in db_session.query(TaskProgress).filter_by(taskID=task.id).all():
+                    if progress.id != owner_progress.id:
+                        owner_progress._silentUpdateProgress(db_session, progress.value)
+                        for entry in db_session.query(ProgressEntry).filter_by(taskProgressID=progress.id).all():
+                            entry.taskProgressID = owner_progress.id
+                            owner_progress._silentUpdateProgress(db_session, entry.value)
+                        db_session.delete(progress)
+
+            self.type = TaskGroupType.COOPERATIVE
+            db_session.execute(
+                CompetetiveTaskGroup.__table__.delete().where(CompetetiveTaskGroup.__table__.c.id == self.id)
+            )
+            db_session.execute(
+                CooperativeTaskGroup.__table__.insert().values(id=self.id)
+            )
+        
+        try:
+            db_session.flush()
+        except Exception:
+            db_session.rollback()
+            raise
 
 class CooperativeTaskGroup(TaskGroup):
     __tablename__ = "cooperative_task_groups"
@@ -746,6 +785,49 @@ class CooperativeTaskGroup(TaskGroup):
             new_member.role = role
             db_session.add(new_member)
             
+        try:
+            db_session.flush()
+        except Exception:
+            db_session.rollback()
+            raise
+    
+    def changeGroupType(self, db_session: Session, user_id: UUID, new_type: TaskGroupType) -> None:
+        if not self.checkPerms(db_session, user_id, GroupRole.OWNER):
+            raise ValueError("User does not have permission to change group type")
+        if new_type == TaskGroupType.COOPERATIVE:
+            return
+        elif new_type == TaskGroupType.COMPETITIVE:
+            owner_member = db_session.query(GroupMember).filter_by(groupID=self.id, userID=self.ownerID).first()
+            if owner_member is None:
+                raise ValueError("Owner is not a member of this group")
+            
+            for task in self.tasks:
+                for member in self.members:
+                    if member.id == owner_member.id:
+                        continue
+                    progress = RepeatableTaskProgress() if task.type == TaskType.REPEATABLE.value else (OneTimeTaskProgress() if task.type == TaskType.ONE_TIME.value else (EndlessTaskProgress() if task.type == TaskType.ENDLESS.value else ChallengeTaskProgress())) #TODO za długie XD
+                    progress.groupMemberID = member.id
+                    progress.taskID = task.id
+                    progress.type = TaskType(task.type) if isinstance(task.type, str) else task.type
+                    db_session.add(progress)
+                db_session.flush()
+
+                owner_progress = db_session.query(TaskProgress).filter_by(groupMemberID=owner_member.id, taskID=task.id).first()
+                for entry in owner_progress.entries:
+                    if entry.memberID != owner_member.id:
+                        real_progress = db_session.query(TaskProgress).filter_by(groupMemberID=entry.memberID, taskID=task.id).first()
+                        entry.taskProgressID = real_progress.id
+                        real_progress._silentUpdateProgress(db_session, entry.value)
+                        owner_progress._silentUpdateProgress(db_session, -entry.value)
+                        
+            self.type = TaskGroupType.COMPETITIVE
+            db_session.execute(
+                CooperativeTaskGroup.__table__.delete().where(CooperativeTaskGroup.__table__.c.id == self.id)
+            )
+            db_session.execute(
+                CompetetiveTaskGroup.__table__.insert().values(id=self.id)
+            )
+        
         try:
             db_session.flush()
         except Exception:
@@ -836,6 +918,10 @@ class GroupMember(Base):
     group: Mapped[TaskGroup] = relationship("TaskGroup", back_populates="members")
     taskProgresses: Mapped[list[TaskProgress]] = relationship(
         "TaskProgress",
+        back_populates="groupMember",
+    )
+    progressEntries: Mapped[list[ProgressEntry]] = relationship(
+        "ProgressEntry",
         back_populates="groupMember",
     )
 
@@ -952,8 +1038,18 @@ class Task(Base):
         if "description" in new_data:
             new_description = new_data["description"]
         if "goal" in new_data:
-            new_goal = new_data["goal"]
-            #TODO dokończyć
+            self.goal = new_data["goal"]
+            for progress in self.progresses:
+                progress._silentUpdateProgress(db_session, 0) #update statusu
+        
+        self.name = new_name
+        self.description = new_description
+        try:
+            db_session.flush()
+        except Exception:
+            db_session.rollback()
+            raise
+        
 
     def delete(self, db_session: Session, user_id: UUID) -> None:
         db_session.delete(self)
@@ -964,7 +1060,65 @@ class Task(Base):
             raise
 
     def changeTaskType(self, db_session: Session, user_id: UUID, new_type: TaskType) -> None:
-        pass #inne w każdym TODO
+        if not self.group.checkPerms(db_session, user_id, GroupRole.ADMIN):
+            raise ValueError("User does not have permission to change task type")
+        current_type = TaskType(self.type) if isinstance(self.type, str) else self.type
+        if new_type == current_type:
+            return
+
+        task_table_map = {
+            TaskType.ENDLESS: EndlessTask.__table__,
+            TaskType.ONE_TIME: OneTimeTask.__table__,
+            TaskType.REPEATABLE: RepeatableTask.__table__,
+            TaskType.CHALLENGE: ChallengeTask.__table__,
+        }
+        progress_table_map = {
+            TaskType.ENDLESS: EndlessTaskProgress.__table__,
+            TaskType.ONE_TIME: OneTimeTaskProgress.__table__,
+            TaskType.REPEATABLE: RepeatableTaskProgress.__table__,
+            TaskType.CHALLENGE: ChallengeTaskProgress.__table__,
+        }
+
+        self.type = new_type
+
+        old_task_table = task_table_map[current_type]
+        new_task_table = task_table_map[new_type]
+        db_session.execute(old_task_table.delete().where(old_task_table.c.id == self.id))
+        if new_type == TaskType.REPEATABLE:
+            db_session.execute(new_task_table.insert().values(id=self.id, frequency=None))
+        elif new_type in (TaskType.ONE_TIME, TaskType.CHALLENGE):
+            db_session.execute(new_task_table.insert().values(id=self.id, deadline=None))
+        else:
+            db_session.execute(new_task_table.insert().values(id=self.id))
+
+        progress_ids = [row[0] for row in db_session.query(TaskProgress.id).filter_by(taskID=self.id).all()]
+        if progress_ids:
+            old_progress_table = progress_table_map[current_type]
+            new_progress_table = progress_table_map[new_type]
+            db_session.execute(old_progress_table.delete().where(old_progress_table.c.id.in_(progress_ids)))
+            db_session.query(TaskProgress).filter_by(taskID=self.id).update(
+                {"type": new_type.value},
+                synchronize_session=False,
+            )
+            if new_type == TaskType.REPEATABLE:
+                db_session.execute(
+                    new_progress_table.insert(),
+                    [{"id": progress_id, "counter": 0, "streak": 0} for progress_id in progress_ids],
+                )
+            else:
+                db_session.execute(
+                    new_progress_table.insert(),
+                    [{"id": progress_id} for progress_id in progress_ids],
+                )
+            for progress in list(self.progresses):
+                if progress in db_session:
+                    db_session.expunge(progress)
+        
+        try:
+            db_session.flush()
+        except Exception:
+            db_session.rollback()
+            raise
 
 
 class EndlessTask(Task):
@@ -1080,57 +1234,45 @@ class TaskProgress(Base):
         "polymorphic_abstract": True,
     }
 
-    def updateProgress(self, db_session: Session, delta_value: float, user_id: UUID, message: str, photoUrl: str | None = None) -> None:
-        #TODO update troche zalezny od typu, trzeba dorobic
+    def _validate_update(self, db_session: Session, delta_value: float, user_id: UUID, photoUrl: str | None) -> None:
         group = self.task.group
         if not group.checkPerms(db_session, user_id, GroupRole.MEMBER):
             raise ValueError("User does not have permission to update progress for this task")
-        elif self.userID != user_id and group.type == TaskGroupType.COMPETITIVE:
+        if self.userID != user_id and group.type == TaskGroupType.COMPETITIVE:
             raise ValueError("User does not have permission to update progress for this task")
-        elif self.task.params and self.task.params.photoRequired and not photoUrl:
+        if self.task.params and self.task.params.photoRequired and not photoUrl:
             raise ValueError("Photo is required to update progress for this task")
-        elif not isinstance(delta_value, (int, float)):
+        if not isinstance(delta_value, (int, float)):
             raise ValueError("Invalid progress value")
-        
-        old_value = self.value
-        old_status = self.status
-        counter_was_set = isinstance(self, RepeatableTaskProgress)
-        old_counter = self.counter if counter_was_set else None
 
-        self.value = self.value + float(delta_value)
-        if isinstance(self, RepeatableTaskProgress):
-            if self.status != TaskStatus.DONE:
-                self.counter += 1
-            if self.task.goal is not None and self.value >= self.task.goal:
-                self.status = TaskStatus.DONE
-            else:
-                self.status = TaskStatus.IN_PROGRESS
-        elif isinstance(self, (OneTimeTaskProgress, ChallengeTaskProgress)):
-            if self.task.goal is not None and self.value >= self.task.goal:
-                self.status = TaskStatus.DONE
-            else:
-                self.status = TaskStatus.IN_PROGRESS
-        else:
-            self.status = TaskStatus.IN_PROGRESS if self.value != 0 else TaskStatus.TODO
+    def _snapshot_state(self) -> dict[str, Any]:
+        return {
+            "value": self.value,
+            "status": self.status,
+        }
 
+    def _restore_state(self, snapshot: dict[str, Any]) -> None:
+        self.value = snapshot["value"]
+        self.status = snapshot["status"]
+
+    def _create_progress_entry(self, db_session: Session, user_id: UUID, message: str, photoUrl: str | None) -> None:
+        member = db_session.query(GroupMember).filter_by(groupID=self.task.groupID, userID=user_id, active=True).first()
+        if member is None:
+            raise ValueError("User is not a member of this group")
         entry = ProgressEntry()
         entry.taskProgress = self
-        entry.userID = user_id
+        entry.memberID = member.id
         entry.message = message
         entry.photoUrl = photoUrl
         db_session.add(entry)
-        try:
-            db_session.flush()
-        except Exception:
-            self.value = old_value
-            self.status = old_status
-            if counter_was_set:
-                self.counter = old_counter
-            db_session.rollback()
-            raise
         
-    def silentUpdateProgress(self,db_session: Session,delta_value: float,) -> None: #nowe, idk czy testy
+    def _silentUpdateProgress(self,db_session: Session,delta_value: float,) -> None: #nowe, idk czy testy
         self.value += delta_value
+        if self.task.goal is not None and self.value >= self.task.goal:
+            self.status = TaskStatus.DONE
+        elif self.value != 0:
+            self.status = TaskStatus.IN_PROGRESS
+            
         try:
             db_session.flush()
         except Exception:
@@ -1151,6 +1293,21 @@ class EndlessTaskProgress(TaskProgress):
         "polymorphic_identity": TaskType.ENDLESS.value,
     }
 
+    def updateProgress(self, db_session: Session, delta_value: float, user_id: UUID, message: str, photoUrl: str | None = None) -> None:
+        self._validate_update(db_session, delta_value, user_id, photoUrl)
+        snapshot = self._snapshot_state()
+
+        self.value = self.value + float(delta_value)
+        self.status = TaskStatus.IN_PROGRESS if self.value != 0 else TaskStatus.TODO
+
+        self._create_progress_entry(db_session, user_id, message, photoUrl)
+        try:
+            db_session.flush()
+        except Exception:
+            self._restore_state(snapshot)
+            db_session.rollback()
+            raise
+
 
 class OneTimeTaskProgress(TaskProgress):
     __tablename__ = "one_time_task_progresses"
@@ -1164,6 +1321,24 @@ class OneTimeTaskProgress(TaskProgress):
     __mapper_args__ = {
         "polymorphic_identity": TaskType.ONE_TIME.value,
     }
+
+    def updateProgress(self, db_session: Session, delta_value: float, user_id: UUID, message: str, photoUrl: str | None = None) -> None:
+        self._validate_update(db_session, delta_value, user_id, photoUrl)
+        snapshot = self._snapshot_state()
+
+        self.value = self.value + float(delta_value)
+        if self.task.goal is not None and self.value >= self.task.goal:
+            self.status = TaskStatus.DONE
+        else:
+            self.status = TaskStatus.IN_PROGRESS
+
+        self._create_progress_entry(db_session, user_id, message, photoUrl)
+        try:
+            db_session.flush()
+        except Exception:
+            self._restore_state(snapshot)
+            db_session.rollback()
+            raise
 
 
 class RepeatableTaskProgress(TaskProgress):
@@ -1181,6 +1356,55 @@ class RepeatableTaskProgress(TaskProgress):
         "polymorphic_identity": TaskType.REPEATABLE.value,
     }
 
+    def _snapshot_state(self) -> dict[str, Any]:
+        snapshot = super()._snapshot_state()
+        snapshot["counter"] = self.counter
+        snapshot["streak"] = self.streak
+        return snapshot
+
+    def _restore_state(self, snapshot: dict[str, Any]) -> None:
+        super()._restore_state(snapshot)
+        self.counter = snapshot["counter"]
+        self.streak = snapshot["streak"]
+
+    def updateProgress(self, db_session: Session, delta_value: float, user_id: UUID, message: str, photoUrl: str | None = None) -> None:
+        self._validate_update(db_session, delta_value, user_id, photoUrl)
+        snapshot = self._snapshot_state()
+
+        self.value = self.value + float(delta_value)
+        if self.task.goal is not None and self.value >= self.task.goal and self.status != TaskStatus.DONE:
+            self.status = TaskStatus.DONE
+            self.counter+=1
+            self.streak+=1
+        else:
+            self.status = TaskStatus.IN_PROGRESS
+
+        self._create_progress_entry(db_session, user_id, message, photoUrl)
+        try:
+            db_session.flush()
+        except Exception:
+            self._restore_state(snapshot)
+            db_session.rollback()
+            raise
+        
+    def _silentUpdateProgress(self,db_session: Session,delta_value: float,) -> None: #nowe, idk czy testy
+        self.value += delta_value
+        if self.task.goal is not None and self.value >= self.task.goal and self.status != TaskStatus.DONE:
+            self.status = TaskStatus.DONE
+            self.counter+=1
+            self.streak+=1
+        elif self.value < self.task.goal and self.status == TaskStatus.DONE:
+            self.status = TaskStatus.IN_PROGRESS
+            self.streak-=1
+        elif self.value != 0:
+            self.status = TaskStatus.IN_PROGRESS
+            
+        try:
+            db_session.flush()
+        except Exception:
+            db_session.rollback()
+            raise
+
 
 class ChallengeTaskProgress(TaskProgress):
     __tablename__ = "challenge_task_progresses"
@@ -1194,6 +1418,24 @@ class ChallengeTaskProgress(TaskProgress):
     __mapper_args__ = {
         "polymorphic_identity": TaskType.CHALLENGE.value,
     }
+
+    def updateProgress(self, db_session: Session, delta_value: float, user_id: UUID, message: str, photoUrl: str | None = None) -> None:
+        self._validate_update(db_session, delta_value, user_id, photoUrl)
+        snapshot = self._snapshot_state()
+
+        self.value = self.value + float(delta_value)
+        if self.task.goal is not None and self.value >= self.task.goal:
+            self.status = TaskStatus.DONE
+        else:
+            self.status = TaskStatus.IN_PROGRESS
+
+        self._create_progress_entry(db_session, user_id, message, photoUrl)
+        try:
+            db_session.flush()
+        except Exception:
+            self._restore_state(snapshot)
+            db_session.rollback()
+            raise
 
 
 class TaskParams(Base):
@@ -1212,6 +1454,19 @@ class TaskParams(Base):
     id = synonym("taskID")
 
     task: Mapped[Task] = relationship("Task", back_populates="params")
+
+    @validates("color")
+    def _validate_color(self, key: str, value: str | None) -> str | None:
+        if value is None:
+            return None
+        if not isinstance(value, str):
+            raise ValueError("Invalid color")
+        color = value.strip()
+        if color == "":
+            return ""
+        if _COLOR_HEX_RE.match(color):
+            return color
+        raise ValueError("Invalid color")
 
     def edit(self, db_session: Session, photoRequired: bool | None = None, color: str | None = None, notifications: bool | None = None) -> None:
         if not self.task.group.checkPerms(db_session, self.task.ownerID, GroupRole.ADMIN):
@@ -1241,9 +1496,9 @@ class ProgressEntry(Base):
     __tablename__ = "progress_entries"
 
     id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
-    userID: Mapped[UUID] = mapped_column(
+    memberID: Mapped[UUID] = mapped_column(
         Uuid(as_uuid=True),
-        ForeignKey("users.id", ondelete="CASCADE"),
+        ForeignKey("group_members.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
@@ -1260,7 +1515,7 @@ class ProgressEntry(Base):
 
     date = synonym("createdAt")
 
-    user: Mapped[User] = relationship("User", back_populates="progressEntries")
+    groupMember: Mapped[GroupMember] = relationship("GroupMember", back_populates="progressEntries")
     taskProgress: Mapped[TaskProgress] = relationship("TaskProgress", back_populates="entries")
     comments: Mapped[list[Comment]] = relationship(
         "Comment",
@@ -1277,7 +1532,7 @@ class ProgressEntry(Base):
         return True
 
     def delete(self, db_session: Session) -> None:
-        self.taskProgress.silentUpdateProgress(db_session, -self.value)
+        self.taskProgress._silentUpdateProgress(db_session, -self.value)
         db_session.delete(self)
         try:
             db_session.flush()
