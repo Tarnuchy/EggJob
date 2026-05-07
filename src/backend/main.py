@@ -1,116 +1,64 @@
-from datetime import datetime
-from uuid import UUID
-
-from fastapi import Depends, FastAPI, HTTPException, Query
-from pydantic import BaseModel
+from fastapi import Depends, FastAPI, HTTPException
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from src.backend.database import get_db
 from src.backend.models import Account, User
+from src.backend.request import LoginRequest, RegisterRequest
 
 app = FastAPI()
 
 
-class DemoUserCreateRequest(BaseModel):
-    email: str
-    password_hash: str
-    username: str
-    photo_url: str | None = None
-
-
-def _demo_user_payload(user: User, email: str) -> dict:
+def _auth_payload(account: Account, user: User) -> dict:
     return {
-        "id": str(user.id),
-        "account_id": str(user.accountID),
-        "email": email,
+        "account_id": str(account.id),
+        "user_id": str(user.id),
+        "email": account.email,
         "username": user.username,
         "photo_url": user.photoUrl,
     }
 
-@app.get("/")
-def read_root():
-    return {"message": "jajo"}
 
-@app.get("/test")
-def health_check():
-    return {"message": "test"}
-
-
-@app.get("/health/db")
-def health_check_db(db: Session = Depends(get_db)):
-    db.execute(text("SELECT 1"))
-    return {"message": "db_ok"}
-
-
-@app.post("/demo/users", status_code=201)
-def demo_create_user(payload: DemoUserCreateRequest, db: Session = Depends(get_db)):
-    account = Account(
-        email=payload.email,
-        passwordHash=payload.password_hash,
-        registrationDate=datetime.utcnow(),
-    )
-    db.add(account)
-    db.flush()
-
-    user = User(
-        accountID=account.id,
-        username=payload.username,
-        photoUrl=payload.photo_url,
-    )
-    db.add(user)
-
+@app.post("/auth/register", status_code=201)
+def register(payload: RegisterRequest, db: Session = Depends(get_db)):
+    account = Account()
     try:
+        account.register(
+            db_session=db,
+            email=payload.email,
+            username=payload.username,
+            password=payload.password,
+        )
+        account.createUser(db_session=db, username=payload.username, photoUrl=payload.photo_url)
         db.commit()
+    except ValueError as exc:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     except IntegrityError as exc:
         db.rollback()
         raise HTTPException(status_code=409, detail="Email or username already exists") from exc
 
-    db.refresh(account)
-    db.refresh(user)
-    return _demo_user_payload(user=user, email=account.email)
+    user = db.query(User).filter_by(accountID=account.id).first()
+    if user is None:
+        raise HTTPException(status_code=500, detail="User profile was not created")
+
+    return _auth_payload(account=account, user=user)
 
 
-@app.get("/demo/users/{user_id}")
-def demo_get_user(user_id: UUID, db: Session = Depends(get_db)):
-    row = (
-        db.query(User, Account.email)
-        .join(Account, User.accountID == Account.id)
-        .filter(User.id == user_id)
-        .first()
-    )
-    if row is None:
-        raise HTTPException(status_code=404, detail="User not found")
+@app.post("/auth/login")
+def login(payload: LoginRequest, db: Session = Depends(get_db)):
+    account = Account()
+    try:
+        account.login(db_session=db, email=payload.email, password=payload.password)
+        db.commit()
+    except ValueError as exc:
+        detail = str(exc)
+        if detail == "Account does not exist":
+            raise HTTPException(status_code=404, detail=detail) from exc
+        raise HTTPException(status_code=401, detail=detail) from exc
 
-    user, email = row
-    return _demo_user_payload(user=user, email=email)
+    user = db.query(User).filter_by(accountID=account.id).first()
+    if user is None:
+        raise HTTPException(status_code=404, detail="User profile not found")
 
-
-@app.get("/demo/users")
-def demo_list_users(
-    username: str | None = Query(default=None, description="Filter usernames containing this value"),
-    email: str | None = Query(default=None, description="Filter emails containing this value"),
-    limit: int = Query(default=20, ge=1, le=100),
-    db: Session = Depends(get_db),
-):
-    query = db.query(User, Account.email).join(Account, User.accountID == Account.id)
-
-    if username:
-        query = query.filter(User.username.ilike(f"%{username}%"))
-    if email:
-        query = query.filter(Account.email.ilike(f"%{email}%"))
-
-    rows = query.order_by(User.username.asc()).limit(limit).all()
-    items = [_demo_user_payload(user=user, email=acc_email) for user, acc_email in rows]
-
-    return {
-        "count": len(items),
-        "items": items,
-    }
-
-# @app.get()
-# def costam(data, db: Session = Depends(get_db)):
-#     data costam
-#     metoda(db)
-#     db.commit()
+    return _auth_payload(account=account, user=user)
