@@ -5,11 +5,17 @@ interface Props {
     title?: string;
     onPress: () => void;
     style?: StyleProp<ViewStyle>;
+    disabled?: boolean;
 }
 
-export const AppButton = ({ title, onPress, style }: Props) => {
+export const AppButton = ({ title, onPress, style, disabled }: Props) => {
     return (
-        <TouchableOpacity style={[styles.button, style]} onPress={onPress} activeOpacity={0.7}>
+        <TouchableOpacity
+            style={[styles.button, disabled && styles.buttonDisabled, style]}
+            onPress={onPress}
+            activeOpacity={0.7}
+            disabled={disabled}
+        >
             <Text style={styles.text}>{title}</Text>
         </TouchableOpacity>
     );
@@ -25,6 +31,9 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         paddingHorizontal: 16,
         paddingVertical: 12,
+    },
+    buttonDisabled: {
+        opacity: 0.6,
     },
     text: {
         color: colors.textOnPrimary,

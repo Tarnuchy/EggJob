@@ -1,5 +1,5 @@
-import react from 'react';
-import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
+import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
@@ -9,36 +9,94 @@ import { AppButton } from '../../components/common/AppButton';
 import { AppInput } from '../../components/common/AppInput';
 import { AppText } from '../../components/common/AppText';
 import { ErrorMessage } from '../../components/common/ErrorMessage';
+import { LoadingIndicator } from '../../components/common/LoadingIndicator';
 import { Spacer } from '../../components/common/Spacer';
 import { colors } from '../../theme/colors';
-// LoadingIndicator
+import { authService } from '../../services';
+import { useAppState } from '../../application/AppStateContext';
 
 export const LoginScreen = () => {
     const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+    const { dispatch } = useAppState();
 
-    const [email, setEmail] = react.useState('');
-    const [password, setPassword] = react.useState('');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const [errorMessage, setErrorMessage] = useState('');
 
-    const handleLogin = () => {
-        // console.log('Logging in with', email, password);
-        navigation.replace('BottomBar');
+    const handleLogin = async () => {
+        setErrorMessage('');
+
+        if (!email.trim()) {
+            setErrorMessage('Email is required.');
+            return;
+        }
+        if (!password.trim()) {
+            setErrorMessage('Password is required.');
+            return;
+        }
+
+        setIsLoading(true);
+        try {
+            const result = await authService.login({ email: email.trim(), password });
+            if (!result.ok) {
+                setErrorMessage('Invalid email or password.');
+                return;
+            }
+            dispatch({
+                type: 'auth/login',
+                accountId: result.value.accountId,
+                userId: result.value.userId,
+            });
+            navigation.replace('BottomBar');
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
         <ScreenContainer style={styles.container}>
-            <AppText style={styles.title} color={colors.textPrimary} children='EggJob🥚' variant='default'></AppText>
-            <Spacer height={50} width={50}></Spacer>
+            <AppText style={styles.title} color={colors.textPrimary}>
+                EggJob
+            </AppText>
+            <AppText style={styles.subtitle} color={colors.muted}>
+                Sign in to continue
+            </AppText>
+            <Spacer height={16} width={16} />
 
-            {/* Formularz logowania */}
-            <AppInput placeholder='Email' message={email} onChangeText={setEmail} style={styles.input} />
-            <AppInput placeholder='Password' message={password} onChangeText={setPassword} style={styles.input} secureTextEntry />
-            <Spacer height={20} width={20}></Spacer>
-            <AppButton title='Login' onPress={handleLogin} style={styles.button} />
-            <Spacer height={20} width={20}></Spacer>
+            <AppInput
+                placeholder='Email'
+                message={email}
+                onChangeText={setEmail}
+                style={styles.input}
+                keyboardType='email-address'
+                autoCapitalize='none'
+                autoCorrect={false}
+            />
+            <AppInput
+                placeholder='Password'
+                message={password}
+                onChangeText={setPassword}
+                style={styles.input}
+                secureTextEntry
+            />
+            <ErrorMessage message={errorMessage} visible={Boolean(errorMessage)} />
+            <Spacer height={20} width={20} />
+            {isLoading ? (
+                <LoadingIndicator />
+            ) : (
+                <AppButton title='Sign In' onPress={handleLogin} disabled={isLoading} style={styles.button} />
+            )}
+            <Spacer height={24} width={24} />
+
             <View style={styles.registerContainer}>
-                <AppText color={colors.textPrimary} children="Don't have an account?" variant='default' style={styles.registerText}></AppText>
+                <AppText color={colors.textPrimary} style={styles.registerText}>
+                    Don't have an account?
+                </AppText>
                 <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-                    <AppText color={colors.primary} children='Register' variant='default' style={styles.registerLinkText}></AppText>
+                    <AppText color={colors.primary} style={styles.registerLinkText}>
+                        Register
+                    </AppText>
                 </TouchableOpacity>
             </View>
         </ScreenContainer>
@@ -60,17 +118,21 @@ const styles = StyleSheet.create({
     container: {
         justifyContent: 'center',
         alignItems: 'center',
-        width: '100%',
+        paddingHorizontal: 32,
     },
     title: {
-        fontSize: 32,
+        fontSize: 36,
         fontWeight: 'bold',
+        lineHeight: 44,
+    },
+    subtitle: {
+        marginBottom: 32,
     },
     input: {
-        width: '80%',
+        width: '100%',
         marginBottom: 12,
     },
     button: {
-        width: '80%',
+        width: '100%',
     },
 });

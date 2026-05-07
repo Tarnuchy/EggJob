@@ -1,16 +1,12 @@
-import react from 'react';
-import { View, Text, StyleSheet, TextInput, StyleProp, TextStyle } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TextInputProps } from 'react-native';
 import { colors } from '../../theme/colors';
 
-interface Props {
+interface Props extends Omit<TextInputProps, 'value' | 'onChangeText'> {
     label?: string;
     touched?: boolean;
     error?: string;
     message?: string;
-    placeholder?: string;
-    style?: StyleProp<TextStyle>;
     onChangeText?: (text: string) => void;
-    secureTextEntry?: boolean;
 }
 
 export const AppInput = ({
@@ -22,10 +18,16 @@ export const AppInput = ({
     style,
     onChangeText,
     secureTextEntry,
+    autoCapitalize,
+    autoCorrect,
+    ...rest
 }: Props) => {
     const value = message ?? '';
     const useAsteriskMask = Boolean(secureTextEntry);
     const displayValue = useAsteriskMask ? '*'.repeat(value.length) : value;
+    const resolvedAutoCapitalize =
+        autoCapitalize ?? (useAsteriskMask ? 'none' : 'sentences');
+    const resolvedAutoCorrect = autoCorrect ?? (useAsteriskMask ? false : undefined);
 
     const handleChange = (inputText: string) => {
         if (!onChangeText) {
@@ -61,14 +63,15 @@ export const AppInput = ({
         <View style={styles.container}>
             {label ? <Text style={styles.label}>{label}</Text> : null}
             <TextInput
+                {...rest}
                 style={[styles.input, touched && error && styles.inputError, style]}
                 placeholder={placeholder}
                 placeholderTextColor={colors.muted}
                 value={displayValue}
                 onChangeText={handleChange}
                 secureTextEntry={false}
-                autoCapitalize={useAsteriskMask ? 'none' : 'sentences'}
-                autoCorrect={useAsteriskMask ? false : undefined}
+                autoCapitalize={resolvedAutoCapitalize}
+                autoCorrect={resolvedAutoCorrect}
                 selectionColor={colors.primary}
             />
         </View>
