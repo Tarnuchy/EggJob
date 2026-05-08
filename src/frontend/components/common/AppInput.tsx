@@ -1,16 +1,24 @@
-import react from 'react';
-import { View, Text, StyleSheet, TextInput, StyleProp, TextStyle } from 'react-native';
+import React, { useState } from 'react';
+import {
+    View,
+    Text,
+    StyleSheet,
+    TextInput,
+    TextInputProps,
+    TouchableOpacity,
+} from 'react-native';
 import { colors } from '../../theme/colors';
+import { typography } from '../../theme/typography';
+import { spacing } from '../../theme/spacing';
 
-interface Props {
+interface Props extends Omit<TextInputProps, 'value' | 'onChangeText'> {
     label?: string;
     touched?: boolean;
     error?: string;
     message?: string;
-    placeholder?: string;
-    style?: StyleProp<TextStyle>;
     onChangeText?: (text: string) => void;
-    secureTextEntry?: boolean;
+    passwordVisible?: boolean;
+    onTogglePasswordVisibility?: () => void;
 }
 
 export const AppInput = ({
@@ -22,55 +30,92 @@ export const AppInput = ({
     style,
     onChangeText,
     secureTextEntry,
+    autoCapitalize,
+    autoCorrect,
+    onFocus,
+    onBlur,
+    passwordVisible,
+    onTogglePasswordVisibility,
+    ...rest
 }: Props) => {
-    const value = message ?? '';
-    const useAsteriskMask = Boolean(secureTextEntry);
-    const displayValue = useAsteriskMask ? '*'.repeat(value.length) : value;
+    const [isFocused, setIsFocused] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
 
-    const handleChange = (inputText: string) => {
-        if (!onChangeText) {
+    const isPassword = Boolean(secureTextEntry);
+    const resolvedAutoCapitalize =
+        autoCapitalize ?? (isPassword ? 'none' : 'sentences');
+    const resolvedAutoCorrect = autoCorrect ?? (isPassword ? false : undefined);
+
+    const hasError = touched && Boolean(error);
+    const resolvedPasswordVisible = passwordVisible ?? showPassword;
+
+    const handleTogglePasswordVisibility = () => {
+        if (onTogglePasswordVisibility) {
+            onTogglePasswordVisibility();
             return;
         }
+        setShowPassword(v => !v);
+    };
 
-        if (!useAsteriskMask) {
-            onChangeText(inputText);
-            return;
-        }
+    const handleFocus = (e: Parameters<NonNullable<TextInputProps['onFocus']>>[0]) => {
+        setIsFocused(true);
+        onFocus?.(e);
+    };
 
-        const previousLength = value.length;
-        const nextLength = inputText.length;
-
-        if (nextLength < previousLength) {
-            onChangeText(value.slice(0, nextLength));
-            return;
-        }
-
-        if (nextLength === previousLength) {
-            return;
-        }
-
-        const appendedPart = inputText.slice(previousLength);
-        const appendedChars = appendedPart.replace(/\*/g, '');
-
-        if (appendedChars.length > 0) {
-            onChangeText(value + appendedChars);
-        }
+    const handleBlur = (e: Parameters<NonNullable<TextInputProps['onBlur']>>[0]) => {
+        setIsFocused(false);
+        onBlur?.(e);
     };
 
     return (
-        <View style={styles.container}>
-            {label ? <Text style={styles.label}>{label}</Text> : null}
-            <TextInput
-                style={[styles.input, touched && error && styles.inputError, style]}
-                placeholder={placeholder}
-                placeholderTextColor={colors.muted}
-                value={displayValue}
-                onChangeText={handleChange}
-                secureTextEntry={false}
-                autoCapitalize={useAsteriskMask ? 'none' : 'sentences'}
-                autoCorrect={useAsteriskMask ? false : undefined}
-                selectionColor={colors.primary}
-            />
+        <View style={[styles.container, style]}>
+            {label ? (
+                <Text style={styles.label}>{label}</Text>
+            ) : null}
+            <View style={styles.fieldFrame}>
+                <View
+                    pointerEvents="none"
+                    style={[styles.focusTint, isFocused && styles.focusTintVisible]}
+                />
+                <View
+                    pointerEvents="none"
+                    style={[
+                        styles.stateRing,
+                        isFocused && styles.stateRingFocused,
+                        hasError && styles.stateRingError,
+                    ]}
+                />
+                <View style={styles.inputRow}>
+                    <TextInput
+                        {...rest}
+                        style={styles.input}
+                        placeholder={placeholder}
+                        placeholderTextColor={colors.muted}
+                        value={message ?? ''}
+                        onChangeText={onChangeText}
+                        onFocus={handleFocus}
+                        onBlur={handleBlur}
+                        secureTextEntry={isPassword && !resolvedPasswordVisible}
+                        autoCapitalize={resolvedAutoCapitalize}
+                        autoCorrect={resolvedAutoCorrect}
+                        selectionColor={colors.primary}
+                    />
+                    {isPassword ? (
+                        <TouchableOpacity
+                            style={styles.eyeButton}
+                            onPress={handleTogglePasswordVisibility}
+                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        >
+                            <Text style={styles.eyeIcon}>
+                                {resolvedPasswordVisible ? '🙈' : '🐵'}
+                            </Text>
+                        </TouchableOpacity>
+                    ) : null}
+                </View>
+            </View>
+            <Text style={styles.errorText} numberOfLines={1}>
+                {hasError ? `⚠️ ${error}` : ' '}
+            </Text>
         </View>
     );
 };
@@ -78,23 +123,63 @@ export const AppInput = ({
 const styles = StyleSheet.create({
     container: {
         width: '100%',
-        marginBottom: 10,
+        marginBottom: spacing.md,
     },
     label: {
         marginBottom: 6,
         color: colors.textSecondary,
-        fontWeight: '600',
+        ...typography.label,
+        fontSize: 14,
     },
-    input: {
-        minHeight: 48,
-        borderWidth: 1,
-        borderColor: colors.border,
+    fieldFrame: {
         borderRadius: 12,
         backgroundColor: colors.surfaceAlt,
-        color: colors.textPrimary,
+    },
+    focusTint: {
+        ...StyleSheet.absoluteFillObject,
+        borderRadius: 12,
+        backgroundColor: colors.background,
+        opacity: 0,
+    },
+    focusTintVisible: {
+        opacity: 1,
+    },
+    stateRing: {
+        ...StyleSheet.absoluteFillObject,
+        borderRadius: 12,
+        borderWidth: 2,
+        borderColor: 'rgba(67, 38, 23, 0.3)',
+    },
+    stateRingFocused: {
+        borderColor: colors.primary,
+        borderWidth: 3
+    },
+    stateRingError: {
+        borderColor: colors.danger,
+    },
+    inputRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        minHeight: 48,
         paddingHorizontal: 12,
     },
-    inputError: {
-        borderColor: colors.danger,
+    input: {
+        flex: 1,
+        color: colors.textPrimary,
+        paddingVertical: 12
+        ,
+        ...typography.body,
+    },
+    eyeButton: {
+        paddingLeft: 8,
+    },
+    eyeIcon: {
+        fontSize: 18,
+    },
+    errorText: {
+        marginTop: 4,
+        minHeight: 18,
+        color: colors.danger,
+        ...typography.caption,
     },
 });

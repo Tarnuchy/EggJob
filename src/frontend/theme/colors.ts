@@ -18,4 +18,7 @@ export const colors = {
   textOnPrimary: "#F4ECE3",
   danger: "#6B2B22",
   muted: "rgba(30, 19, 14, 0.65)",
+  coolAccent: "#3A5A60",
+  warmGlow: "rgba(107, 63, 34, 0.35)",
+  warmHighlight: "#F4ECE3",
 } as const;

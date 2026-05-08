@@ -2,8 +2,7 @@ import React from 'react';
 import { DefaultTheme, NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
-import { LoginScreen } from '../screens/auth/LoginScreen';
-import { RegisterScreen } from '../screens/auth/RegisterScreen';
+import { AuthScreen } from '../screens/auth/AuthScreen';
 import { SettingsScreen } from '../screens/profile/SettingsScreen';
 import { NotificationScreen } from '../screens/social/NotificationScreen';
 import { MainTabs } from './MainTabs';
@@ -28,8 +27,7 @@ export function AppNavigator() {
   return (
     <NavigationContainer theme={navigationTheme}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="Login" component={LoginScreen} />
-        <Stack.Screen name="Register" component={RegisterScreen} />
+        <Stack.Screen name="Auth" component={AuthScreen} />
         <Stack.Screen name="BottomBar" component={MainTabs} />
         <Stack.Screen
           name="Settings"

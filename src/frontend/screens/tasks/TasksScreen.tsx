@@ -1,4 +1,4 @@
-import react from 'react';
+import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { ScreenContainer } from '../../components/common/ScreenContainer';
 import { TopBar } from '../../components/common/TopBar';
