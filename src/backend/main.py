@@ -1,116 +1,123 @@
-from datetime import datetime
-from uuid import UUID
-
-from fastapi import Depends, FastAPI, HTTPException, Query
-from pydantic import BaseModel
+from fastapi import Depends, FastAPI, Request
+from fastapi.responses import JSONResponse
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from src.backend.database import get_db
-from src.backend.models import Account, User
+from src.backend.exceptions import *
+from src.backend.models import *
+from src.backend.request import *
 
 app = FastAPI()
 
 
-class DemoUserCreateRequest(BaseModel):
-    email: str
-    password_hash: str
-    username: str
-    photo_url: str | None = None
+@app.exception_handler(ValidationError)
+def handle_validation_error(_: Request, exc: ValidationError) -> JSONResponse:
+    return JSONResponse(status_code=400, content={"detail": str(exc)})
 
 
-def _demo_user_payload(user: User, email: str) -> dict:
+@app.exception_handler(ConflictError)
+def handle_conflict_error(_: Request, exc: ConflictError) -> JSONResponse:
+    return JSONResponse(status_code=409, content={"detail": str(exc)})
+
+
+@app.exception_handler(AuthenticationError)
+def handle_authentication_error(_: Request, exc: AuthenticationError) -> JSONResponse:
+    return JSONResponse(status_code=401, content={"detail": str(exc)})
+
+
+@app.exception_handler(PermissionDeniedError)
+def handle_permission_denied_error(_: Request, exc: PermissionDeniedError) -> JSONResponse:
+    return JSONResponse(status_code=403, content={"detail": str(exc)})
+
+
+@app.exception_handler(NotFoundError)
+def handle_not_found_error(_: Request, exc: NotFoundError) -> JSONResponse:
+    return JSONResponse(status_code=404, content={"detail": str(exc)})
+
+
+@app.exception_handler(StateError)
+def handle_state_error(_: Request, exc: StateError) -> JSONResponse:
+    return JSONResponse(status_code=500, content={"detail": str(exc)})
+
+
+@app.exception_handler(IntegrityError)
+def handle_integrity_error(_: Request, __: IntegrityError) -> JSONResponse:
+    return JSONResponse(status_code=409, content={"detail": "Integrity error"})
+
+
+def _auth_payload(account: Account, user: User) -> dict:
     return {
-        "id": str(user.id),
-        "account_id": str(user.accountID),
-        "email": email,
+        "account_id": str(account.id),
+        "user_id": str(user.id),
+        "email": account.email,
         "username": user.username,
         "photo_url": user.photoUrl,
     }
 
-@app.get("/")
-def read_root():
-    return {"message": "jajo"}
 
-@app.get("/test")
-def health_check():
-    return {"message": "test"}
+@app.post("/auth/register", status_code=201)
+def register(payload: RegisterRequest, db: Session = Depends(get_db)):
+    account = Account()
+    try:
+        account.register(
+            db_session=db,
+            email=payload.email,
+            username=payload.username,
+            password=payload.password,
+        )
+        account.createUser(db_session=db, username=payload.username, photoUrl=payload.photo_url)
+        db.commit()
+        user = db.query(User).filter_by(accountID=account.id).first()
+        if user is None:
+            raise StateError("User profile was not created")
+    except AppError:
+        db.rollback()
+        raise
+    except Exception:
+        db.rollback()
+        raise
+
+    return _auth_payload(account=account, user=user)
 
 
-@app.get("/health/db")
-def health_check_db(db: Session = Depends(get_db)):
-    db.execute(text("SELECT 1"))
-    return {"message": "db_ok"}
+@app.post("/auth/login")
+def login(payload: LoginRequest, db: Session = Depends(get_db)):
+    account = Account()
+    try:
+        account.login(db_session=db, email=payload.email, password=payload.password)
+        db.commit()
+        user = db.query(User).filter_by(accountID=account.id).first()
+        if user is None:
+            raise NotFoundError("User profile not found")
+    except AppError:
+        db.rollback()
+        raise
+    except Exception:
+        db.rollback()
+        raise
+
+    return _auth_payload(account=account, user=user)
 
 
-@app.post("/demo/users", status_code=201)
-def demo_create_user(payload: DemoUserCreateRequest, db: Session = Depends(get_db)):
-    account = Account(
-        email=payload.email,
-        passwordHash=payload.password_hash,
-        registrationDate=datetime.utcnow(),
-    )
-    db.add(account)
-    db.flush()
-
-    user = User(
-        accountID=account.id,
-        username=payload.username,
-        photoUrl=payload.photo_url,
-    )
-    db.add(user)
+@app.post("/auth/password")
+def change_password(payload: ChangePasswordRequest, db: Session = Depends(get_db)):
+    account = db.query(Account).filter_by(email=payload.email).first()
+    if account is None:
+        raise NotFoundError("Account does not exist")
 
     try:
+        account.changePassword(
+            db_session=db,
+            old_password=payload.old_password,
+            new_password=payload.new_password,
+        )
         db.commit()
-    except IntegrityError as exc:
+    except AppError:
         db.rollback()
-        raise HTTPException(status_code=409, detail="Email or username already exists") from exc
+        raise
+    except Exception:
+        db.rollback()
+        raise
 
-    db.refresh(account)
-    db.refresh(user)
-    return _demo_user_payload(user=user, email=account.email)
-
-
-@app.get("/demo/users/{user_id}")
-def demo_get_user(user_id: UUID, db: Session = Depends(get_db)):
-    row = (
-        db.query(User, Account.email)
-        .join(Account, User.accountID == Account.id)
-        .filter(User.id == user_id)
-        .first()
-    )
-    if row is None:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    user, email = row
-    return _demo_user_payload(user=user, email=email)
-
-
-@app.get("/demo/users")
-def demo_list_users(
-    username: str | None = Query(default=None, description="Filter usernames containing this value"),
-    email: str | None = Query(default=None, description="Filter emails containing this value"),
-    limit: int = Query(default=20, ge=1, le=100),
-    db: Session = Depends(get_db),
-):
-    query = db.query(User, Account.email).join(Account, User.accountID == Account.id)
-
-    if username:
-        query = query.filter(User.username.ilike(f"%{username}%"))
-    if email:
-        query = query.filter(Account.email.ilike(f"%{email}%"))
-
-    rows = query.order_by(User.username.asc()).limit(limit).all()
-    items = [_demo_user_payload(user=user, email=acc_email) for user, acc_email in rows]
-
-    return {
-        "count": len(items),
-        "items": items,
-    }
-
-# @app.get()
-# def costam(data, db: Session = Depends(get_db)):
-#     data costam
-#     metoda(db)
-#     db.commit()
+    return {"message": "password updated"}

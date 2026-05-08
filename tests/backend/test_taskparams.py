@@ -2,6 +2,7 @@ import pytest
 from datetime import datetime
 from uuid import uuid4
 
+from src.backend.exceptions import ValidationError
 from src.backend.models import *
 
 def test_TaskParams_edit(db_session, TaskParams_shoppingList_eggs):
@@ -28,7 +29,7 @@ def test_TaskParams_edit(db_session, TaskParams_shoppingList_eggs):
     # próbujemy zmienić na niepoprawne wartości, powinno wywalić błąd
     
     newParams["color"] = "notAColor"
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         TaskParams_shoppingList_eggs.edit(db_session, **newParams)
         
     assert db_session.query(TaskParams).filter_by(id=TaskParams_shoppingList_eggs.id).first().color == "#FF0000"

@@ -2,6 +2,7 @@ import pytest
 from datetime import datetime
 from uuid import uuid4
 
+from src.backend.exceptions import AuthenticationError, ConflictError, NotFoundError, ValidationError
 from src.backend.models import *
 from src.backend.security import *
 
@@ -31,7 +32,7 @@ def test_Account_register(ecosystem):
 
 
     # -------------------------------------------------------------------
-    # PRZYPADEK 2: BŁĄD (ValueError) - E-mail jest już zajęty
+    # PRZYPADEK 2: BŁĄD (ConflictError) - E-mail jest już zajęty
     # -------------------------------------------------------------------
     existing_acc_a = ecosystem["accounts"]["a"]
     
@@ -39,7 +40,7 @@ def test_Account_register(ecosystem):
     duplicate_email_form["email"] = existing_acc_a.email
 
     accounts_before_err = len(db_session.query(Account).all())
-    with pytest.raises(ValueError):
+    with pytest.raises(ConflictError):
         Account().register(db_session=db_session, **duplicate_email_form)
         
     db_session.flush()
@@ -47,7 +48,7 @@ def test_Account_register(ecosystem):
 
 
     # -------------------------------------------------------------------
-    # PRZYPADEK 3: BŁĄD (ValueError) - Username jest już zajęty
+    # PRZYPADEK 3: BŁĄD (ConflictError) - Username jest już zajęty
     # -------------------------------------------------------------------
     # Sprawdzamy czy rejestracja sprawdza duplikaty username'a z bazy Userów,
     # mimo że powiązane konto "User" nie jest w trakcie tej metody jeszcze ostatecznie skonstruowane
@@ -58,7 +59,7 @@ def test_Account_register(ecosystem):
     duplicate_username_form["username"] = existing_user_a.username
 
     accounts_before_err = len(db_session.query(Account).all())
-    with pytest.raises(ValueError):
+    with pytest.raises(ConflictError):
         Account().register(db_session=db_session, **duplicate_username_form)
         
     db_session.flush()
@@ -66,13 +67,13 @@ def test_Account_register(ecosystem):
 
 
     # -------------------------------------------------------------------
-    # PRZYPADEK 4: BŁĄD (ValueError) - Niewłaściwy format e-maila
+    # PRZYPADEK 4: BŁĄD (ValidationError) - Niewłaściwy format e-maila
     # -------------------------------------------------------------------
     invalid_email_form = valid_form.copy()
     invalid_email_form["email"] = "nie_mail_tylko_string"
 
     accounts_before_err = len(db_session.query(Account).all())
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         Account().register(db_session=db_session, **invalid_email_form)
         
     db_session.flush()
@@ -81,13 +82,13 @@ def test_Account_register(ecosystem):
 
 
     # -------------------------------------------------------------------
-    # PRZYPADEK 5: BŁĄD (ValueError) - Za słabe hasło
+    # PRZYPADEK 5: BŁĄD (ValidationError) - Za słabe hasło
     # -------------------------------------------------------------------
     weak_password_form = valid_form.copy()
     weak_password_form["password"] = "123"
 
     accounts_before_err = len(db_session.query(Account).all())
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         Account().register(db_session=db_session, **weak_password_form)
         
     db_session.flush()
@@ -111,16 +112,16 @@ def test_Account_login(ecosystem):
     assert result is True 
 
     # -------------------------------------------------------------------
-    # PRZYPADEK 2: BŁĄD (ValueError) - błędne hasło dla istniejącego konta
+    # PRZYPADEK 2: BŁĄD (AuthenticationError) - błędne hasło dla istniejącego konta
     # -------------------------------------------------------------------
     invalid_password_form = valid_login_form.copy()
     invalid_password_form["password"] = "ZleHaslo123!"
 
-    with pytest.raises(ValueError):
+    with pytest.raises(AuthenticationError):
         existing_acc_a.login(db_session=db_session, **invalid_password_form)
 
     # -------------------------------------------------------------------
-    # PRZYPADEK 3: BŁĄD (ValueError) - email nie istnieje (brak konta)
+    # PRZYPADEK 3: BŁĄD (NotFoundError) - email nie istnieje (brak konta)
     # -------------------------------------------------------------------
     non_existent_email_form = {
         "email": "nieistniejacy_mail@eggjob.com",
@@ -131,7 +132,7 @@ def test_Account_login(ecosystem):
     non_existent_acc = Account()
     non_existent_acc.email = "nieistniejacy_mail@eggjob.com"
 
-    with pytest.raises(ValueError):
+    with pytest.raises(NotFoundError):
         non_existent_acc.login(db_session=db_session, **non_existent_email_form)
 
 #TODO: cale do remontu generalnego
@@ -272,11 +273,13 @@ def test_Account_createUser(ecosystem):
         "photoUrl": "https://example.com/avatar.jpg"
     }
 
-    result = new_account.createUser(db_session=db_session, **valid_form)
+    new_account.createUser(db_session=db_session, **valid_form)
     db_session.flush()
 
-    assert result is True
+    #assert result is True
     assert len(db_session.query(User).all()) == users_before + 1
+    assert new_account.user is not None
+    assert new_account.user.username == valid_form["username"]
     
     saved_user = db_session.query(User).filter_by(username=valid_form["username"]).first()
     assert saved_user is not None
@@ -284,7 +287,7 @@ def test_Account_createUser(ecosystem):
         assert saved_user.accountID == new_account.id
 
     # -------------------------------------------------------------------
-    # PRZYPADEK 2: BŁĄD (ValueError) - Username jest już zajęty
+    # PRZYPADEK 2: BŁĄD (ConflictError) - Username jest już zajęty
     # -------------------------------------------------------------------
     existing_user_a = ecosystem["users"]["a"]
     
@@ -299,7 +302,7 @@ def test_Account_createUser(ecosystem):
     duplicate_username_form["username"] = existing_user_a.username
 
     users_before_err = len(db_session.query(User).all())
-    with pytest.raises(ValueError):
+    with pytest.raises(ConflictError):
         another_account.createUser(db_session=db_session, **duplicate_username_form)
         
     db_session.flush()
@@ -308,7 +311,7 @@ def test_Account_createUser(ecosystem):
 
 """
     # -------------------------------------------------------------------
-    # PRZYPADEK 3: BŁĄD (ValueError) - Konto już posiada przypisanego Usera (User i Account to 1 do 1)
+    # PRZYPADEK 3: BŁĄD (ConflictError) - Konto już posiada przypisanego Usera (User i Account to 1 do 1)
     # -------------------------------------------------------------------
     existing_acc_a = ecosystem["accounts"]["a"] 
     
@@ -318,7 +321,7 @@ def test_Account_createUser(ecosystem):
     }
 
     users_before_err = len(db_session.query(User).all())
-    with pytest.raises(ValueError):
+    with pytest.raises(ConflictError):
         existing_acc_a.createUser(db_session=db_session, **valid_form_2)
         
     db_session.flush()
@@ -352,14 +355,14 @@ def test_Account_changePassword(ecosystem):
     changed_password_hash = account_a.passwordHash
 
     # -------------------------------------------------------------------
-    # PRZYPADEK 2: BŁĄD (ValueError) - błędne stare hasło
+    # PRZYPADEK 2: BŁĄD (AuthenticationError) - błędne stare hasło
     # -------------------------------------------------------------------
     invalid_old_password_form = {
         "old_password": "ZleStareHaslo123!",
         "new_password": "AnotherStrongPassword123!"
     }
 
-    with pytest.raises(ValueError):
+    with pytest.raises(AuthenticationError):
         account_a.changePassword(db_session=db_session, **invalid_old_password_form)
         
     db_session.flush()
@@ -369,14 +372,14 @@ def test_Account_changePassword(ecosystem):
     assert saved_account_case2.passwordHash == changed_password_hash
 
     # -------------------------------------------------------------------
-    # PRZYPADEK 3: BŁĄD (ValueError) - za słabe nowe hasło
+    # PRZYPADEK 3: BŁĄD (ValidationError) - za słabe nowe hasło
     # -------------------------------------------------------------------
     weak_new_password_form = {
         "old_password": valid_form["new_password"], # Używamy zmienionego hasła z Przypadku 1
         "new_password": "123"
     }
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         account_a.changePassword(db_session=db_session, **weak_new_password_form)
         
     db_session.flush()

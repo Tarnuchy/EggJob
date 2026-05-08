@@ -12,6 +12,7 @@ def test_GroupMember_removeMember_take_progress(
     eggChallenge_bundle
 ):
     #30 minut z codexem siedziałem, chyba git ten test # kuźwa jaki syf, ale nie mogę się już wycofać 💀
+    #TODO fix, coś się wywala
     member_before = db_session.query(GroupMember).filter_by(
         userID=GM_shoppingList_ghost.userID,
         groupID=GM_shoppingList_ghost.groupID,
@@ -40,7 +41,7 @@ def test_GroupMember_removeMember_take_progress(
     owner_progress_before_value = owner_progress_before.value
     ghost_entry_value = PE_shoppingList_eggs.value
 
-    GM_shoppingList_ghost.removeMember(session=db_session, take_progress=True, punisher=owner.id)
+    GM_shoppingList_ghost.removeMember(db_session=db_session, take_progress=True, punisher=owner.id)
     db_session.flush()
 
     member_after = db_session.query(GroupMember).filter_by(
@@ -75,16 +76,22 @@ def test_GroupMember_removeMember_take_progress(
     admin_entries_before = eggChallenge_bundle["tasks"]["eating"]["entries"]["admin"]
     owner_progress_before = eggChallenge_bundle["tasks"]["eating"]["progress"]["owner"]
     
-    admin.removeMember(session=db_session, take_progress=True, punisher=admin.userID)
+    admin.removeMember(db_session=db_session, take_progress=True, punisher=admin.userID)
     db_session.flush()#???
     assert db_session.query(GroupMember).filter_by(userID=admin.userID, groupID=eggChallenge_bundle["TG"].id).first() is None
-    assert db_session.query(OneTimeTaskProgress).filter_by(userId=admin.userID, taskID=admin_progress_before.taskID).first() is not None
+    assert db_session.query(OneTimeTaskProgress).join(GroupMember).filter(
+        GroupMember.userID == admin.userID,
+        OneTimeTaskProgress.taskID == admin_progress_before.taskID,
+    ).first() is not None
     for entry in admin_entries_before:
         assert db_session.query(ProgressEntry).filter_by(id=entry.id).first() is None
-    assert db_session.query(OneTimeTaskProgress).filter_by(userId=eggChallenge_bundle["GM"]["owner"].userID, taskID=admin_progress_before.taskID).first().value == owner_progress_before.value
+    assert db_session.query(OneTimeTaskProgress).join(GroupMember).filter(
+        GroupMember.userID == eggChallenge_bundle["GM"]["owner"].userID,
+        OneTimeTaskProgress.taskID == admin_progress_before.taskID,
+    ).first().value == owner_progress_before.value
     
     with pytest.raises(Exception):
-        owner.removeMember(session=db_session, take_progress=True, punisher=owner.id)
+        owner.removeMember(db_session=db_session, take_progress=True, punisher=owner.id)
     
 
 def test_GroupMember_removeMember_keep_progress(
@@ -110,7 +117,7 @@ def test_GroupMember_removeMember_keep_progress(
     assert progress_before is not None
     assert entry_before is not None
 
-    GM_shoppingList_member.removeMember(session=db_session, take_progress=False, punisher = GM_shoppingList_member.userID)
+    GM_shoppingList_member.removeMember(db_session=db_session, take_progress=False, punisher = GM_shoppingList_member.userID)
     db_session.flush()
 
     member_after = db_session.query(GroupMember).filter_by(
@@ -134,6 +141,7 @@ def test_GroupMember_changePermissions(db_session, GM_shoppingList_member, GM_sh
     # zmieniamy uprawnienia członka, sprawdzamy czy się zmieniły
     GM_shoppingList_member.changePermissions(db_session, GroupRole.ADMIN, GM_shoppingList_owner.userID)
     assert db_session.query(GroupMember).filter_by(userID=GM_shoppingList_member.userID, groupID=GM_shoppingList_member.groupID).first().role == GroupRole.ADMIN
+    GM_shoppingList_member.changePermissions(db_session, GroupRole.MEMBER, GM_shoppingList_owner.userID)
     # próbujemy zmienić uprawnienia nie mając do tego praw, powinno wywalić błąd
     with pytest.raises(Exception):
         GM_shoppingList_member.changePermissions(db_session, GroupRole.ADMIN, GM_shoppingList_member.userID)
