@@ -1,4 +1,4 @@
-export { mockAuthService as authService } from "./mock/MockAuthService";
+export { httpAuthService as authService } from "./http/HttpAuthService";
 export { mockProfileService as profileService } from "./mock/MockProfileService";
 export { mockSocialService as socialService } from "./mock/MockSocialService";
 export { mockTaskGroupService as taskGroupService } from "./mock/MockTaskGroupService";

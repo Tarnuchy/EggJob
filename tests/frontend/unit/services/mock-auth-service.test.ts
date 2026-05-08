@@ -1,4 +1,4 @@
-import { authService } from "../../../../src/frontend/services";
+import { mockAuthService as authService } from "../../../../src/frontend/services/mock/MockAuthService";
 
 describe("Mock auth service contract", () => {
 	it("rejects login with invalid password", async () => {
