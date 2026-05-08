@@ -93,10 +93,17 @@ export const AuthScreen = () => {
 
     const handleTabChange = (tab: Tab) => {
         if (tab === activeTab) return;
+
+        setLoginShakeCount(0);
+        setRegisterShakeCount(0);
+
         formOpacity.stopAnimation();
         formOpacity.setValue(0.9);
+
         LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+
         setActiveTab(tab);
+
         Animated.timing(formOpacity, {
             toValue: 1,
             duration: 180,
@@ -224,7 +231,6 @@ export const AuthScreen = () => {
 
     return (
         <View style={styles.root}>
-            {/* AuthBackground fills full screen including behind OS nav bar */}
             <AuthBackground />
             <SafeAreaView style={styles.safeArea}>
                 <KeyboardAvoidingView
@@ -277,10 +283,12 @@ export const AuthScreen = () => {
                                                 />
                                                 {loginError ? <Text style={styles.errorText}>⚠️ {loginError}</Text> : null}
                                                 <Spacer height={spacing.sm} />
-                                                {isLoading
-                                                    ? <LoadingIndicator />
-                                                    : <AppButton title="Log In" onPress={handleLogin} shakeCount={loginShakeCount} />
-                                                }
+                                                <AppButton 
+                                                    title="Log In" 
+                                                    onPress={handleLogin} 
+                                                    shakeCount={loginShakeCount} 
+                                                    isLoading={isLoading} 
+                                                />
                                             </>
                                         ) : (
                                             <>
@@ -349,10 +357,12 @@ export const AuthScreen = () => {
                                                 />
                                                 {registerError ? <Text style={styles.errorText}>⚠️ {registerError}</Text> : null}
                                                 <Spacer height={spacing.sm} />
-                                                {isLoading
-                                                    ? <LoadingIndicator />
-                                                    : <AppButton title="Create Account" onPress={handleRegister} shakeCount={registerShakeCount} />
-                                                }
+                                                <AppButton 
+                                                    title="Create Account" 
+                                                    onPress={handleRegister} 
+                                                    shakeCount={registerShakeCount} 
+                                                    isLoading={isLoading} 
+                                                />
                                             </>
                                         )}
                                     </Animated.View>

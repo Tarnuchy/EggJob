@@ -18,7 +18,7 @@ const styles = StyleSheet.create({
     container: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginVertical: spacing.xl, // 40px top/bottom — golden ratio margin
+        marginVertical: spacing.xl,
     },
     line: {
         flex: 1,
