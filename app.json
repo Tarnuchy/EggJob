@@ -13,8 +13,13 @@
         "backgroundColor": "#ffffff"
       }
     },
+    "androidNavigationBar": {
+      "backgroundColor": "#A99A8A",
+      "barStyle": "dark-content"
+    },
     "plugins": [
-      "expo-asset"
+      "expo-asset",
+      "expo-font"
     ]
   }
 }
