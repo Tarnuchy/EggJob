@@ -2,6 +2,7 @@ import pytest
 from datetime import datetime
 from uuid import uuid4
 
+from src.backend.exceptions import ValidationError
 from src.backend.models import *
 
 def test_TaskProgress_updateProgress(db_session, bingo_bundle):
@@ -42,10 +43,10 @@ def test_TaskProgress_updateProgress(db_session, bingo_bundle):
     assert db_session.query(TaskProgress).filter_by(id=progress.id).first().status == TaskStatus.IN_PROGRESS #moze todo?
     
     # robimy niepoprawny update, błąd
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         progress.updateProgress(db_session, 1, progress.userID, "nie dodaje zdjęcia ez?")
     
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         progress.updateProgress(db_session, "jeden", progress.userID, "ez", photoUrl="http://photos.com/asdf.jpg")
     
     #TODO dodać case gdzie update bez permisji (competetive i nie swój progress, update nie jako członek)

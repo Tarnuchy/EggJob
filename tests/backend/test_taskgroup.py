@@ -2,6 +2,7 @@ import pytest
 from datetime import datetime
 from uuid import uuid4
 
+from src.backend.exceptions import ConflictError, PermissionDeniedError, ValidationError
 from src.backend.models import *
 
 def test_TaskGroup_edit(ecosystem):
@@ -23,8 +24,8 @@ def test_TaskGroup_edit(ecosystem):
         "new_privacy": PrivacyLevel.PUBLIC
     }
 
-    # 1. PRZYPADEK: GHOST próbuje coś zmienić bez uprawnień -> Oczekujemy PermissionError
-    with pytest.raises(PermissionError):
+    # 1. PRZYPADEK: GHOST próbuje coś zmienić bez uprawnień -> Oczekujemy PermissionDeniedError
+    with pytest.raises(PermissionDeniedError):
         tg.edit(user_id=ghost.userID, db_session=db_session, **new_data)
         
     db_session.flush()
@@ -34,8 +35,8 @@ def test_TaskGroup_edit(ecosystem):
     assert saved_tg.name == initial_name
     assert saved_tg.privacy == initial_privacy
         
-    # 2. PRZYPADEK: MEMBER próbuje edytować dane -> Oczekujemy PermissionError
-    with pytest.raises(PermissionError):
+    # 2. PRZYPADEK: MEMBER próbuje edytować dane -> Oczekujemy PermissionDeniedError
+    with pytest.raises(PermissionDeniedError):
         tg.edit(user_id=member.userID, db_session=db_session, **new_data)
         
     db_session.flush()
@@ -53,9 +54,9 @@ def test_TaskGroup_edit(ecosystem):
     assert saved_tg.name == new_data["new_name"]
     assert saved_tg.privacy == new_data["new_privacy"]
 
-    # 4. PRZYPADEK: OWNER podaje błędną nazwę w słowniku -> Oczekujemy ValueError
+    # 4. PRZYPADEK: OWNER podaje błędną nazwę w słowniku -> Oczekujemy ValidationError
     new_data["new_name"] = ""
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         tg.edit(user_id=owner.userID, db_session=db_session, **new_data)
 
     db_session.flush()
@@ -87,8 +88,8 @@ def test_TaskGroup_delete(ecosystem):
     entries_before = [e for e in db_session.query(ProgressEntry).all() if e.TaskProgressID in progress_ids]
     entry_ids = [e.id for e in entries_before]
 
-    # 1. PRZYPADEK: MEMBER (nie owner) próbuje usunąć grupę -> Oczekujemy PermissionError
-    with pytest.raises(PermissionError):
+    # 1. PRZYPADEK: MEMBER (nie owner) próbuje usunąć grupę -> Oczekujemy PermissionDeniedError
+    with pytest.raises(PermissionDeniedError):
         tg.delete(user_id=member.userID, db_session=db_session)
         
     db_session.flush()
@@ -153,23 +154,23 @@ def test_TaskGroup_addFriend(ecosystem):
     user_c = ecosystem["users"]["c"]
     user_d = ecosystem["users"]["d"]
 
-    # 1. PRZYPADEK: MEMBER próbuje dodać kogoś -> Błąd uprawnień (PermissionError)
+    # 1. PRZYPADEK: MEMBER próbuje dodać kogoś -> Błąd uprawnień (PermissionDeniedError)
     # B (member w shopping) próbuje dodać swojego znajomego C
-    with pytest.raises(PermissionError):
+    with pytest.raises(PermissionDeniedError):
         shopping_tg.addFriend(db_session=db_session, user_id=shopping_member.userID, friend_id=user_c.id)
 
     db_session.flush()
 
-    # 2. PRZYPADEK: OWNER dodaje znajomego, który już jest w grupie -> Błąd (ValueError)
+    # 2. PRZYPADEK: OWNER dodaje znajomego, który już jest w grupie -> Błąd (ConflictError)
     # A dodaje B w shopping (są znajomymi, ale B już jest)
-    with pytest.raises(ValueError):
+    with pytest.raises(ConflictError):
         shopping_tg.addFriend(db_session=db_session, user_id=shopping_owner.userID, friend_id=user_b.id)
 
     db_session.flush()
     
-    # 3. PRZYPADEK: OWNER dodaje użytkownika, który nie jest jego znajomym -> Błąd (PermissionError)
+    # 3. PRZYPADEK: OWNER dodaje użytkownika, który nie jest jego znajomym -> Błąd (PermissionDeniedError)
     # A próbuje dodać C w shopping (nie ma friendship_ac)
-    with pytest.raises(PermissionError):
+    with pytest.raises(PermissionDeniedError):
         shopping_tg.addFriend(db_session=db_session, user_id=shopping_owner.userID, friend_id=user_c.id)
 
     db_session.flush()
@@ -236,7 +237,7 @@ def test_TaskGroup_createTask(ecosystem):
         "notifications": True
     }
     
-    with pytest.raises(PermissionError):
+    with pytest.raises(PermissionDeniedError):
         coop_tg.createTask(user_id=coop_ghost.userID, db_session=db_session, **ghost_task_data)
         
     db_session.flush()
@@ -356,7 +357,7 @@ def test_TaskGroup_createTask(ecosystem):
     params_count_before_err = len(db_session.query(TaskParams).all())
     progress_count_before_err = len(db_session.query(TaskProgress).all())
     
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         comp_tg.createTask(user_id=comp_admin.userID, db_session=db_session, **invalid_name_data)
         
     db_session.flush()
@@ -375,7 +376,7 @@ def test_TaskGroup_createTask(ecosystem):
     # Wyciągamy rzeczywistych użytkowników z ekosystemu, np. user_a, który nie należy do Egg Challenge (comp_tg)
     user_not_in_group = ecosystem["users"]["a"] 
     
-    with pytest.raises(PermissionError):
+    with pytest.raises(PermissionDeniedError):
         comp_tg.createTask(user_id=user_not_in_group.id, db_session=db_session, **invalid_user_data)
         
     db_session.flush()

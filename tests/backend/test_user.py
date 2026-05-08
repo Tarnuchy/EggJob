@@ -2,6 +2,7 @@ import pytest
 from datetime import datetime
 from uuid import uuid4
 
+from src.backend.exceptions import ConflictError, ValidationError
 from src.backend.models import *
 
 def test_User_editProfile(db_session, user_a, user_b):
@@ -22,13 +23,13 @@ def test_User_editProfile(db_session, user_a, user_b):
     
     # zmieniamy zdjecie, nieobslugiwany format (?), powinno wywalic
     newData["photoUrl"] = "idk.exe"
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         user_a.editProfile(db_session, **newData)
         
     # zmieniamy username, jest zajety, nie dzial
     newData["photoUrl"] = None
     newData["username"] = user_b.username
-    with pytest.raises(ValueError):
+    with pytest.raises(ConflictError):
         user_a.editProfile(db_session, **newData)
 
 def test_User_inviteFriend(ecosystem):
