@@ -23,6 +23,14 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, Session, mapped_column, relationship, synonym, validates
 
 from src.backend.database import Base
+from src.backend.exceptions import (
+    AuthenticationError,
+    ConflictError,
+    NotFoundError,
+    PermissionDeniedError,
+    StateError,
+    ValidationError,
+)
 from src.backend.security import hash_password, password_needs_rehash, verify_password
 
 
@@ -101,14 +109,14 @@ class Account(Base):
 
     def register(self, db_session: Session, email: str, username: str, password: str) -> bool:
         if not self._is_valid_email(email):
-            raise ValueError("Invalid email format")
+            raise ValidationError("Invalid email format")
         if not self._is_strong_password(password):
-            raise ValueError("Weak password")
+            raise ValidationError("Weak password")
 
         if db_session.query(Account).filter_by(email=email).first() is not None:
-            raise ValueError("Email already in use")
+            raise ConflictError("Email already in use")
         if db_session.query(User).filter_by(username=username).first() is not None:
-            raise ValueError("Username already in use")
+            raise ConflictError("Username already in use")
 
         self.email = email
         self.passwordHash = hash_password(password)
@@ -125,10 +133,10 @@ class Account(Base):
     def login(self, db_session: Session, email: str, password: str) -> bool:
         account = db_session.query(Account).filter_by(email=email).first()
         if account is None:
-            raise ValueError("Account does not exist")
+            raise NotFoundError("Account does not exist")
 
         if not verify_password(password, account.passwordHash):
-            raise ValueError("Invalid credentials")
+            raise AuthenticationError("Invalid credentials")
 
         if password_needs_rehash(account.passwordHash):
             account.passwordHash = hash_password(password)
@@ -145,7 +153,7 @@ class Account(Base):
     def deleteAccount(self, password: str, db_session: Session) -> None:
         hash = self.passwordHash
         if not verify_password(password, hash):
-            raise ValueError("Invalid password")
+            raise AuthenticationError("Invalid password")
         db_session.delete(self)
         try:
             db_session.flush()
@@ -155,11 +163,11 @@ class Account(Base):
 
     def createUser(self, db_session: Session, username: str, photoUrl: str | None = None) -> None:
         if self.user is not None:
-            raise ValueError("User already exists for this account")
+            raise ConflictError("User already exists for this account")
         if db_session.query(User).filter_by(username=username).first() is not None:
-            raise ValueError("Username already in use")
+            raise ConflictError("Username already in use")
         if photoUrl is not None and not User.is_valid_photo_url(photoUrl):
-            raise ValueError("Invalid photo URL")
+            raise ValidationError("Invalid photo URL")
 
         user = User()
         user.accountID = self.id
@@ -176,9 +184,9 @@ class Account(Base):
     def changePassword(self, db_session: Session, old_password: str, new_password: str) -> bool:
         hash = self.passwordHash
         if not verify_password(old_password, hash):
-            raise ValueError("Invalid current password")
+            raise AuthenticationError("Invalid current password")
         if not self._is_strong_password(new_password):
-            raise ValueError("Weak new password")
+            raise ValidationError("Weak new password")
         
         self.passwordHash = hash_password(new_password)
         try:
@@ -288,11 +296,11 @@ class User(Base):
         if username is not None:
             username = username.strip()
             if not self.is_unique_username(db_session, username) and username != self.username:
-                raise ValueError("Invalid username")
+                raise ConflictError("Invalid username")
             new_username = username
         if photoUrl is not None:
             if not self.is_valid_photo_url(photoUrl):
-                raise ValueError("Invalid photo URL")
+                raise ValidationError("Invalid photo URL")
             new_photoUrl = photoUrl
         
         self.username = new_username
@@ -309,7 +317,7 @@ class User(Base):
             ((Friendship.userOneID == self.id) & (Friendship.userTwoID == friend_id)) |
             ((Friendship.userOneID == friend_id) & (Friendship.userTwoID == self.id))
         ).first() is not None:
-            raise ValueError("Invalid friend ID") #TODO przejrzeć typy exception
+            raise ValidationError("Invalid friend ID") #TODO przejrzeć typy exception
         
         invitation = Invitation()
         invitation.fromUserID = self.id
@@ -336,7 +344,7 @@ class User(Base):
 
     def createGroup(self, db_session: Session, name: str, privacy: PrivacyLevel = PrivacyLevel.PUBLIC, isBingo: bool = False, type: TaskGroupType = TaskGroupType.TASK_GROUP) -> None: #nowe, ważne, trzeba dodać testy!!!!!! TODO
         if name.strip() == "": #TODO mogą być dwie grupy o tej samej nazwie?
-            raise ValueError("Group name cannot be empty")
+            raise ValidationError("Group name cannot be empty")
         group = CooperativeTaskGroup() if type == TaskGroupType.COOPERATIVE else CompetetiveTaskGroup()
         group.ownerID = self.id
         group.name = name
@@ -562,13 +570,13 @@ class TaskGroup(Base):
 
     def edit(self, db_session: Session, user_id: UUID, name: str | None = None, privacy: PrivacyLevel | None = None,) -> None:
         if not self.checkPerms(db_session, user_id, GroupRole.ADMIN):
-            raise ValueError("User does not have permission to edit this group")
+            raise PermissionDeniedError("User does not have permission to edit this group")
         new_name = self.name
         new_privacy = self.privacy
         
         if name is not None:
             if name.strip() == "":
-                raise ValueError("Group name cannot be empty")
+                raise ValidationError("Group name cannot be empty")
             new_name = name
         if privacy is not None:
             new_privacy = privacy
@@ -582,7 +590,7 @@ class TaskGroup(Base):
 
     def delete(self, db_session: Session, user_id: UUID) -> None:
         if not self.checkPerms(db_session, user_id, GroupRole.OWNER):
-            raise ValueError("User does not have permission to delete this group")
+            raise PermissionDeniedError("User does not have permission to delete this group")
         db_session.delete(self)
         try:
             db_session.flush()
@@ -615,15 +623,15 @@ class CompetetiveTaskGroup(TaskGroup):
     
     def addFriend(self, db_session: Session, user_id: UUID, friend_id: UUID, role: GroupRole) -> None:
         if role == GroupRole.OWNER:
-            raise ValueError("Insufficient permissions")
+            raise PermissionDeniedError("Insufficient permissions")
         elif role == GroupRole.ADMIN and not self.checkPerms(db_session, user_id, GroupRole.OWNER):
-            raise ValueError("Insufficient permissions")
+            raise PermissionDeniedError("Insufficient permissions")
         elif role == GroupRole.MEMBER and not self.checkPerms(db_session, user_id, GroupRole.ADMIN):
-            raise ValueError("Insufficient permissions")
+            raise PermissionDeniedError("Insufficient permissions")
         member = db_session.query(GroupMember).filter_by(groupID=self.id, userID=friend_id).first()
         if member is not None:
             if member.active:
-                raise ValueError("User is already a member of this group")
+                raise ConflictError("User is already a member of this group")
             else:
                 member.active = True
                 member.role = role
@@ -658,7 +666,7 @@ class CompetetiveTaskGroup(TaskGroup):
         
     def createTask(self, db_session: Session, user_id: UUID, type: TaskType, **taskparams) -> None:
         if not self.checkPerms(db_session, user_id, GroupRole.ADMIN):
-            raise ValueError("User does not have permission to create tasks in this group")
+            raise PermissionDeniedError("User does not have permission to create tasks in this group")
         new_task = None
         new_progress = None
         if type == TaskType.ENDLESS:
@@ -697,7 +705,7 @@ class CompetetiveTaskGroup(TaskGroup):
                 progress.type = type
                 db_session.add(progress)
         else:
-            raise ValueError("Invalid task type")
+            raise ValidationError("Invalid task type")
 
         new_task.groupID = self.id
         new_task.ownerID = user_id
@@ -719,13 +727,13 @@ class CompetetiveTaskGroup(TaskGroup):
         
     def changeGroupType(self, db_session: Session, user_id: UUID, new_type: TaskGroupType) -> None:
         if not self.checkPerms(db_session, user_id, GroupRole.OWNER):
-            raise ValueError("User does not have permission to change group type")
+            raise PermissionDeniedError("User does not have permission to change group type")
         if new_type == TaskGroupType.COMPETITIVE:
             return
         elif new_type == TaskGroupType.COOPERATIVE:
             owner_member = db_session.query(GroupMember).filter_by(groupID=self.id, userID=self.ownerID).first()
             if owner_member is None:
-                raise ValueError("Owner is not a member of this group")
+                raise StateError("Owner is not a member of this group")
 
             for task in self.tasks:
                 owner_progress = db_session.query(TaskProgress).filter_by(groupMemberID=owner_member.id, taskID=task.id).first()
@@ -766,15 +774,15 @@ class CooperativeTaskGroup(TaskGroup):
     
     def addFriend(self, db_session: Session, user_id: UUID, friend_id: UUID, role: GroupRole) -> None:
         if role == GroupRole.OWNER:
-            raise ValueError("Insufficient permissions")
+            raise PermissionDeniedError("Insufficient permissions")
         elif role == GroupRole.ADMIN and not self.checkPerms(db_session, user_id, GroupRole.OWNER):
-            raise ValueError("Insufficient permissions")
+            raise PermissionDeniedError("Insufficient permissions")
         elif role == GroupRole.MEMBER and not self.checkPerms(db_session, user_id, GroupRole.ADMIN):
-            raise ValueError("Insufficient permissions")
+            raise PermissionDeniedError("Insufficient permissions")
         member = db_session.query(GroupMember).filter_by(groupID=self.id, userID=friend_id).first()
         if member is not None:
             if member.active:
-                raise ValueError("User is already a member of this group")
+                raise ConflictError("User is already a member of this group")
             else:
                 member.active = True
                 member.role = role
@@ -793,13 +801,13 @@ class CooperativeTaskGroup(TaskGroup):
     
     def changeGroupType(self, db_session: Session, user_id: UUID, new_type: TaskGroupType) -> None:
         if not self.checkPerms(db_session, user_id, GroupRole.OWNER):
-            raise ValueError("User does not have permission to change group type")
+            raise PermissionDeniedError("User does not have permission to change group type")
         if new_type == TaskGroupType.COOPERATIVE:
             return
         elif new_type == TaskGroupType.COMPETITIVE:
             owner_member = db_session.query(GroupMember).filter_by(groupID=self.id, userID=self.ownerID).first()
             if owner_member is None:
-                raise ValueError("Owner is not a member of this group")
+                raise StateError("Owner is not a member of this group")
             
             for task in self.tasks:
                 for member in self.members:
@@ -836,7 +844,7 @@ class CooperativeTaskGroup(TaskGroup):
         
     def createTask(self, db_session: Session, user_id: UUID, type: TaskType, **taskparams) -> None:
         if not self.checkPerms(db_session, user_id, GroupRole.ADMIN):
-            raise ValueError("User does not have permission to create tasks in this group")
+            raise PermissionDeniedError("User does not have permission to create tasks in this group")
         new_task = None
         new_progress = None
         if type == TaskType.ENDLESS:
@@ -856,7 +864,7 @@ class CooperativeTaskGroup(TaskGroup):
             new_task.deadline = taskparams.get("deadline")
             new_progress = ChallengeTaskProgress()
         else:
-            raise ValueError("Invalid task type")
+            raise ValidationError("Invalid task type")
 
         new_task.groupID = self.id
         new_task.ownerID = user_id
@@ -873,7 +881,7 @@ class CooperativeTaskGroup(TaskGroup):
         new_progress.taskID = new_task.id
         owner_member = db_session.query(GroupMember).filter_by(groupID=self.id, userID=self.ownerID).first()
         if owner_member is None:
-            raise ValueError("Owner is not a member of this group")
+            raise StateError("Owner is not a member of this group")
         new_progress.groupMemberID = owner_member.id
         new_progress.type = type
         db_session.add(new_progress)
@@ -927,16 +935,16 @@ class GroupMember(Base):
 
     def changePermissions(self, db_session: Session, new_role: GroupRole, by_user_id: UUID) -> None:
         if self.role == GroupRole.OWNER:
-            raise ValueError("Can't change owner's permissions")
+            raise StateError("Can't change owner's permissions")
         if self.role == new_role:
             return #a może error?
         
         if new_role == GroupRole.OWNER:
-            raise ValueError("Insufficient permissions")
+            raise PermissionDeniedError("Insufficient permissions")
         elif new_role == GroupRole.ADMIN and not self.group.checkPerms(db_session, by_user_id, GroupRole.OWNER):
-            raise ValueError("Insufficient permissions")
+            raise PermissionDeniedError("Insufficient permissions")
         elif new_role == GroupRole.MEMBER and not self.group.checkPerms(db_session, by_user_id, GroupRole.ADMIN):
-            raise ValueError("Insufficient permissions")
+            raise PermissionDeniedError("Insufficient permissions")
         
         self.role=new_role
         try:
@@ -947,12 +955,12 @@ class GroupMember(Base):
 
     def removeMember(self, db_session: Session, take_progress: bool, punisher: UUID) -> None:
         if self.role == GroupRole.OWNER:
-            raise ValueError("Can't remove owner")
+            raise StateError("Can't remove owner")
         if self.userID != punisher:
             if self.role == GroupRole.ADMIN and not self.group.checkPerms(db_session, punisher, GroupRole.OWNER):
-                raise ValueError("Insufficient permissions")
+                raise PermissionDeniedError("Insufficient permissions")
             elif self.role == GroupRole.MEMBER and not self.group.checkPerms(db_session, punisher, GroupRole.ADMIN):
-                raise ValueError("Insufficient permissions")
+                raise PermissionDeniedError("Insufficient permissions")
         
         if not take_progress:
             self.active = False
@@ -1027,13 +1035,13 @@ class Task(Base):
     #new_data: name, description, goal
     def edit(self, db_session: Session, user_id: UUID, **new_data: Any) -> None:
         if not self.group.checkPerms(db_session, user_id, GroupRole.ADMIN):
-            raise ValueError("User does not have permission to edit this task")
+            raise PermissionDeniedError("User does not have permission to edit this task")
         new_name = self.name
         new_description = self.description
         new_goal = self.goal
         if "name" in new_data:
             if new_data["name"].strip() == "":
-                raise ValueError("Task name cannot be empty")
+                raise ValidationError("Task name cannot be empty")
             new_name = new_data["name"]
         if "description" in new_data:
             new_description = new_data["description"]
@@ -1061,7 +1069,7 @@ class Task(Base):
 
     def changeTaskType(self, db_session: Session, user_id: UUID, new_type: TaskType) -> None:
         if not self.group.checkPerms(db_session, user_id, GroupRole.ADMIN):
-            raise ValueError("User does not have permission to change task type")
+            raise PermissionDeniedError("User does not have permission to change task type")
         current_type = TaskType(self.type) if isinstance(self.type, str) else self.type
         if new_type == current_type:
             return
@@ -1237,13 +1245,13 @@ class TaskProgress(Base):
     def _validate_update(self, db_session: Session, delta_value: float, user_id: UUID, photoUrl: str | None) -> None:
         group = self.task.group
         if not group.checkPerms(db_session, user_id, GroupRole.MEMBER):
-            raise ValueError("User does not have permission to update progress for this task")
+            raise PermissionDeniedError("User does not have permission to update progress for this task")
         if self.userID != user_id and group.type == TaskGroupType.COMPETITIVE:
-            raise ValueError("User does not have permission to update progress for this task")
+            raise PermissionDeniedError("User does not have permission to update progress for this task")
         if self.task.params and self.task.params.photoRequired and not photoUrl:
-            raise ValueError("Photo is required to update progress for this task")
+            raise ValidationError("Photo is required to update progress for this task")
         if not isinstance(delta_value, (int, float)):
-            raise ValueError("Invalid progress value")
+            raise ValidationError("Invalid progress value")
 
     def _snapshot_state(self) -> dict[str, Any]:
         return {
@@ -1258,7 +1266,7 @@ class TaskProgress(Base):
     def _create_progress_entry(self, db_session: Session, user_id: UUID, message: str, photoUrl: str | None) -> None:
         member = db_session.query(GroupMember).filter_by(groupID=self.task.groupID, userID=user_id, active=True).first()
         if member is None:
-            raise ValueError("User is not a member of this group")
+            raise PermissionDeniedError("User is not a member of this group")
         entry = ProgressEntry()
         entry.taskProgress = self
         entry.memberID = member.id
@@ -1460,17 +1468,17 @@ class TaskParams(Base):
         if value is None:
             return None
         if not isinstance(value, str):
-            raise ValueError("Invalid color")
+            raise ValidationError("Invalid color")
         color = value.strip()
         if color == "":
             return ""
         if _COLOR_HEX_RE.match(color):
             return color
-        raise ValueError("Invalid color")
+        raise ValidationError("Invalid color")
 
     def edit(self, db_session: Session, photoRequired: bool | None = None, color: str | None = None, notifications: bool | None = None) -> None:
         if not self.task.group.checkPerms(db_session, self.task.ownerID, GroupRole.ADMIN):
-            raise ValueError("User does not have permission to edit this task's parameters")
+            raise PermissionDeniedError("User does not have permission to edit this task's parameters")
         new_PhotoRequired = self.photoRequired
         new_color = self.color
         new_notifications = self.notifications
@@ -1526,7 +1534,7 @@ class ProgressEntry(Base):
     def validate(self, db_session: Session) -> bool:
         params = db_session.query(TaskParams).filter(TaskParams.taskID == self.taskProgress.taskID).first()
         if not params:
-            raise ValueError("no to niemożliwe akurat")
+            raise StateError("no to niemożliwe akurat")
         if params.photoRequired and not self.photoUrl:
             return False
         return True
@@ -1542,9 +1550,9 @@ class ProgressEntry(Base):
 
     def addComment(self, db_session: Session, user_id: UUID, message: str) -> None:
         if message.strip() == "":
-            raise ValueError("Comment message cannot be empty")
+            raise ValidationError("Comment message cannot be empty")
         if self.taskProgress.task.group.privacy == PrivacyLevel.PRIVATE and not db_session.query(GroupMember).filter_by(groupID=self.taskProgress.task.groupID, userID=user_id, active=True).first():
-            raise ValueError("User is not a member of the task's group") #TODO za długie query, nieefektywne imo
+            raise PermissionDeniedError("User is not a member of the task's group") #TODO za długie query, nieefektywne imo
         comment = Comment()
         comment.userID = user_id
         comment.progressEntryID = self.id

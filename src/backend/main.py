@@ -3,6 +3,13 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from src.backend.database import get_db
+from src.backend.exceptions import (
+    AuthenticationError,
+    ConflictError,
+    NotFoundError,
+    StateError,
+    ValidationError,
+)
 from src.backend.models import Account, User
 from src.backend.request import ChangePasswordRequest, LoginRequest, RegisterRequest
 
@@ -31,16 +38,21 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
         )
         account.createUser(db_session=db, username=payload.username, photoUrl=payload.photo_url)
         db.commit()
-    except ValueError as exc:
+        user = db.query(User).filter_by(accountID=account.id).first()
+        if user is None:
+            raise StateError("User profile was not created")
+    except ValidationError as exc:
         db.rollback()
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except ConflictError as exc:
+        db.rollback()
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except StateError as exc:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
     except IntegrityError as exc:
         db.rollback()
         raise HTTPException(status_code=409, detail="Email or username already exists") from exc
-
-    user = db.query(User).filter_by(accountID=account.id).first()
-    if user is None:
-        raise HTTPException(status_code=500, detail="User profile was not created")
 
     return _auth_payload(account=account, user=user)
 
@@ -51,15 +63,15 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
     try:
         account.login(db_session=db, email=payload.email, password=payload.password)
         db.commit()
-    except ValueError as exc:
-        detail = str(exc)
-        if detail == "Account does not exist":
-            raise HTTPException(status_code=404, detail=detail) from exc
-        raise HTTPException(status_code=401, detail=detail) from exc
-
-    user = db.query(User).filter_by(accountID=account.id).first()
-    if user is None:
-        raise HTTPException(status_code=404, detail="User profile not found")
+        user = db.query(User).filter_by(accountID=account.id).first()
+        if user is None:
+            raise NotFoundError("User profile not found")
+    except AuthenticationError as exc:
+        db.rollback()
+        raise HTTPException(status_code=401, detail=str(exc)) from exc
+    except NotFoundError as exc:
+        db.rollback()
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
 
     return _auth_payload(account=account, user=user)
 
@@ -77,10 +89,11 @@ def change_password(payload: ChangePasswordRequest, db: Session = Depends(get_db
             new_password=payload.new_password,
         )
         db.commit()
-    except ValueError as exc:
-        detail = str(exc)
-        if detail == "Invalid current password":
-            raise HTTPException(status_code=401, detail=detail) from exc
-        raise HTTPException(status_code=400, detail=detail) from exc
+    except AuthenticationError as exc:
+        db.rollback()
+        raise HTTPException(status_code=401, detail=str(exc)) from exc
+    except ValidationError as exc:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     return {"message": "password_updated"}
