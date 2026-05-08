@@ -154,8 +154,8 @@ export const AuthScreen = () => {
 
     // ─── Register validation ──────────────────────────────────
     const getRegEmailError = (v: string) => (!isValidEmail(v.trim()) ? 'Please enter a valid email address.' : '');
-    const getRegUsernameError = (v: string) => (!isValidUsername(v.trim()) ? 'Username must be at least 3 characters.' : '');
-    const getRegPasswordError = (v: string) => (!isValidPassword(v) ? 'Password must be at least 8 characters.' : '');
+    const getRegUsernameError = (v: string) => (!isValidUsername(v.trim()) ? 'At least 3 characters.' : '');
+    const getRegPasswordError = (v: string) => (!isValidPassword(v) ? 'At least 8 characters.' : '');
     const getRegConfirmError = (v: string, pw: string) => {
         if (!v.trim()) return 'Please confirm your password.';
         if (!passwordsMatch(pw, v)) return 'Passwords do not match.';
@@ -279,7 +279,7 @@ export const AuthScreen = () => {
                                                 <Spacer height={spacing.sm} />
                                                 {isLoading
                                                     ? <LoadingIndicator />
-                                                    : <AppButton title="Sign In" onPress={handleLogin} shakeCount={loginShakeCount} />
+                                                    : <AppButton title="Log In" onPress={handleLogin} shakeCount={loginShakeCount} />
                                                 }
                                             </>
                                         ) : (
