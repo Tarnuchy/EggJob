@@ -107,7 +107,7 @@ class Account(Base):
         has_digit = any(ch.isdigit() for ch in password)
         return has_letter and has_digit
 
-    def register(self, db_session: Session, email: str, username: str, password: str) -> bool:
+    def register(self, db_session: Session, email: str, username: str, password: str):
         if not self._is_valid_email(email):
             raise ValidationError("Invalid email format")
         if not self._is_strong_password(password):
@@ -123,12 +123,7 @@ class Account(Base):
         self.registrationDate = utcnow()
         db_session.add(self)
         #self.createUser(db_session, username) #TODO to tworzymy usera tu czy ręcznie ?????
-        try:
-            db_session.flush()
-        except Exception:
-            db_session.rollback()
-            raise
-        return True
+        db_session.flush()
 
     def login(self, db_session: Session, email: str, password: str) -> bool:
         account = db_session.query(Account).filter_by(email=email).first()
@@ -147,7 +142,7 @@ class Account(Base):
         self.email = account.email
         self.passwordHash = account.passwordHash
         self.registrationDate = account.registrationDate
-        return True
+        db_session.flush()
 
 #TODO: powinno usuwac wszystko czego wlascicielem jest ten user, POZA TASKAMI, TASKPROGRESS, GROUPMEMBER oraz zamieniac GroupRole na ghost w kazdej TG, poza tymi, której jest ownerem, wtedy delete wszystko.
     def deleteAccount(self, password: str, db_session: Session) -> None:
@@ -155,11 +150,7 @@ class Account(Base):
         if not verify_password(password, hash):
             raise AuthenticationError("Invalid password")
         db_session.delete(self)
-        try:
-            db_session.flush()
-        except Exception:
-            db_session.rollback()
-            raise
+        db_session.flush()
 
     def createUser(self, db_session: Session, username: str, photoUrl: str | None = None) -> None:
         if self.user is not None:
@@ -175,11 +166,7 @@ class Account(Base):
         user.photoUrl = photoUrl
         self.user = user
         db_session.add(user)
-        try:
-            db_session.flush()
-        except Exception:
-            db_session.rollback()
-            raise
+        db_session.flush()
         
     def changePassword(self, db_session: Session, old_password: str, new_password: str) -> bool:
         hash = self.passwordHash
@@ -189,11 +176,7 @@ class Account(Base):
             raise ValidationError("Weak new password")
         
         self.passwordHash = hash_password(new_password)
-        try:
-            db_session.flush()
-        except Exception:
-            db_session.rollback()
-            raise
+        db_session.flush()
 
 
 class User(Base):
@@ -305,11 +288,7 @@ class User(Base):
         
         self.username = new_username
         self.photoUrl = new_photoUrl
-        try:
-            db_session.flush()
-        except Exception:
-            db_session.rollback()
-            raise
+        db_session.flush()
 
     def inviteFriend(self, db_session: Session, friend_id: UUID) -> None:
         friend = db_session.query(User).filter_by(id=friend_id).first()
@@ -324,22 +303,14 @@ class User(Base):
         invitation.toUserID = friend_id
         db_session.add(invitation)
         friend.notify(db_session, f"You have a new friend invitation from {self.username}!")
-        try:
-            db_session.flush()
-        except Exception:
-            db_session.rollback()
-            raise
+        db_session.flush()
 
     def notify(self, db_session: Session, message: str) -> None:
         notification = Notification()
         notification.userID = self.id
         notification.message = message
         db_session.add(notification)
-        try:
-            db_session.flush()
-        except Exception:
-            db_session.rollback()
-            raise
+        db_session.flush()
 
 
     def createGroup(self, db_session: Session, name: str, privacy: PrivacyLevel = PrivacyLevel.PUBLIC, isBingo: bool = False, type: TaskGroupType = TaskGroupType.TASK_GROUP) -> None: #nowe, ważne, trzeba dodać testy!!!!!! TODO
@@ -361,11 +332,7 @@ class User(Base):
         member.role = GroupRole.OWNER
         db_session.add(member)
         
-        try:
-            db_session.flush()
-        except Exception:
-            db_session.rollback()
-            raise
+        db_session.flush()
         
 
 class Friendship(Base):
@@ -402,11 +369,7 @@ class Friendship(Base):
 
     def deleteFriend(self, db_session: Session) -> None:
         db_session.delete(self)
-        try:
-            db_session.flush()
-        except Exception:
-            db_session.rollback()
-            raise
+        db_session.flush()
 
 
 class Invitation(Base):
@@ -447,27 +410,15 @@ class Invitation(Base):
         friendship.userTwoID = self.toUserID
         db_session.add(friendship)
         db_session.delete(self)
-        try:
-            db_session.flush()
-        except Exception:
-            db_session.rollback()
-            raise
+        db_session.flush()
 
     def reject(self, db_session: Session) -> None:
         db_session.delete(self)
-        try:
-            db_session.flush()
-        except Exception:
-            db_session.rollback()
-            raise
+        db_session.flush()
 
     def cancel(self, db_session: Session) -> None: 
         db_session.delete(self)
-        try:
-            db_session.flush()
-        except Exception:
-            db_session.rollback()
-            raise
+        db_session.flush()
 
     def notify(self, db_session: Session) -> None: #TODO do wywalenia XD
         self.toUser.notify(db_session, f"You have a new friend invitation from {self.fromUser.username}!")
@@ -498,11 +449,7 @@ class Notification(Base):
 
     def read(self, db_session: Session) -> None:
         self.active = False
-        try:
-            db_session.flush()
-        except Exception:
-            db_session.rollback()
-            raise
+        db_session.flush()
 
 
 class TaskGroup(Base):
@@ -582,21 +529,13 @@ class TaskGroup(Base):
             new_privacy = privacy
         self.name = new_name
         self.privacy = new_privacy
-        try:
-            db_session.flush()
-        except Exception:
-            db_session.rollback()
-            raise
+        db_session.flush()
 
     def delete(self, db_session: Session, user_id: UUID) -> None:
         if not self.checkPerms(db_session, user_id, GroupRole.OWNER):
             raise PermissionDeniedError("User does not have permission to delete this group")
         db_session.delete(self)
-        try:
-            db_session.flush()
-        except Exception:
-            db_session.rollback()
-            raise
+        db_session.flush()
 
     def addFriend(self, db_session: Session, user_id: UUID, friend_id: UUID, role: GroupRole) -> None:
         pass #różne implementacje w zależności od typu grupy
@@ -657,12 +596,8 @@ class CompetetiveTaskGroup(TaskGroup):
                 progress.taskID = task.id
                 progress.type = task_type.value
                 db_session.add(progress)
-            
-        try:
-            db_session.flush()
-        except Exception:
-            db_session.rollback()
-            raise
+        
+        db_session.flush()
         
     def createTask(self, db_session: Session, user_id: UUID, type: TaskType, **taskparams) -> None:
         if not self.checkPerms(db_session, user_id, GroupRole.ADMIN):
@@ -719,11 +654,7 @@ class CompetetiveTaskGroup(TaskGroup):
         new_params.notifications = taskparams.get("notifications", False)
         db_session.add(new_params)
         
-        try:
-            db_session.flush()
-        except Exception:
-            db_session.rollback()
-            raise
+        db_session.flush()
         
     def changeGroupType(self, db_session: Session, user_id: UUID, new_type: TaskGroupType) -> None:
         if not self.checkPerms(db_session, user_id, GroupRole.OWNER):
@@ -753,11 +684,7 @@ class CompetetiveTaskGroup(TaskGroup):
                 CooperativeTaskGroup.__table__.insert().values(id=self.id)
             )
         
-        try:
-            db_session.flush()
-        except Exception:
-            db_session.rollback()
-            raise
+        db_session.flush()
 
 class CooperativeTaskGroup(TaskGroup):
     __tablename__ = "cooperative_task_groups"
@@ -792,12 +719,8 @@ class CooperativeTaskGroup(TaskGroup):
             new_member.userID = friend_id
             new_member.role = role
             db_session.add(new_member)
-            
-        try:
-            db_session.flush()
-        except Exception:
-            db_session.rollback()
-            raise
+        
+        db_session.flush()
     
     def changeGroupType(self, db_session: Session, user_id: UUID, new_type: TaskGroupType) -> None:
         if not self.checkPerms(db_session, user_id, GroupRole.OWNER):
@@ -836,11 +759,7 @@ class CooperativeTaskGroup(TaskGroup):
                 CompetetiveTaskGroup.__table__.insert().values(id=self.id)
             )
         
-        try:
-            db_session.flush()
-        except Exception:
-            db_session.rollback()
-            raise
+        db_session.flush()
         
     def createTask(self, db_session: Session, user_id: UUID, type: TaskType, **taskparams) -> None:
         if not self.checkPerms(db_session, user_id, GroupRole.ADMIN):
@@ -886,11 +805,7 @@ class CooperativeTaskGroup(TaskGroup):
         new_progress.type = type
         db_session.add(new_progress)
         
-        try:
-            db_session.flush()
-        except Exception:
-            db_session.rollback()
-            raise
+        db_session.flush()
 
 class GroupMember(Base):
     __tablename__ = "group_members"
@@ -947,11 +862,7 @@ class GroupMember(Base):
             raise PermissionDeniedError("Insufficient permissions")
         
         self.role=new_role
-        try:
-            db_session.flush()
-        except Exception:
-            db_session.rollback()
-            raise
+        db_session.flush()
 
     def removeMember(self, db_session: Session, take_progress: bool, punisher: UUID) -> None:
         if self.role == GroupRole.OWNER:
@@ -968,12 +879,8 @@ class GroupMember(Base):
             for progress in self.taskProgresses:
                 db_session.delete(progress)
             db_session.delete(self)
-            
-        try:
-            db_session.flush()
-        except Exception:
-            db_session.rollback()
-            raise
+        
+        db_session.flush()
             
         
             
@@ -1052,20 +959,12 @@ class Task(Base):
         
         self.name = new_name
         self.description = new_description
-        try:
-            db_session.flush()
-        except Exception:
-            db_session.rollback()
-            raise
+        db_session.flush()
         
 
     def delete(self, db_session: Session, user_id: UUID) -> None:
         db_session.delete(self)
-        try:
-            db_session.flush()
-        except Exception:
-            db_session.rollback()
-            raise
+        db_session.flush()
 
     def changeTaskType(self, db_session: Session, user_id: UUID, new_type: TaskType) -> None:
         if not self.group.checkPerms(db_session, user_id, GroupRole.ADMIN):
@@ -1122,11 +1021,7 @@ class Task(Base):
                 if progress in db_session:
                     db_session.expunge(progress)
         
-        try:
-            db_session.flush()
-        except Exception:
-            db_session.rollback()
-            raise
+        db_session.flush()
 
 
 class EndlessTask(Task):
@@ -1280,12 +1175,8 @@ class TaskProgress(Base):
             self.status = TaskStatus.DONE
         elif self.value != 0:
             self.status = TaskStatus.IN_PROGRESS
-            
-        try:
-            db_session.flush()
-        except Exception:
-            db_session.rollback()
-            raise
+        
+        db_session.flush()
 
 
 class EndlessTaskProgress(TaskProgress):
@@ -1313,7 +1204,6 @@ class EndlessTaskProgress(TaskProgress):
             db_session.flush()
         except Exception:
             self._restore_state(snapshot)
-            db_session.rollback()
             raise
 
 
@@ -1345,7 +1235,6 @@ class OneTimeTaskProgress(TaskProgress):
             db_session.flush()
         except Exception:
             self._restore_state(snapshot)
-            db_session.rollback()
             raise
 
 
@@ -1392,7 +1281,6 @@ class RepeatableTaskProgress(TaskProgress):
             db_session.flush()
         except Exception:
             self._restore_state(snapshot)
-            db_session.rollback()
             raise
         
     def _silentUpdateProgress(self,db_session: Session,delta_value: float,) -> None: #nowe, idk czy testy
@@ -1406,12 +1294,8 @@ class RepeatableTaskProgress(TaskProgress):
             self.streak-=1
         elif self.value != 0:
             self.status = TaskStatus.IN_PROGRESS
-            
-        try:
-            db_session.flush()
-        except Exception:
-            db_session.rollback()
-            raise
+        
+        db_session.flush()
 
 
 class ChallengeTaskProgress(TaskProgress):
@@ -1442,7 +1326,6 @@ class ChallengeTaskProgress(TaskProgress):
             db_session.flush()
         except Exception:
             self._restore_state(snapshot)
-            db_session.rollback()
             raise
 
 
@@ -1491,11 +1374,7 @@ class TaskParams(Base):
         self.photoRequired = new_PhotoRequired
         self.color = new_color
         self.notifications = new_notifications
-        try:
-            db_session.flush()
-        except Exception:
-            db_session.rollback()
-            raise
+        db_session.flush()
 
     
 
@@ -1542,11 +1421,7 @@ class ProgressEntry(Base):
     def delete(self, db_session: Session) -> None:
         self.taskProgress._silentUpdateProgress(db_session, -self.value)
         db_session.delete(self)
-        try:
-            db_session.flush()
-        except Exception:
-            db_session.rollback()
-            raise
+        db_session.flush()
 
     def addComment(self, db_session: Session, user_id: UUID, message: str) -> None:
         if message.strip() == "":
@@ -1558,11 +1433,7 @@ class ProgressEntry(Base):
         comment.progressEntryID = self.id
         comment.message = message
         db_session.add(comment)
-        try:
-            db_session.flush()
-        except Exception:
-            db_session.rollback()
-            raise
+        db_session.flush()
 
 
 class Comment(Base):
@@ -1591,11 +1462,7 @@ class Comment(Base):
 
     def deleteComment(self, db_session: Session) -> None:
         db_session.delete(self)
-        try:
-            db_session.flush()
-        except Exception:
-            db_session.rollback()
-            raise
+        db_session.flush()
 
 
 __all__ = [ #do importów
