@@ -24,11 +24,15 @@ import { spacing } from '../../theme/spacing';
 import { authService } from '../../services';
 import { useAppState } from '../../application/AppStateContext';
 import {
-    isValidEmail,
-    isValidPassword,
-    isValidUsername,
-    passwordsMatch,
-} from '../../utils/validation';
+    getEmailError,
+    getPasswordError,
+    getRegConfirmError,
+    getRegEmailError,
+    getRegPasswordError,
+    getRegUsernameError,
+    shouldValidateOnBlur,
+    shouldValidatePasswordOnBlur,
+} from '../../utils/authValidation';
 import { AuthTab } from '../../types';
 import { useAuthFormAnimation } from '../../hooks/useAuthFormAnimation';
 
@@ -79,10 +83,7 @@ export const AuthScreen = () => {
         setActiveTab(tab);
     };
 
-    // ─── Login validation ─────────────────────────────────────
-    const getEmailError = (v: string) => (!v.trim() ? 'Email is required.' : '');
-    const getPasswordError = (v: string) => (!v.trim() ? 'Password is required.' : '');
-
+    // ─── Login handlers ───────────────────────────────────────
     const handleEmailChange = (v: string) => {
         setEmail(v);
         if (emailError) setEmailError('');
@@ -93,9 +94,6 @@ export const AuthScreen = () => {
         if (passwordError) setPasswordError('');
         if (loginError) setLoginError('');
     };
-
-    const shouldValidateOnBlur = (value: string) => value.trim().length > 0;
-    const shouldValidatePasswordOnBlur = (value: string) => value.length > 0;
 
     const handleLogin = async () => {
         setEmailTouched(true);
@@ -121,16 +119,7 @@ export const AuthScreen = () => {
         }
     };
 
-    // ─── Register validation ──────────────────────────────────
-    const getRegEmailError = (v: string) => (!isValidEmail(v.trim()) ? 'Please enter a valid email address.' : '');
-    const getRegUsernameError = (v: string) => (!isValidUsername(v.trim()) ? 'At least 3 characters.' : '');
-    const getRegPasswordError = (v: string) => (!isValidPassword(v) ? 'At least 8 characters.' : '');
-    const getRegConfirmError = (v: string, pw: string) => {
-        if (!v.trim()) return 'Please confirm your password.';
-        if (!passwordsMatch(pw, v)) return 'Passwords do not match.';
-        return '';
-    };
-
+    // ─── Register handlers ────────────────────────────────────
     const handleRegEmailChange = (v: string) => {
         setRegEmail(v);
         if (regEmailError) setRegEmailError('');
