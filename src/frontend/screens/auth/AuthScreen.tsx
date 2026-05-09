@@ -402,7 +402,7 @@ const styles = StyleSheet.create({
     cardShadow: {
         width: '100%',
         borderRadius: 24,
-        shadowColor: '#6B3F22',
+        shadowColor: colors.shadowAccent,
         shadowOffset: { width: 0, height: 12 },
         shadowOpacity: 0.18,
         shadowRadius: 32,
@@ -412,9 +412,9 @@ const styles = StyleSheet.create({
         overflow: 'hidden',
     },
     cardInner: {
-        backgroundColor: 'rgba(186, 171, 156, 0.4)',
+        backgroundColor: colors.cardSurfaceTranslucent,
         borderWidth: 1,
-        borderColor: 'rgba(244, 236, 227, 0.2)',
+        borderColor: colors.cardBorderTranslucent,
         borderRadius: 24,
         padding: spacing.lg,
     },

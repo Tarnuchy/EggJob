@@ -23,7 +23,7 @@ const styles = StyleSheet.create({
     line: {
         flex: 1,
         height: 1,
-        backgroundColor: 'rgba(67, 38, 23, 0.2)',
+        backgroundColor: colors.dividerLine,
     },
     label: {
         marginHorizontal: spacing.md,

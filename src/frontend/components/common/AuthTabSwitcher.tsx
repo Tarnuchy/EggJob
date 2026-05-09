@@ -72,7 +72,7 @@ const PILL_RADIUS = 11;
 const styles = StyleSheet.create({
     container: {
         flexDirection: 'row',
-        backgroundColor: 'rgba(30, 19, 14, 0.08)',
+        backgroundColor: colors.tabSwitcherTrack,
         borderRadius: 14,
         padding: PILL_PADDING,
         height: 44,

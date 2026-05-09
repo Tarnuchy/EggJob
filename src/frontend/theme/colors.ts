@@ -21,4 +21,10 @@ export const colors = {
   coolAccent: "#3A5A60",
   warmGlow: "rgba(107, 63, 34, 0.35)",
   warmHighlight: "#F4ECE3",
+  shadowAccent: eggJobPalette.searingGorgeBrown,
+  inputBorderIdle: "rgba(67, 38, 23, 0.3)",
+  tabSwitcherTrack: "rgba(30, 19, 14, 0.08)",
+  dividerLine: "rgba(67, 38, 23, 0.2)",
+  cardSurfaceTranslucent: "rgba(186, 171, 156, 0.4)",
+  cardBorderTranslucent: "rgba(244, 236, 227, 0.2)",
 } as const;
