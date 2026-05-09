@@ -1,14 +1,11 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
     StyleSheet,
     View,
     Text,
     Animated,
-    Easing,
     KeyboardAvoidingView,
     Platform,
-    LayoutAnimation,
-    UIManager,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -20,12 +17,10 @@ import { AppButton } from '../../components/common/AppButton';
 import { AppInput } from '../../components/common/AppInput';
 import { AuthBackground } from '../../components/common/AuthBackground';
 import { AuthTabSwitcher } from '../../components/common/AuthTabSwitcher';
-import { LoadingIndicator } from '../../components/common/LoadingIndicator';
 import { Spacer } from '../../components/common/Spacer';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
-import { duration } from '../../theme/animations';
 import { authService } from '../../services';
 import { useAppState } from '../../application/AppStateContext';
 import {
@@ -35,8 +30,7 @@ import {
     passwordsMatch,
 } from '../../utils/validation';
 import { AuthTab } from '../../types';
-
-const EASE = Easing.bezier(0.25, 1, 0.5, 1);
+import { useAuthFormAnimation } from '../../hooks/useAuthFormAnimation';
 
 export const AuthScreen = () => {
     const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -73,23 +67,7 @@ export const AuthScreen = () => {
     const [regPasswordVisible, setRegPasswordVisible] = useState(false);
 
     // ─── Animations ───────────────────────────────────────────
-    const staggerAnim = useRef(new Animated.Value(0)).current;
-    const formOpacity = useRef(new Animated.Value(1)).current;
-
-    useEffect(() => {
-        Animated.timing(staggerAnim, {
-            toValue: 1,
-            duration: duration.medium,
-            easing: EASE,
-            useNativeDriver: true,
-        }).start();
-    }, []);
-
-    useEffect(() => {
-        if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-            UIManager.setLayoutAnimationEnabledExperimental(true);
-        }
-    }, []);
+    const { cardEntrance, formOpacity, animateTabSwitch } = useAuthFormAnimation();
 
     const handleTabChange = (tab: AuthTab) => {
         if (tab === activeTab) return;
@@ -97,24 +75,8 @@ export const AuthScreen = () => {
         setLoginShakeCount(0);
         setRegisterShakeCount(0);
 
-        formOpacity.stopAnimation();
-        formOpacity.setValue(0.9);
-
-        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-
+        animateTabSwitch();
         setActiveTab(tab);
-
-        Animated.timing(formOpacity, {
-            toValue: 1,
-            duration: 180,
-            easing: EASE,
-            useNativeDriver: true,
-        }).start();
-    };
-
-    const cardEntrance = {
-        opacity: staggerAnim,
-        transform: [{ translateY: staggerAnim.interpolate({ inputRange: [0, 1], outputRange: [24, 0] }) }],
     };
 
     // ─── Login validation ─────────────────────────────────────
