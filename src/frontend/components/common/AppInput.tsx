@@ -148,7 +148,7 @@ const styles = StyleSheet.create({
         ...StyleSheet.absoluteFillObject,
         borderRadius: 12,
         borderWidth: 2,
-        borderColor: 'rgba(67, 38, 23, 0.3)',
+        borderColor: colors.inputBorderIdle,
     },
     stateRingFocused: {
         borderColor: colors.primary,

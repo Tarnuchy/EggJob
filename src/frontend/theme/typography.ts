@@ -24,7 +24,7 @@ export const typography = {
     fontFamily: fontFamily.bold,
     fontSize: 32,
     lineHeight: 40,
-    letterSpacing: -0.64, // -0.02em at 32px
+    letterSpacing: -0.64,
   },
   h2: {
     fontFamily: fontFamily.semiBold,

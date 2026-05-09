@@ -1,14 +1,11 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
     StyleSheet,
     View,
     Text,
     Animated,
-    Easing,
     KeyboardAvoidingView,
     Platform,
-    LayoutAnimation,
-    UIManager,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -20,29 +17,30 @@ import { AppButton } from '../../components/common/AppButton';
 import { AppInput } from '../../components/common/AppInput';
 import { AuthBackground } from '../../components/common/AuthBackground';
 import { AuthTabSwitcher } from '../../components/common/AuthTabSwitcher';
-import { LoadingIndicator } from '../../components/common/LoadingIndicator';
 import { Spacer } from '../../components/common/Spacer';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
-import { duration } from '../../theme/animations';
 import { authService } from '../../services';
 import { useAppState } from '../../application/AppStateContext';
 import {
-    isValidEmail,
-    isValidPassword,
-    isValidUsername,
-    passwordsMatch,
-} from '../../utils/validation';
-
-type Tab = 'login' | 'register';
-const EASE = Easing.bezier(0.25, 1, 0.5, 1);
+    getEmailError,
+    getPasswordError,
+    getRegConfirmError,
+    getRegEmailError,
+    getRegPasswordError,
+    getRegUsernameError,
+    shouldValidateOnBlur,
+    shouldValidatePasswordOnBlur,
+} from '../../utils/authValidation';
+import { AuthTab } from '../../types';
+import { useAuthFormAnimation } from '../../hooks/useAuthFormAnimation';
 
 export const AuthScreen = () => {
     const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
     const { dispatch } = useAppState();
 
-    const [activeTab, setActiveTab] = useState<Tab>('login');
+    const [activeTab, setActiveTab] = useState<AuthTab>('login');
     const [isLoading, setIsLoading] = useState(false);
 
     // ─── Login state ─────────────────────────────────────────
@@ -73,54 +71,19 @@ export const AuthScreen = () => {
     const [regPasswordVisible, setRegPasswordVisible] = useState(false);
 
     // ─── Animations ───────────────────────────────────────────
-    const staggerAnim = useRef(new Animated.Value(0)).current;
-    const formOpacity = useRef(new Animated.Value(1)).current;
+    const { cardEntrance, formOpacity, animateTabSwitch } = useAuthFormAnimation();
 
-    useEffect(() => {
-        Animated.timing(staggerAnim, {
-            toValue: 1,
-            duration: duration.medium,
-            easing: EASE,
-            useNativeDriver: true,
-        }).start();
-    }, []);
-
-    useEffect(() => {
-        if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-            UIManager.setLayoutAnimationEnabledExperimental(true);
-        }
-    }, []);
-
-    const handleTabChange = (tab: Tab) => {
+    const handleTabChange = (tab: AuthTab) => {
         if (tab === activeTab) return;
 
         setLoginShakeCount(0);
         setRegisterShakeCount(0);
 
-        formOpacity.stopAnimation();
-        formOpacity.setValue(0.9);
-
-        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-
+        animateTabSwitch();
         setActiveTab(tab);
-
-        Animated.timing(formOpacity, {
-            toValue: 1,
-            duration: 180,
-            easing: EASE,
-            useNativeDriver: true,
-        }).start();
     };
 
-    const cardEntrance = {
-        opacity: staggerAnim,
-        transform: [{ translateY: staggerAnim.interpolate({ inputRange: [0, 1], outputRange: [24, 0] }) }],
-    };
-
-    // ─── Login validation ─────────────────────────────────────
-    const getEmailError = (v: string) => (!v.trim() ? 'Email is required.' : '');
-    const getPasswordError = (v: string) => (!v.trim() ? 'Password is required.' : '');
-
+    // ─── Login handlers ───────────────────────────────────────
     const handleEmailChange = (v: string) => {
         setEmail(v);
         if (emailError) setEmailError('');
@@ -131,9 +94,6 @@ export const AuthScreen = () => {
         if (passwordError) setPasswordError('');
         if (loginError) setLoginError('');
     };
-
-    const shouldValidateOnBlur = (value: string) => value.trim().length > 0;
-    const shouldValidatePasswordOnBlur = (value: string) => value.length > 0;
 
     const handleLogin = async () => {
         setEmailTouched(true);
@@ -159,16 +119,7 @@ export const AuthScreen = () => {
         }
     };
 
-    // ─── Register validation ──────────────────────────────────
-    const getRegEmailError = (v: string) => (!isValidEmail(v.trim()) ? 'Please enter a valid email address.' : '');
-    const getRegUsernameError = (v: string) => (!isValidUsername(v.trim()) ? 'At least 3 characters.' : '');
-    const getRegPasswordError = (v: string) => (!isValidPassword(v) ? 'At least 8 characters.' : '');
-    const getRegConfirmError = (v: string, pw: string) => {
-        if (!v.trim()) return 'Please confirm your password.';
-        if (!passwordsMatch(pw, v)) return 'Passwords do not match.';
-        return '';
-    };
-
+    // ─── Register handlers ────────────────────────────────────
     const handleRegEmailChange = (v: string) => {
         setRegEmail(v);
         if (regEmailError) setRegEmailError('');
@@ -402,7 +353,7 @@ const styles = StyleSheet.create({
     cardShadow: {
         width: '100%',
         borderRadius: 24,
-        shadowColor: '#6B3F22',
+        shadowColor: colors.shadowAccent,
         shadowOffset: { width: 0, height: 12 },
         shadowOpacity: 0.18,
         shadowRadius: 32,
@@ -412,9 +363,9 @@ const styles = StyleSheet.create({
         overflow: 'hidden',
     },
     cardInner: {
-        backgroundColor: 'rgba(186, 171, 156, 0.4)',
+        backgroundColor: colors.cardSurfaceTranslucent,
         borderWidth: 1,
-        borderColor: 'rgba(244, 236, 227, 0.2)',
+        borderColor: colors.cardBorderTranslucent,
         borderRadius: 24,
         padding: spacing.lg,
     },

@@ -1,28 +1,6 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
-import { ScreenContainer } from '../../components/common/ScreenContainer';
-import { TopBar } from '../../components/common/TopBar';
-import { AppText } from '../../components/common/AppText';
-import { colors } from '../../theme/colors';
+import { PlaceholderScreen } from '../../components/common/PlaceholderScreen';
 
-export const ProfileScreen = () => {
-	return (
-		<View style={styles.wrapper}>
-			<TopBar title='Profile' showIcons={true} />
-			<ScreenContainer style={styles.container}>
-				<AppText color={colors.textPrimary} children='Profile Placeholder' variant='default'></AppText>
-			</ScreenContainer>
-		</View>
-	);
-};
-
-const styles = StyleSheet.create({
-	wrapper: {
-		flex: 1,
-	},
-	container: {
-		flex: 1,
-		justifyContent: 'center',
-		alignItems: 'center',
-	},
-});
+export const ProfileScreen = () => (
+    <PlaceholderScreen showTopBar title="Profile" placeholderText="Profile Placeholder" />
+);
