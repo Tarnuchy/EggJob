@@ -34,15 +34,15 @@ import {
     isValidUsername,
     passwordsMatch,
 } from '../../utils/validation';
+import { AuthTab } from '../../types';
 
-type Tab = 'login' | 'register';
 const EASE = Easing.bezier(0.25, 1, 0.5, 1);
 
 export const AuthScreen = () => {
     const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
     const { dispatch } = useAppState();
 
-    const [activeTab, setActiveTab] = useState<Tab>('login');
+    const [activeTab, setActiveTab] = useState<AuthTab>('login');
     const [isLoading, setIsLoading] = useState(false);
 
     // ─── Login state ─────────────────────────────────────────
@@ -91,7 +91,7 @@ export const AuthScreen = () => {
         }
     }, []);
 
-    const handleTabChange = (tab: Tab) => {
+    const handleTabChange = (tab: AuthTab) => {
         if (tab === activeTab) return;
 
         setLoginShakeCount(0);

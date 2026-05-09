@@ -2,10 +2,11 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated, Easing } from 'react-native';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
+import { AuthTab } from '../../types';
 
 interface Props {
-    activeTab: 'login' | 'register';
-    onTabChange: (tab: 'login' | 'register') => void;
+    activeTab: AuthTab;
+    onTabChange: (tab: AuthTab) => void;
 }
 
 export const AuthTabSwitcher = ({ activeTab, onTabChange }: Props) => {
