@@ -6,7 +6,7 @@ import { AuthScreen } from '../screens/auth/AuthScreen';
 import { SettingsScreen } from '../screens/profile/SettingsScreen';
 import { NotificationScreen } from '../screens/social/NotificationScreen';
 import { MainTabs } from './MainTabs';
-import { RootStackParamList } from './types';
+import type { RootStackParamList } from './types';
 import { colors } from '../theme/colors';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();

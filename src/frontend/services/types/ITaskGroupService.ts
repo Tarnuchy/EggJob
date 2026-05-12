@@ -1,4 +1,4 @@
-import type { Result } from "./index";
+import type { Result } from './index';
 
 export interface ITaskGroupService {
   createGroup(input: {

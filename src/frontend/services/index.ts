@@ -1,9 +1,9 @@
-export { httpAuthService as authService } from "./http/HttpAuthService";
-export { mockProfileService as profileService } from "./mock/MockProfileService";
-export { mockSocialService as socialService } from "./mock/MockSocialService";
-export { mockTaskGroupService as taskGroupService } from "./mock/MockTaskGroupService";
-export { mockTaskService as taskService } from "./mock/MockTaskService";
-export { mockNotificationService as notificationService } from "./mock/MockNotificationService";
+export { httpAuthService as authService } from './http/HttpAuthService';
+export { mockProfileService as profileService } from './mock/MockProfileService';
+export { mockSocialService as socialService } from './mock/MockSocialService';
+export { mockTaskGroupService as taskGroupService } from './mock/MockTaskGroupService';
+export { mockTaskService as taskService } from './mock/MockTaskService';
+export { mockNotificationService as notificationService } from './mock/MockNotificationService';
 
 export type {
   IAuthService,
@@ -14,4 +14,4 @@ export type {
   INotificationService,
   TaskParams,
   Result,
-} from "./types/index";
+} from './types/index';

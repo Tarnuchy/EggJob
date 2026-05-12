@@ -1,4 +1,4 @@
-import { Easing } from "react-native";
+import { Easing } from 'react-native';
 
 export const easing = {
   standard: Easing.bezier(0.25, 1, 0.5, 1),
@@ -14,7 +14,7 @@ export const duration = {
 
 export const pressState = {
   scale: 0.97,
-  overlayColor: "rgba(30, 19, 14, 0.10)",
+  overlayColor: 'rgba(30, 19, 14, 0.10)',
   duration: duration.micro,
   easing: easing.standard,
 } as const;

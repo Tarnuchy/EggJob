@@ -1,31 +1,30 @@
 import React from 'react';
-import { View, StyleSheet, ViewStyle } from 'react-native';
+import type { ViewStyle } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../../theme/colors';
 import { SCREEN_PADDING_H } from '../../theme/spacing';
 
 interface Props {
-    children?: React.ReactNode;
-    style?: ViewStyle;
+  children?: React.ReactNode;
+  style?: ViewStyle;
 }
 
 export const ScreenContainer = ({ children, style }: Props) => {
-    return (
-        <SafeAreaView style={styles.safeArea}>
-            <View style={[styles.container, style]}>
-                {children}
-            </View>
-        </SafeAreaView>
-    );
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      <View style={[styles.container, style]}>{children}</View>
+    </SafeAreaView>
+  );
 };
 
 const styles = StyleSheet.create({
-    safeArea: {
-        flex: 1,
-        backgroundColor: colors.background,
-    },
-    container: {
-        flex: 1,
-        paddingHorizontal: SCREEN_PADDING_H,
-    },
+  safeArea: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  container: {
+    flex: 1,
+    paddingHorizontal: SCREEN_PADDING_H,
+  },
 });

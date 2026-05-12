@@ -7,10 +7,5 @@
     "noEmit": true,
     "jsx": "react-native"
   },
-  "include": [
-    "App.tsx",
-    "src/**/*.ts",
-    "src/**/*.tsx",
-    "babel.config.js"
-  ]
+  "include": ["App.tsx", "src/**/*.ts", "src/**/*.tsx", "babel.config.js"]
 }

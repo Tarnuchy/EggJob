@@ -1,13 +1,10 @@
-import type { ReducerResult } from "../reducer";
-import type { FrontendState } from "../state";
+import type { ReducerResult } from '../reducer';
+import type { FrontendState } from '../state';
 
 type AccessAction = { type: string; [key: string]: unknown };
 
-export function handleTaskGroupAccess(
-  state: FrontendState,
-  action: AccessAction
-): ReducerResult {
-  if (action.type === "task-groups/invite-friend") {
+export function handleTaskGroupAccess(state: FrontendState, action: AccessAction): ReducerResult {
+  if (action.type === 'task-groups/invite-friend') {
     const { invitationId, groupId, fromUserId, toUserId } = action as {
       type: string;
       invitationId: string;
@@ -25,14 +22,14 @@ export function handleTaskGroupAccess(
           ...state.entities,
           invitations: {
             ...state.entities.invitations,
-            [invitationId]: { kind: "task-group", fromUserId, toUserId, groupId },
+            [invitationId]: { kind: 'task-group', fromUserId, toUserId, groupId },
           },
         },
       },
     };
   }
 
-  if (action.type === "task-groups/cancel-invitation") {
+  if (action.type === 'task-groups/cancel-invitation') {
     const invitationId = action.invitationId as string;
     const { [invitationId]: _inv, ...remaining } = state.entities.invitations;
 
@@ -45,16 +42,15 @@ export function handleTaskGroupAccess(
     };
   }
 
-  if (action.type === "task-groups/accept-invitation") {
+  if (action.type === 'task-groups/accept-invitation') {
     const invitationId = action.invitationId as string;
     const groupId = action.groupId as string;
     const userId = action.userId as string;
 
-    const { [invitationId]: _inv, ...remainingInvitations } =
-      state.entities.invitations;
+    const { [invitationId]: _inv, ...remainingInvitations } = state.entities.invitations;
     const group = state.entities.taskGroups[groupId];
     if (!group) {
-      return { ok: false, error: { code: "not-found" } };
+      return { ok: false, error: { code: 'not-found' } };
     }
 
     const memberIds = group.memberIds.includes(userId)
@@ -77,25 +73,24 @@ export function handleTaskGroupAccess(
     };
   }
 
-  if (action.type === "task-groups/request-join") {
-    const { invitationId, groupId, inviteCode, fromUserId, toUserId } =
-      action as {
-        type: string;
-        invitationId: string;
-        groupId: string;
-        inviteCode: string;
-        fromUserId: string;
-        toUserId: string;
-        permissions: string;
-      };
+  if (action.type === 'task-groups/request-join') {
+    const { invitationId, groupId, inviteCode, fromUserId, toUserId } = action as {
+      type: string;
+      invitationId: string;
+      groupId: string;
+      inviteCode: string;
+      fromUserId: string;
+      toUserId: string;
+      permissions: string;
+    };
 
     const group = state.entities.taskGroups[groupId];
     if (!group) {
-      return { ok: false, error: { code: "not-found" } };
+      return { ok: false, error: { code: 'not-found' } };
     }
 
     if (group.inviteCode && inviteCode !== group.inviteCode) {
-      return { ok: false, error: { code: "validation", field: "inviteCode" } };
+      return { ok: false, error: { code: 'validation', field: 'inviteCode' } };
     }
 
     return {
@@ -107,7 +102,7 @@ export function handleTaskGroupAccess(
           invitations: {
             ...state.entities.invitations,
             [invitationId]: {
-              kind: "task-group-request",
+              kind: 'task-group-request',
               fromUserId,
               toUserId,
               groupId,
@@ -118,16 +113,15 @@ export function handleTaskGroupAccess(
     };
   }
 
-  if (action.type === "task-groups/accept-request") {
+  if (action.type === 'task-groups/accept-request') {
     const invitationId = action.invitationId as string;
     const groupId = action.groupId as string;
     const userId = action.userId as string;
 
-    const { [invitationId]: _inv, ...remainingInvitations } =
-      state.entities.invitations;
+    const { [invitationId]: _inv, ...remainingInvitations } = state.entities.invitations;
     const group = state.entities.taskGroups[groupId];
     if (!group) {
-      return { ok: false, error: { code: "not-found" } };
+      return { ok: false, error: { code: 'not-found' } };
     }
 
     const memberIds = group.memberIds.includes(userId)
@@ -150,7 +144,7 @@ export function handleTaskGroupAccess(
     };
   }
 
-  if (action.type === "task-groups/reject-request") {
+  if (action.type === 'task-groups/reject-request') {
     const invitationId = action.invitationId as string;
     const { [invitationId]: _inv, ...remaining } = state.entities.invitations;
 
@@ -163,5 +157,5 @@ export function handleTaskGroupAccess(
     };
   }
 
-  return { ok: false, error: { code: "unknown-action" } };
+  return { ok: false, error: { code: 'unknown-action' } };
 }

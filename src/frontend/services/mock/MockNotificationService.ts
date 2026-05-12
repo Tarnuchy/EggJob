@@ -1,11 +1,8 @@
-import type { INotificationService } from "../types/INotificationService";
-import type { Result } from "../types/index";
+import type { INotificationService } from '../types/INotificationService';
+import type { Result } from '../types/index';
 
 class MockNotificationService implements INotificationService {
-  private notifications: Record<
-    string,
-    { userId: string; message: string; active: boolean }
-  > = {};
+  private notifications: Record<string, { userId: string; message: string; active: boolean }> = {};
 
   async addNotification(input: {
     notificationId: string;
@@ -23,17 +20,15 @@ class MockNotificationService implements INotificationService {
   async markAsRead(notificationId: string): Promise<Result<void>> {
     const notification = this.notifications[notificationId];
     if (!notification) {
-      return { ok: false, error: { code: "not-found" } };
+      return { ok: false, error: { code: 'not-found' } };
     }
     notification.active = false;
     return { ok: true, value: undefined };
   }
 
   async getNotifications(
-    userId: string
-  ): Promise<
-    Result<Array<{ notificationId: string; message: string; active: boolean }>>
-  > {
+    userId: string,
+  ): Promise<Result<Array<{ notificationId: string; message: string; active: boolean }>>> {
     const result = Object.entries(this.notifications)
       .filter(([, notification]) => notification.userId === userId)
       .map(([notificationId, notification]) => ({

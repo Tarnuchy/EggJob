@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useReducer } from 'react';
 import { reduceFrontendState } from './reducer';
-import { createInitialFrontendState, FrontendState } from './state';
+import type { FrontendState } from './state';
+import { createInitialFrontendState } from './state';
 
 type Action = { type: string; [key: string]: unknown };
 
@@ -12,13 +13,10 @@ type AppStateContextValue = {
 const AppStateContext = createContext<AppStateContextValue | null>(null);
 
 export function AppStateProvider({ children }: { children: React.ReactNode }) {
-  const [state, dispatchRaw] = useReducer(
-    (currentState: FrontendState, action: Action) => {
-      const result = reduceFrontendState(currentState, action);
-      return result.ok ? result.value : currentState;
-    },
-    createInitialFrontendState()
-  );
+  const [state, dispatchRaw] = useReducer((currentState: FrontendState, action: Action) => {
+    const result = reduceFrontendState(currentState, action);
+    return result.ok ? result.value : currentState;
+  }, createInitialFrontendState());
 
   return (
     <AppStateContext.Provider value={{ state, dispatch: dispatchRaw }}>

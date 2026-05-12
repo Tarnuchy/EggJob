@@ -1,25 +1,22 @@
-import { isValidUsername } from "../../utils/validation";
-import type { ReducerResult } from "../reducer";
-import type { FrontendState } from "../state";
+import { isValidUsername } from '../../utils/validation';
+import type { ReducerResult } from '../reducer';
+import type { FrontendState } from '../state';
 
 type ProfileAction = { type: string; [key: string]: unknown };
 
-export function handleProfile(
-  state: FrontendState,
-  action: ProfileAction
-): ReducerResult {
-  if (action.type === "profile/edit") {
+export function handleProfile(state: FrontendState, action: ProfileAction): ReducerResult {
+  if (action.type === 'profile/edit') {
     const userId = action.userId as string;
     const username = action.username as string | undefined;
     const photoUrl = action.photoUrl as string | undefined;
 
     if (username !== undefined && !isValidUsername(username)) {
-      return { ok: false, error: { code: "validation", field: "username" } };
+      return { ok: false, error: { code: 'validation', field: 'username' } };
     }
 
     const existing = state.entities.users[userId];
     if (!existing) {
-      return { ok: false, error: { code: "not-found" } };
+      return { ok: false, error: { code: 'not-found' } };
     }
 
     return {
@@ -41,7 +38,7 @@ export function handleProfile(
     };
   }
 
-  if (action.type === "account/delete") {
+  if (action.type === 'account/delete') {
     const accountId = action.accountId as string;
     const userId = action.userId as string;
 
@@ -62,5 +59,5 @@ export function handleProfile(
     };
   }
 
-  return { ok: false, error: { code: "unknown-action" } };
+  return { ok: false, error: { code: 'unknown-action' } };
 }

@@ -1,13 +1,10 @@
-import type { ReducerResult } from "../reducer";
-import type { FrontendState } from "../state";
+import type { ReducerResult } from '../reducer';
+import type { FrontendState } from '../state';
 
 type TaskAction = { type: string; [key: string]: unknown };
 
-export function handleTasks(
-  state: FrontendState,
-  action: TaskAction
-): ReducerResult {
-  if (action.type === "tasks/create") {
+export function handleTasks(state: FrontendState, action: TaskAction): ReducerResult {
+  if (action.type === 'tasks/create') {
     const { taskId, groupId, progressId, name, goal, params } = action as {
       type: string;
       taskId: string;
@@ -26,7 +23,7 @@ export function handleTasks(
 
     const group = state.entities.taskGroups[groupId];
     if (!group) {
-      return { ok: false, error: { code: "not-found" } };
+      return { ok: false, error: { code: 'not-found' } };
     }
 
     return {
@@ -52,22 +49,21 @@ export function handleTasks(
     };
   }
 
-  if (action.type === "tasks/edit") {
+  if (action.type === 'tasks/edit') {
     const taskId = action.taskId as string;
     const name = action.name as string | undefined;
     const goal = action.goal as number | undefined;
-    const params =
-      action.params as
-        | Partial<{
-            photoRequired: boolean;
-            color: string;
-            notifications: boolean;
-          }>
-        | undefined;
+    const params = action.params as
+      | Partial<{
+          photoRequired: boolean;
+          color: string;
+          notifications: boolean;
+        }>
+      | undefined;
 
     const existing = state.entities.tasks[taskId];
     if (!existing) {
-      return { ok: false, error: { code: "not-found" } };
+      return { ok: false, error: { code: 'not-found' } };
     }
 
     return {
@@ -90,7 +86,7 @@ export function handleTasks(
     };
   }
 
-  if (action.type === "tasks/delete") {
+  if (action.type === 'tasks/delete') {
     const taskId = action.taskId as string;
     const task = state.entities.tasks[taskId];
     const { [taskId]: _task, ...remainingTasks } = state.entities.tasks;
@@ -99,7 +95,7 @@ export function handleTasks(
       Object.entries(state.entities.taskGroups).map(([groupId, group]) => [
         groupId,
         { ...group, taskIds: group.taskIds.filter((id) => id !== taskId) },
-      ])
+      ]),
     );
 
     if (!task) {
@@ -122,7 +118,7 @@ export function handleTasks(
     const entryIdsToDelete = new Set(
       Object.entries(state.entities.progressEntries)
         .filter(([, entry]) => entry.taskId === taskId)
-        .map(([entryId]) => entryId)
+        .map(([entryId]) => entryId),
     );
 
     const commentIdsToDelete = new Set<string>();
@@ -138,14 +134,14 @@ export function handleTasks(
 
     const remainingProgressEntries = Object.fromEntries(
       Object.entries(state.entities.progressEntries).filter(
-        ([entryId]) => !entryIdsToDelete.has(entryId)
-      )
+        ([entryId]) => !entryIdsToDelete.has(entryId),
+      ),
     );
 
     const remainingComments = Object.fromEntries(
       Object.entries(state.entities.comments).filter(
-        ([commentId]) => !commentIdsToDelete.has(commentId)
-      )
+        ([commentId]) => !commentIdsToDelete.has(commentId),
+      ),
     );
 
     return {
@@ -164,7 +160,7 @@ export function handleTasks(
     };
   }
 
-  if (action.type === "tasks/add-progress") {
+  if (action.type === 'tasks/add-progress') {
     const { entryId, taskId, value } = action as {
       type: string;
       entryId: string;
@@ -175,12 +171,12 @@ export function handleTasks(
     };
 
     if (value < 0) {
-      return { ok: false, error: { code: "validation", field: "value" } };
+      return { ok: false, error: { code: 'validation', field: 'value' } };
     }
 
     const task = state.entities.tasks[taskId];
     if (!task) {
-      return { ok: false, error: { code: "not-found" } };
+      return { ok: false, error: { code: 'not-found' } };
     }
 
     const progressId = task.progressId;
@@ -205,14 +201,14 @@ export function handleTasks(
     };
   }
 
-  if (action.type === "tasks/add-comment") {
+  if (action.type === 'tasks/add-comment') {
     const commentId = action.commentId as string;
     const progressEntryId = action.progressEntryId as string;
     const message = action.message as string;
 
     const entry = state.entities.progressEntries[progressEntryId];
     if (!entry) {
-      return { ok: false, error: { code: "not-found" } };
+      return { ok: false, error: { code: 'not-found' } };
     }
 
     return {
@@ -237,12 +233,11 @@ export function handleTasks(
     };
   }
 
-  if (action.type === "tasks/delete-comment") {
+  if (action.type === 'tasks/delete-comment') {
     const commentId = action.commentId as string;
     const progressEntryId = action.progressEntryId as string;
 
-    const { [commentId]: _comment, ...remainingComments } =
-      state.entities.comments;
+    const { [commentId]: _comment, ...remainingComments } = state.entities.comments;
     const entry = state.entities.progressEntries[progressEntryId];
 
     return {
@@ -266,5 +261,5 @@ export function handleTasks(
     };
   }
 
-  return { ok: false, error: { code: "unknown-action" } };
+  return { ok: false, error: { code: 'unknown-action' } };
 }

@@ -1,13 +1,13 @@
-import type { ReducerResult } from "../reducer";
-import type { FrontendState } from "../state";
+import type { ReducerResult } from '../reducer';
+import type { FrontendState } from '../state';
 
 type NotificationAction = { type: string; [key: string]: unknown };
 
 export function handleNotifications(
   state: FrontendState,
-  action: NotificationAction
+  action: NotificationAction,
 ): ReducerResult {
-  if (action.type === "notifications/add") {
+  if (action.type === 'notifications/add') {
     const notificationId = action.notificationId as string;
 
     return {
@@ -25,11 +25,11 @@ export function handleNotifications(
     };
   }
 
-  if (action.type === "notifications/read") {
+  if (action.type === 'notifications/read') {
     const notificationId = action.notificationId as string;
     const existing = state.entities.notifications[notificationId];
     if (!existing) {
-      return { ok: false, error: { code: "not-found" } };
+      return { ok: false, error: { code: 'not-found' } };
     }
 
     return {
@@ -47,5 +47,5 @@ export function handleNotifications(
     };
   }
 
-  return { ok: false, error: { code: "unknown-action" } };
+  return { ok: false, error: { code: 'unknown-action' } };
 }

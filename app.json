@@ -17,9 +17,6 @@
       "backgroundColor": "#A99A8A",
       "barStyle": "dark-content"
     },
-    "plugins": [
-      "expo-asset",
-      "expo-font"
-    ]
+    "plugins": ["expo-asset", "expo-font"]
   }
 }

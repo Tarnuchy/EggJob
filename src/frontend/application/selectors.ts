@@ -1,4 +1,4 @@
-import type { FrontendState } from "./state";
+import type { FrontendState } from './state';
 
 export function selectCurrentUserId(state: FrontendState): string | null {
   return state.session.currentUserId;

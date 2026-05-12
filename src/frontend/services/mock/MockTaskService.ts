@@ -1,28 +1,28 @@
-import type { ITaskService, TaskParams } from "../types/ITaskService";
-import type { Result } from "../types/index";
+import type { ITaskService, TaskParams } from '../types/ITaskService';
+import type { Result } from '../types/index';
 
 class MockTaskService implements ITaskService {
   private tasks: Record<
     string,
     { name: string; goal: number; progressId: string; params: TaskParams }
   > = {
-    "tsk-seed-1": {
-      name: "Run 5km",
+    'tsk-seed-1': {
+      name: 'Run 5km',
       goal: 5,
-      progressId: "prg-seed-1",
-      params: { photoRequired: false, color: "blue", notifications: true },
+      progressId: 'prg-seed-1',
+      params: { photoRequired: false, color: 'blue', notifications: true },
     },
-    "tsk-seed-2": {
-      name: "Push-ups 100",
+    'tsk-seed-2': {
+      name: 'Push-ups 100',
       goal: 100,
-      progressId: "prg-seed-2",
-      params: { photoRequired: false, color: "green", notifications: false },
+      progressId: 'prg-seed-2',
+      params: { photoRequired: false, color: 'green', notifications: false },
     },
   };
 
   private progresses: Record<string, { value: number }> = {
-    "prg-seed-1": { value: 3 },
-    "prg-seed-2": { value: 0 },
+    'prg-seed-1': { value: 3 },
+    'prg-seed-2': { value: 0 },
   };
 
   private entries: Record<string, { taskId: string; value: number; commentIds: string[] }> = {};
@@ -53,12 +53,12 @@ class MockTaskService implements ITaskService {
 
   async editTask(
     taskId: string,
-    input: { name?: string; goal?: number; status?: string; params?: Partial<TaskParams> }
+    input: { name?: string; goal?: number; status?: string; params?: Partial<TaskParams> },
   ): Promise<Result<void>> {
     void input.status;
     const task = this.tasks[taskId];
     if (!task) {
-      return { ok: false, error: { code: "not-found" } };
+      return { ok: false, error: { code: 'not-found' } };
     }
 
     if (input.name !== undefined) {
@@ -89,12 +89,12 @@ class MockTaskService implements ITaskService {
     void input.authorUserId;
     void input.note;
     if (input.value < 0) {
-      return { ok: false, error: { code: "validation", field: "value" } };
+      return { ok: false, error: { code: 'validation', field: 'value' } };
     }
 
     const task = this.tasks[input.taskId];
     if (!task) {
-      return { ok: false, error: { code: "not-found" } };
+      return { ok: false, error: { code: 'not-found' } };
     }
 
     this.entries[input.entryId] = {
@@ -138,19 +138,19 @@ class MockTaskService implements ITaskService {
     return { ok: true, value: undefined };
   }
 
-  async getTask(taskId: string): Promise<
-    Result<{ name: string; goal: number; progressId: string; params: TaskParams }>
-  > {
+  async getTask(
+    taskId: string,
+  ): Promise<Result<{ name: string; goal: number; progressId: string; params: TaskParams }>> {
     const task = this.tasks[taskId];
     if (!task) {
-      return { ok: false, error: { code: "not-found" } };
+      return { ok: false, error: { code: 'not-found' } };
     }
 
     return { ok: true, value: { ...task } };
   }
 
   async getProgressEntries(
-    taskId: string
+    taskId: string,
   ): Promise<Result<Array<{ entryId: string; value: number; commentIds: string[] }>>> {
     const result = Object.entries(this.entries)
       .filter(([, entry]) => entry.taskId === taskId)

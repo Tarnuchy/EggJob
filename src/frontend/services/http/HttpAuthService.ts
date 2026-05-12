@@ -1,6 +1,6 @@
-import type { IAuthService } from "../types/IAuthService";
-import type { Result } from "../types/index";
-import { API_BASE_URL } from "./config";
+import type { IAuthService } from '../types/IAuthService';
+import type { Result } from '../types/index';
+import { API_BASE_URL } from './config';
 
 type BackendAuthPayload = {
   account_id: string;
@@ -12,43 +12,38 @@ type BackendAuthPayload = {
 
 type BackendErrorBody = { detail?: unknown };
 
-function mapRegisterError(
-  status: number,
-  detail: string
-): { code: string; field?: string } {
+function mapRegisterError(status: number, detail: string): { code: string; field?: string } {
   const lower = detail.toLowerCase();
 
   if (status === 400) {
-    if (lower.includes("email")) return { code: "validation", field: "email" };
-    if (lower.includes("password"))
-      return { code: "validation", field: "password" };
-    return { code: "validation" };
+    if (lower.includes('email')) return { code: 'validation', field: 'email' };
+    if (lower.includes('password')) return { code: 'validation', field: 'password' };
+    return { code: 'validation' };
   }
   if (status === 409) {
-    if (lower.includes("email")) return { code: "conflict", field: "email" };
-    if (lower.includes("username"))
-      return { code: "conflict", field: "username" };
-    return { code: "conflict" };
+    if (lower.includes('email')) return { code: 'conflict', field: 'email' };
+    if (lower.includes('username')) return { code: 'conflict', field: 'username' };
+    return { code: 'conflict' };
   }
   return { code: `http-${status}` };
 }
 
 function mapLoginError(status: number): { code: string; field?: string } {
-  if (status === 404) return { code: "not-found" };
-  if (status === 401) return { code: "unauthorized" };
-  if (status === 400) return { code: "validation" };
+  if (status === 404) return { code: 'not-found' };
+  if (status === 401) return { code: 'unauthorized' };
+  if (status === 400) return { code: 'validation' };
   return { code: `http-${status}` };
 }
 
 async function readDetail(response: Response): Promise<string> {
   try {
     const body = (await response.json()) as BackendErrorBody;
-    if (typeof body?.detail === "string") return body.detail;
-    if (body?.detail != null) return JSON.stringify(body.detail);
+    if (typeof body?.detail === 'string') return body.detail;
+    if (body?.detail !== null && body?.detail !== undefined) return JSON.stringify(body.detail);
   } catch {
     // not JSON
   }
-  return "";
+  return '';
 }
 
 class HttpAuthService implements IAuthService {
@@ -62,8 +57,8 @@ class HttpAuthService implements IAuthService {
     let response: Response;
     try {
       response = await fetch(`${this.baseUrl}/auth/register`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify({
           email: input.email,
           username: input.username,
@@ -71,7 +66,7 @@ class HttpAuthService implements IAuthService {
         }),
       });
     } catch {
-      return { ok: false, error: { code: "network" } };
+      return { ok: false, error: { code: 'network' } };
     }
 
     if (!response.ok) {
@@ -93,12 +88,12 @@ class HttpAuthService implements IAuthService {
     let response: Response;
     try {
       response = await fetch(`${this.baseUrl}/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify({ email: input.email, password: input.password }),
       });
     } catch {
-      return { ok: false, error: { code: "network" } };
+      return { ok: false, error: { code: 'network' } };
     }
 
     if (!response.ok) {

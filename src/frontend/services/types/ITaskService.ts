@@ -1,4 +1,4 @@
-import type { Result } from "./index";
+import type { Result } from './index';
 
 export type TaskParams = {
   photoRequired: boolean;
@@ -20,7 +20,7 @@ export interface ITaskService {
 
   editTask(
     taskId: string,
-    input: { name?: string; goal?: number; status?: string; params?: Partial<TaskParams> }
+    input: { name?: string; goal?: number; status?: string; params?: Partial<TaskParams> },
   ): Promise<Result<void>>;
 
   deleteTask(taskId: string): Promise<Result<void>>;
@@ -40,10 +40,7 @@ export interface ITaskService {
     message: string;
   }): Promise<Result<void>>;
 
-  deleteComment(input: {
-    commentId: string;
-    progressEntryId: string;
-  }): Promise<Result<void>>;
+  deleteComment(input: { commentId: string; progressEntryId: string }): Promise<Result<void>>;
 
   getTask(taskId: string): Promise<
     Result<{

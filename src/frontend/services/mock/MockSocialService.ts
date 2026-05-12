@@ -1,14 +1,12 @@
-import type { ISocialService } from "../types/ISocialService";
-import type { Result } from "../types/index";
+import type { ISocialService } from '../types/ISocialService';
+import type { Result } from '../types/index';
 
 class MockSocialService implements ISocialService {
-  private invitations: Record<string, { fromUserId: string; toUserId: string }> =
-    {};
+  private invitations: Record<string, { fromUserId: string; toUserId: string }> = {};
 
-  private friendships: Record<string, { userId: string; friendUserId: string }> =
-    {
-      "fr-seed-1": { userId: "usr-seed-1", friendUserId: "usr-seed-2" },
-    };
+  private friendships: Record<string, { userId: string; friendUserId: string }> = {
+    'fr-seed-1': { userId: 'usr-seed-1', friendUserId: 'usr-seed-2' },
+  };
 
   async inviteFriend(input: {
     invitationId: string;
@@ -28,7 +26,7 @@ class MockSocialService implements ISocialService {
   }): Promise<Result<void>> {
     const invitation = this.invitations[input.invitationId];
     if (!invitation) {
-      return { ok: false, error: { code: "not-found" } };
+      return { ok: false, error: { code: 'not-found' } };
     }
 
     delete this.invitations[input.invitationId];
@@ -50,25 +48,22 @@ class MockSocialService implements ISocialService {
   }
 
   async getFriends(
-    userId: string
+    userId: string,
   ): Promise<Result<Array<{ friendshipId: string; friendUserId: string }>>> {
     const result = Object.entries(this.friendships)
-      .filter(([, friendship]) =>
-        friendship.userId === userId || friendship.friendUserId === userId
+      .filter(
+        ([, friendship]) => friendship.userId === userId || friendship.friendUserId === userId,
       )
       .map(([friendshipId, friendship]) => ({
         friendshipId,
-        friendUserId:
-          friendship.userId === userId
-            ? friendship.friendUserId
-            : friendship.userId,
+        friendUserId: friendship.userId === userId ? friendship.friendUserId : friendship.userId,
       }));
 
     return { ok: true, value: result };
   }
 
   async getPendingInvitations(
-    userId: string
+    userId: string,
   ): Promise<Result<Array<{ invitationId: string; fromUserId: string }>>> {
     const result = Object.entries(this.invitations)
       .filter(([, invitation]) => invitation.toUserId === userId)
