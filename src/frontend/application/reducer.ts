@@ -1,4 +1,4 @@
-import type { FrontendState } from './state';
+import type { AppAction } from './actions';
 import { handleAuth } from './handlers/auth';
 import { handleNotifications } from './handlers/notifications';
 import { handleProfile } from './handlers/profile';
@@ -6,13 +6,13 @@ import { handleSocial } from './handlers/social';
 import { handleTaskGroupAccess } from './handlers/task-group-access';
 import { handleTaskGroups } from './handlers/task-groups';
 import { handleTasks } from './handlers/tasks';
+import type { FrontendState } from './state';
 
-type Action = { type: string; [key: string]: unknown };
 export type ReducerResult =
   | { ok: true; value: FrontendState }
   | { ok: false; error: { code: string; field?: string } };
 
-export function reduceFrontendState(state: FrontendState, action: Action): ReducerResult {
+export function reduceFrontendState(state: FrontendState, action: AppAction): ReducerResult {
   switch (action.type) {
     case 'auth/register':
     case 'auth/login':
@@ -57,7 +57,10 @@ export function reduceFrontendState(state: FrontendState, action: Action): Reduc
     case 'notifications/read':
       return handleNotifications(state, action);
 
-    default:
+    default: {
+      const exhaustive: never = action;
+      void exhaustive;
       return { ok: false, error: { code: 'unknown-action' } };
+    }
   }
 }

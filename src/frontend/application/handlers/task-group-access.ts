@@ -1,18 +1,19 @@
+import type { ActionOf } from '../actions';
 import type { ReducerResult } from '../reducer';
 import type { FrontendState } from '../state';
 
-type AccessAction = { type: string; [key: string]: unknown };
+type AccessAction = ActionOf<
+  | 'task-groups/invite-friend'
+  | 'task-groups/cancel-invitation'
+  | 'task-groups/accept-invitation'
+  | 'task-groups/request-join'
+  | 'task-groups/accept-request'
+  | 'task-groups/reject-request'
+>;
 
 export function handleTaskGroupAccess(state: FrontendState, action: AccessAction): ReducerResult {
   if (action.type === 'task-groups/invite-friend') {
-    const { invitationId, groupId, fromUserId, toUserId } = action as {
-      type: string;
-      invitationId: string;
-      groupId: string;
-      fromUserId: string;
-      toUserId: string;
-      permissions: string;
-    };
+    const { invitationId, groupId, fromUserId, toUserId } = action;
 
     return {
       ok: true,
@@ -30,7 +31,7 @@ export function handleTaskGroupAccess(state: FrontendState, action: AccessAction
   }
 
   if (action.type === 'task-groups/cancel-invitation') {
-    const invitationId = action.invitationId as string;
+    const { invitationId } = action;
     const { [invitationId]: _inv, ...remaining } = state.entities.invitations;
 
     return {
@@ -43,9 +44,7 @@ export function handleTaskGroupAccess(state: FrontendState, action: AccessAction
   }
 
   if (action.type === 'task-groups/accept-invitation') {
-    const invitationId = action.invitationId as string;
-    const groupId = action.groupId as string;
-    const userId = action.userId as string;
+    const { invitationId, groupId, userId } = action;
 
     const { [invitationId]: _inv, ...remainingInvitations } = state.entities.invitations;
     const group = state.entities.taskGroups[groupId];
@@ -74,15 +73,7 @@ export function handleTaskGroupAccess(state: FrontendState, action: AccessAction
   }
 
   if (action.type === 'task-groups/request-join') {
-    const { invitationId, groupId, inviteCode, fromUserId, toUserId } = action as {
-      type: string;
-      invitationId: string;
-      groupId: string;
-      inviteCode: string;
-      fromUserId: string;
-      toUserId: string;
-      permissions: string;
-    };
+    const { invitationId, groupId, inviteCode, fromUserId, toUserId } = action;
 
     const group = state.entities.taskGroups[groupId];
     if (!group) {
@@ -114,9 +105,7 @@ export function handleTaskGroupAccess(state: FrontendState, action: AccessAction
   }
 
   if (action.type === 'task-groups/accept-request') {
-    const invitationId = action.invitationId as string;
-    const groupId = action.groupId as string;
-    const userId = action.userId as string;
+    const { invitationId, groupId, userId } = action;
 
     const { [invitationId]: _inv, ...remainingInvitations } = state.entities.invitations;
     const group = state.entities.taskGroups[groupId];
@@ -144,18 +133,14 @@ export function handleTaskGroupAccess(state: FrontendState, action: AccessAction
     };
   }
 
-  if (action.type === 'task-groups/reject-request') {
-    const invitationId = action.invitationId as string;
-    const { [invitationId]: _inv, ...remaining } = state.entities.invitations;
+  const { invitationId } = action;
+  const { [invitationId]: _inv, ...remaining } = state.entities.invitations;
 
-    return {
-      ok: true,
-      value: {
-        ...state,
-        entities: { ...state.entities, invitations: remaining },
-      },
-    };
-  }
-
-  return { ok: false, error: { code: 'unknown-action' } };
+  return {
+    ok: true,
+    value: {
+      ...state,
+      entities: { ...state.entities, invitations: remaining },
+    },
+  };
 }

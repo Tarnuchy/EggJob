@@ -1,14 +1,13 @@
 import { isValidUsername } from '../../utils/validation';
+import type { ActionOf } from '../actions';
 import type { ReducerResult } from '../reducer';
 import type { FrontendState } from '../state';
 
-type ProfileAction = { type: string; [key: string]: unknown };
+type ProfileAction = ActionOf<'profile/edit' | 'account/delete'>;
 
 export function handleProfile(state: FrontendState, action: ProfileAction): ReducerResult {
   if (action.type === 'profile/edit') {
-    const userId = action.userId as string;
-    const username = action.username as string | undefined;
-    const photoUrl = action.photoUrl as string | undefined;
+    const { userId, username, photoUrl } = action;
 
     if (username !== undefined && !isValidUsername(username)) {
       return { ok: false, error: { code: 'validation', field: 'username' } };
@@ -38,26 +37,20 @@ export function handleProfile(state: FrontendState, action: ProfileAction): Redu
     };
   }
 
-  if (action.type === 'account/delete') {
-    const accountId = action.accountId as string;
-    const userId = action.userId as string;
+  const { accountId, userId } = action;
+  const { [accountId]: _acc, ...remainingAccounts } = state.entities.accounts;
+  const { [userId]: _usr, ...remainingUsers } = state.entities.users;
 
-    const { [accountId]: _acc, ...remainingAccounts } = state.entities.accounts;
-    const { [userId]: _usr, ...remainingUsers } = state.entities.users;
-
-    return {
-      ok: true,
-      value: {
-        ...state,
-        session: { currentAccountId: null, currentUserId: null },
-        entities: {
-          ...state.entities,
-          accounts: remainingAccounts,
-          users: remainingUsers,
-        },
+  return {
+    ok: true,
+    value: {
+      ...state,
+      session: { currentAccountId: null, currentUserId: null },
+      entities: {
+        ...state.entities,
+        accounts: remainingAccounts,
+        users: remainingUsers,
       },
-    };
-  }
-
-  return { ok: false, error: { code: 'unknown-action' } };
+    },
+  };
 }

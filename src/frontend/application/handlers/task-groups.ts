@@ -1,18 +1,19 @@
+import type { ActionOf } from '../actions';
 import type { ReducerResult } from '../reducer';
 import type { FrontendState } from '../state';
 
-type TaskGroupAction = { type: string; [key: string]: unknown };
+type TaskGroupAction = ActionOf<
+  | 'task-groups/create'
+  | 'task-groups/edit'
+  | 'task-groups/delete'
+  | 'task-groups/add-member'
+  | 'task-groups/remove-member'
+  | 'task-groups/leave'
+>;
 
 export function handleTaskGroups(state: FrontendState, action: TaskGroupAction): ReducerResult {
   if (action.type === 'task-groups/create') {
-    const { groupId, ownerUserId, name, privacy, inviteCode } = action as {
-      type: string;
-      groupId: string;
-      ownerUserId: string;
-      name: string;
-      privacy: string;
-      inviteCode?: string;
-    };
+    const { groupId, ownerUserId, name, privacy, inviteCode } = action;
 
     if (!name || name.trim().length === 0) {
       return { ok: false, error: { code: 'validation', field: 'name' } };
@@ -41,9 +42,7 @@ export function handleTaskGroups(state: FrontendState, action: TaskGroupAction):
   }
 
   if (action.type === 'task-groups/edit') {
-    const groupId = action.groupId as string;
-    const name = action.name as string | undefined;
-    const privacy = action.privacy as string | undefined;
+    const { groupId, name, privacy } = action;
 
     if (name !== undefined && name.trim().length === 0) {
       return { ok: false, error: { code: 'validation', field: 'name' } };
@@ -74,7 +73,7 @@ export function handleTaskGroups(state: FrontendState, action: TaskGroupAction):
   }
 
   if (action.type === 'task-groups/delete') {
-    const groupId = action.groupId as string;
+    const { groupId } = action;
     const group = state.entities.taskGroups[groupId];
     const { [groupId]: _g, ...remainingTaskGroups } = state.entities.taskGroups;
 
@@ -152,8 +151,7 @@ export function handleTaskGroups(state: FrontendState, action: TaskGroupAction):
   }
 
   if (action.type === 'task-groups/add-member') {
-    const groupId = action.groupId as string;
-    const userId = action.userId as string;
+    const { groupId, userId } = action;
     const group = state.entities.taskGroups[groupId];
     if (!group) {
       return { ok: false, error: { code: 'not-found' } };
@@ -178,31 +176,26 @@ export function handleTaskGroups(state: FrontendState, action: TaskGroupAction):
     };
   }
 
-  if (action.type === 'task-groups/remove-member' || action.type === 'task-groups/leave') {
-    const groupId = action.groupId as string;
-    const userId = action.userId as string;
-    const group = state.entities.taskGroups[groupId];
-    if (!group) {
-      return { ok: false, error: { code: 'not-found' } };
-    }
+  const { groupId, userId } = action;
+  const group = state.entities.taskGroups[groupId];
+  if (!group) {
+    return { ok: false, error: { code: 'not-found' } };
+  }
 
-    return {
-      ok: true,
-      value: {
-        ...state,
-        entities: {
-          ...state.entities,
-          taskGroups: {
-            ...state.entities.taskGroups,
-            [groupId]: {
-              ...group,
-              memberIds: group.memberIds.filter((id) => id !== userId),
-            },
+  return {
+    ok: true,
+    value: {
+      ...state,
+      entities: {
+        ...state.entities,
+        taskGroups: {
+          ...state.entities.taskGroups,
+          [groupId]: {
+            ...group,
+            memberIds: group.memberIds.filter((id) => id !== userId),
           },
         },
       },
-    };
-  }
-
-  return { ok: false, error: { code: 'unknown-action' } };
+    },
+  };
 }

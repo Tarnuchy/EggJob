@@ -1,59 +1,67 @@
-type Account = {
+export type TaskColor = 'red' | 'orange' | 'yellow' | 'green' | 'blue' | 'purple';
+
+export type TaskGroupPrivacy = 'public' | 'private' | 'friends';
+
+export type InvitationKind = 'friend' | 'task-group' | 'task-group-request';
+
+export type Account = {
   email: string;
 };
 
-type User = {
+export type User = {
   username: string;
   photoUrl?: string;
 };
 
-type TaskGroup = {
+export type TaskGroup = {
   name: string;
   ownerUserId: string;
-  privacy: string;
+  privacy: TaskGroupPrivacy;
   inviteCode: string;
   taskIds: string[];
   memberIds: string[];
 };
 
-type Task = {
+export type TaskParams = {
+  photoRequired: boolean;
+  color: TaskColor;
+  notifications: boolean;
+};
+
+export type Task = {
   name: string;
   goal: number;
   progressId: string;
-  params: {
-    photoRequired: boolean;
-    color: string;
-    notifications: boolean;
-  };
+  params: TaskParams;
 };
 
-type TaskProgress = {
+export type TaskProgress = {
   value: number;
 };
 
-type ProgressEntry = {
+export type ProgressEntry = {
   taskId: string;
   value: number;
   commentIds: string[];
 };
 
-type Comment = {
+export type Comment = {
   message: string;
 };
 
-type Invitation = {
-  kind: string;
+export type Invitation = {
+  kind: InvitationKind;
   fromUserId?: string;
   toUserId?: string;
   groupId?: string;
 };
 
-type Friendship = {
+export type Friendship = {
   userId: string;
   friendUserId: string;
 };
 
-type Notification = {
+export type Notification = {
   active: boolean;
 };
 
