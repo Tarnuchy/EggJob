@@ -16,6 +16,7 @@ import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import { authService } from '../../services';
 import { useAppState } from '../../application/AppStateContext';
+import { mapReducerError } from '../../utils/mapReducerError';
 import {
   getEmailError,
   getPasswordError,
@@ -108,11 +109,16 @@ export const AuthScreen = () => {
         setLoginShakeCount((c) => c + 1);
         return;
       }
-      dispatch({
+      const dispatchResult = dispatch({
         type: 'auth/login',
         accountId: result.value.accountId,
         userId: result.value.userId,
       });
+      if (!dispatchResult.ok) {
+        setLoginError(mapReducerError(dispatchResult.error));
+        setLoginShakeCount((c) => c + 1);
+        return;
+      }
       navigation.replace('BottomBar');
     } finally {
       setIsLoading(false);
@@ -180,13 +186,24 @@ export const AuthScreen = () => {
         setRegisterShakeCount((c) => c + 1);
         return;
       }
-      dispatch({
+      const dispatchResult = dispatch({
         type: 'auth/register',
         email: regEmail.trim(),
         username: regUsername.trim(),
         accountId: result.value.accountId,
         userId: result.value.userId,
       });
+      if (!dispatchResult.ok) {
+        if (dispatchResult.error.field === 'email') {
+          setRegEmailError(mapReducerError(dispatchResult.error));
+        } else if (dispatchResult.error.field === 'username') {
+          setRegUsernameError(mapReducerError(dispatchResult.error));
+        } else {
+          setRegisterError(mapReducerError(dispatchResult.error));
+        }
+        setRegisterShakeCount((c) => c + 1);
+        return;
+      }
       navigation.replace('BottomBar');
     } finally {
       setIsLoading(false);
