@@ -6,208 +6,30 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BlurView } from 'expo-blur';
 import type { RootStackParamList } from '../../navigation/types';
 
-import { AppButton } from '../../components/common/AppButton';
-import { AppInput } from '../../components/common/AppInput';
 import { AuthBackground } from '../../components/auth/AuthBackground';
 import { AuthTabSwitcher } from '../../components/auth/AuthTabSwitcher';
 import { Spacer } from '../../components/common/Spacer';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
-import { authService } from '../../services';
-import { useAppState } from '../../application/AppStateContext';
-import { mapReducerError } from '../../utils/mapReducerError';
-import {
-  getEmailError,
-  getPasswordError,
-  getRegConfirmError,
-  getRegEmailError,
-  getRegPasswordError,
-  getRegUsernameError,
-  shouldValidateOnBlur,
-  shouldValidatePasswordOnBlur,
-} from '../../utils/authValidation';
 import type { AuthTab } from '../../types';
 import { useAuthFormAnimation } from '../../hooks/useAuthFormAnimation';
+import { LoginForm } from './LoginForm';
+import { RegisterForm } from './RegisterForm';
 
 export const AuthScreen = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { dispatch } = useAppState();
-
   const [activeTab, setActiveTab] = useState<AuthTab>('login');
-  const [isLoading, setIsLoading] = useState(false);
-
-  // ─── Login state ─────────────────────────────────────────
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [emailTouched, setEmailTouched] = useState(false);
-  const [passwordTouched, setPasswordTouched] = useState(false);
-  const [emailError, setEmailError] = useState('');
-  const [passwordError, setPasswordError] = useState('');
-  const [loginError, setLoginError] = useState('');
-  const [loginShakeCount, setLoginShakeCount] = useState(0);
-
-  // ─── Register state ───────────────────────────────────────
-  const [regEmail, setRegEmail] = useState('');
-  const [regUsername, setRegUsername] = useState('');
-  const [regPassword, setRegPassword] = useState('');
-  const [regConfirm, setRegConfirm] = useState('');
-  const [regEmailTouched, setRegEmailTouched] = useState(false);
-  const [regUsernameTouched, setRegUsernameTouched] = useState(false);
-  const [regPasswordTouched, setRegPasswordTouched] = useState(false);
-  const [regConfirmTouched, setRegConfirmTouched] = useState(false);
-  const [regEmailError, setRegEmailError] = useState('');
-  const [regUsernameError, setRegUsernameError] = useState('');
-  const [regPasswordError, setRegPasswordError] = useState('');
-  const [regConfirmError, setRegConfirmError] = useState('');
-  const [registerError, setRegisterError] = useState('');
-  const [registerShakeCount, setRegisterShakeCount] = useState(0);
-  const [regPasswordVisible, setRegPasswordVisible] = useState(false);
-
-  // ─── Animations ───────────────────────────────────────────
   const { cardEntrance, formOpacity, animateTabSwitch } = useAuthFormAnimation();
 
   const handleTabChange = (tab: AuthTab) => {
     if (tab === activeTab) return;
-
-    setLoginShakeCount(0);
-    setRegisterShakeCount(0);
-
     animateTabSwitch();
     setActiveTab(tab);
   };
 
-  // ─── Login handlers ───────────────────────────────────────
-  const handleEmailChange = (v: string) => {
-    setEmail(v);
-    if (emailError) setEmailError('');
-    if (loginError) setLoginError('');
-  };
-  const handlePasswordChange = (v: string) => {
-    setPassword(v);
-    if (passwordError) setPasswordError('');
-    if (loginError) setLoginError('');
-  };
-
-  const handleLogin = async () => {
-    setEmailTouched(true);
-    setPasswordTouched(true);
-    const eErr = getEmailError(email);
-    const pErr = getPasswordError(password);
-    setEmailError(eErr);
-    setPasswordError(pErr);
-    if (eErr || pErr) {
-      setLoginShakeCount((c) => c + 1);
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      const result = await authService.login({ email: email.trim(), password });
-      if (!result.ok) {
-        setLoginError('Invalid email or password.');
-        setLoginShakeCount((c) => c + 1);
-        return;
-      }
-      const dispatchResult = dispatch({
-        type: 'auth/login',
-        accountId: result.value.accountId,
-        userId: result.value.userId,
-      });
-      if (!dispatchResult.ok) {
-        setLoginError(mapReducerError(dispatchResult.error));
-        setLoginShakeCount((c) => c + 1);
-        return;
-      }
-      navigation.replace('BottomBar');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // ─── Register handlers ────────────────────────────────────
-  const handleRegEmailChange = (v: string) => {
-    setRegEmail(v);
-    if (regEmailError) setRegEmailError('');
-    if (registerError) setRegisterError('');
-  };
-  const handleRegUsernameChange = (v: string) => {
-    setRegUsername(v);
-    if (regUsernameError) setRegUsernameError('');
-    if (registerError) setRegisterError('');
-  };
-  const handleRegPasswordChange = (v: string) => {
-    setRegPassword(v);
-    if (regPasswordError) setRegPasswordError('');
-    if (regConfirmError) setRegConfirmError('');
-    if (registerError) setRegisterError('');
-  };
-  const handleRegConfirmChange = (v: string) => {
-    setRegConfirm(v);
-    if (regConfirmError) setRegConfirmError('');
-    if (registerError) setRegisterError('');
-  };
-
-  const handleRegister = async () => {
-    setRegEmailTouched(true);
-    setRegUsernameTouched(true);
-    setRegPasswordTouched(true);
-    setRegConfirmTouched(true);
-    const eErr = getRegEmailError(regEmail);
-    const uErr = getRegUsernameError(regUsername);
-    const pErr = getRegPasswordError(regPassword);
-    const cErr = getRegConfirmError(regConfirm, regPassword);
-    setRegEmailError(eErr);
-    setRegUsernameError(uErr);
-    setRegPasswordError(pErr);
-    setRegConfirmError(cErr);
-    if (eErr || uErr || pErr || cErr) {
-      setRegisterShakeCount((c) => c + 1);
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      const result = await authService.register({
-        email: regEmail.trim(),
-        username: regUsername.trim(),
-        password: regPassword,
-      });
-      if (!result.ok) {
-        if (result.error.field === 'email') {
-          setRegEmailTouched(true);
-          setRegEmailError('This email is already in use.');
-        } else if (result.error.field === 'username') {
-          setRegUsernameTouched(true);
-          setRegUsernameError('This username is already taken.');
-        } else {
-          setRegisterError('Registration failed. Please try again.');
-        }
-        setRegisterShakeCount((c) => c + 1);
-        return;
-      }
-      const dispatchResult = dispatch({
-        type: 'auth/register',
-        email: regEmail.trim(),
-        username: regUsername.trim(),
-        accountId: result.value.accountId,
-        userId: result.value.userId,
-      });
-      if (!dispatchResult.ok) {
-        if (dispatchResult.error.field === 'email') {
-          setRegEmailError(mapReducerError(dispatchResult.error));
-        } else if (dispatchResult.error.field === 'username') {
-          setRegUsernameError(mapReducerError(dispatchResult.error));
-        } else {
-          setRegisterError(mapReducerError(dispatchResult.error));
-        }
-        setRegisterShakeCount((c) => c + 1);
-        return;
-      }
-      navigation.replace('BottomBar');
-    } finally {
-      setIsLoading(false);
-    }
+  const handleAuthSuccess = () => {
+    navigation.replace('BottomBar');
   };
 
   return (
@@ -222,7 +44,6 @@ export const AuthScreen = () => {
             <Text style={styles.appName}>EggJob</Text>
             <Spacer height={spacing.md} />
 
-            {/* Glass card */}
             <Animated.View style={[styles.cardShadow, cardEntrance]}>
               <BlurView intensity={12} tint="light" style={styles.blur}>
                 <View style={styles.cardInner}>
@@ -231,122 +52,12 @@ export const AuthScreen = () => {
 
                   <Animated.View style={{ opacity: formOpacity }}>
                     {activeTab === 'login' ? (
-                      <>
-                        <AppInput
-                          label="Email"
-                          placeholder="Your Email"
-                          value={email}
-                          onChangeText={handleEmailChange}
-                          onBlur={() => {
-                            if (!shouldValidateOnBlur(email)) return;
-                            setEmailTouched(true);
-                            setEmailError(getEmailError(email));
-                          }}
-                          touched={emailTouched}
-                          error={emailError}
-                          keyboardType="email-address"
-                          autoCapitalize="none"
-                          autoCorrect={false}
-                        />
-                        <AppInput
-                          label="Password"
-                          placeholder="Your Password"
-                          value={password}
-                          onChangeText={handlePasswordChange}
-                          onBlur={() => {
-                            if (!shouldValidatePasswordOnBlur(password)) return;
-                            setPasswordTouched(true);
-                            setPasswordError(getPasswordError(password));
-                          }}
-                          touched={passwordTouched}
-                          error={passwordError}
-                          secureTextEntry
-                        />
-                        {loginError ? <Text style={styles.errorText}>⚠️ {loginError}</Text> : null}
-                        <Spacer height={spacing.sm} />
-                        <AppButton
-                          title="Log In"
-                          onPress={handleLogin}
-                          shakeCount={loginShakeCount}
-                          isLoading={isLoading}
-                        />
-                      </>
+                      <LoginForm onSuccess={handleAuthSuccess} isActive={activeTab === 'login'} />
                     ) : (
-                      <>
-                        <AppInput
-                          label="Email"
-                          placeholder="Your Email"
-                          value={regEmail}
-                          onChangeText={handleRegEmailChange}
-                          onBlur={() => {
-                            if (!shouldValidateOnBlur(regEmail)) return;
-                            setRegEmailTouched(true);
-                            setRegEmailError(getRegEmailError(regEmail));
-                          }}
-                          touched={regEmailTouched}
-                          error={regEmailError}
-                          keyboardType="email-address"
-                          autoCapitalize="none"
-                          autoCorrect={false}
-                        />
-                        <AppInput
-                          label="Password"
-                          placeholder="Your Password"
-                          value={regPassword}
-                          onChangeText={handleRegPasswordChange}
-                          onBlur={() => {
-                            if (!shouldValidatePasswordOnBlur(regPassword)) return;
-                            setRegPasswordTouched(true);
-                            setRegPasswordError(getRegPasswordError(regPassword));
-                          }}
-                          touched={regPasswordTouched}
-                          error={regPasswordError}
-                          secureTextEntry
-                          passwordVisible={regPasswordVisible}
-                          onTogglePasswordVisibility={() => setRegPasswordVisible((v) => !v)}
-                        />
-                        <AppInput
-                          label="Confirm Password"
-                          placeholder="Confirm Password"
-                          value={regConfirm}
-                          onChangeText={handleRegConfirmChange}
-                          onBlur={() => {
-                            if (!shouldValidatePasswordOnBlur(regConfirm)) return;
-                            setRegConfirmTouched(true);
-                            setRegConfirmError(getRegConfirmError(regConfirm, regPassword));
-                          }}
-                          touched={regConfirmTouched}
-                          error={regConfirmError}
-                          secureTextEntry
-                          passwordVisible={regPasswordVisible}
-                          onTogglePasswordVisibility={() => setRegPasswordVisible((v) => !v)}
-                        />
-                        <AppInput
-                          label="Username"
-                          placeholder="Your Username"
-                          value={regUsername}
-                          onChangeText={handleRegUsernameChange}
-                          onBlur={() => {
-                            if (!shouldValidateOnBlur(regUsername)) return;
-                            setRegUsernameTouched(true);
-                            setRegUsernameError(getRegUsernameError(regUsername));
-                          }}
-                          touched={regUsernameTouched}
-                          error={regUsernameError}
-                          autoCapitalize="none"
-                          autoCorrect={false}
-                        />
-                        {registerError ? (
-                          <Text style={styles.errorText}>⚠️ {registerError}</Text>
-                        ) : null}
-                        <Spacer height={spacing.sm} />
-                        <AppButton
-                          title="Create Account"
-                          onPress={handleRegister}
-                          shakeCount={registerShakeCount}
-                          isLoading={isLoading}
-                        />
-                      </>
+                      <RegisterForm
+                        onSuccess={handleAuthSuccess}
+                        isActive={activeTab === 'register'}
+                      />
                     )}
                   </Animated.View>
                 </View>
@@ -400,10 +111,5 @@ const styles = StyleSheet.create({
     borderColor: colors.cardBorderTranslucent,
     borderRadius: 24,
     padding: spacing.lg,
-  },
-  errorText: {
-    marginBottom: spacing.sm,
-    color: colors.danger,
-    ...typography.caption,
   },
 });
