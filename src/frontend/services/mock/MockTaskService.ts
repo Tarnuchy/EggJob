@@ -38,16 +38,9 @@ class MockTaskService implements ITaskService {
     kind: string;
     params: TaskParams;
   }): Promise<Result<void>> {
-    void input.groupId;
-    void input.status;
-    void input.kind;
-    this.tasks[input.taskId] = {
-      name: input.name,
-      goal: input.goal,
-      progressId: input.progressId,
-      params: input.params,
-    };
-    this.progresses[input.progressId] = { value: 0 };
+    const { taskId, progressId, name, goal, params } = input;
+    this.tasks[taskId] = { name, goal, progressId, params };
+    this.progresses[progressId] = { value: 0 };
     return { ok: true, value: undefined };
   }
 
@@ -55,21 +48,15 @@ class MockTaskService implements ITaskService {
     taskId: string,
     input: { name?: string; goal?: number; status?: string; params?: Partial<TaskParams> },
   ): Promise<Result<void>> {
-    void input.status;
+    const { name, goal, params } = input;
     const task = this.tasks[taskId];
     if (!task) {
       return { ok: false, error: { code: 'not-found' } };
     }
 
-    if (input.name !== undefined) {
-      task.name = input.name;
-    }
-    if (input.goal !== undefined) {
-      task.goal = input.goal;
-    }
-    if (input.params) {
-      task.params = { ...task.params, ...input.params };
-    }
+    if (name !== undefined) task.name = name;
+    if (goal !== undefined) task.goal = goal;
+    if (params) task.params = { ...task.params, ...params };
 
     return { ok: true, value: undefined };
   }
@@ -86,26 +73,21 @@ class MockTaskService implements ITaskService {
     value: number;
     note: string;
   }): Promise<Result<void>> {
-    void input.authorUserId;
-    void input.note;
-    if (input.value < 0) {
+    const { entryId, taskId, value } = input;
+    if (value < 0) {
       return { ok: false, error: { code: 'validation', field: 'value' } };
     }
 
-    const task = this.tasks[input.taskId];
+    const task = this.tasks[taskId];
     if (!task) {
       return { ok: false, error: { code: 'not-found' } };
     }
 
-    this.entries[input.entryId] = {
-      taskId: input.taskId,
-      value: input.value,
-      commentIds: [],
-    };
+    this.entries[entryId] = { taskId, value, commentIds: [] };
 
     const progress = this.progresses[task.progressId];
     if (progress) {
-      progress.value += input.value;
+      progress.value += value;
     }
 
     return { ok: true, value: undefined };
@@ -117,11 +99,11 @@ class MockTaskService implements ITaskService {
     authorUserId: string;
     message: string;
   }): Promise<Result<void>> {
-    void input.authorUserId;
-    this.comments[input.commentId] = { message: input.message };
-    const entry = this.entries[input.progressEntryId];
+    const { commentId, progressEntryId, message } = input;
+    this.comments[commentId] = { message };
+    const entry = this.entries[progressEntryId];
     if (entry) {
-      entry.commentIds.push(input.commentId);
+      entry.commentIds.push(commentId);
     }
     return { ok: true, value: undefined };
   }

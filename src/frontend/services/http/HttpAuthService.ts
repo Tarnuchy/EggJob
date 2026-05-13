@@ -1,14 +1,9 @@
 import type { IAuthService } from '../types/IAuthService';
 import type { Result } from '../types/index';
+import { AuthTokenStorage } from './AuthTokenStorage';
 import { API_BASE_URL } from './config';
-
-type BackendAuthPayload = {
-  account_id: string;
-  user_id: string;
-  email: string;
-  username: string;
-  photo_url: string | null;
-};
+import { mapBackendAuthPayload } from './mappers/mapBackendAuthPayload';
+import type { BackendAuthPayload } from './mappers/mapBackendAuthPayload';
 
 type BackendErrorBody = { detail?: unknown };
 
@@ -46,7 +41,9 @@ async function readDetail(response: Response): Promise<string> {
   return '';
 }
 
-class HttpAuthService implements IAuthService {
+const JSON_HEADERS = { 'Content-Type': 'application/json', Accept: 'application/json' };
+
+export class HttpAuthService implements IAuthService {
   constructor(private readonly baseUrl: string = API_BASE_URL) {}
 
   async register(input: {
@@ -58,12 +55,8 @@ class HttpAuthService implements IAuthService {
     try {
       response = await fetch(`${this.baseUrl}/auth/register`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({
-          email: input.email,
-          username: input.username,
-          password: input.password,
-        }),
+        headers: JSON_HEADERS,
+        body: JSON.stringify(input),
       });
     } catch {
       return { ok: false, error: { code: 'network' } };
@@ -74,10 +67,13 @@ class HttpAuthService implements IAuthService {
       return { ok: false, error: mapRegisterError(response.status, detail) };
     }
 
-    const payload = (await response.json()) as BackendAuthPayload;
+    const parsed = mapBackendAuthPayload((await response.json()) as BackendAuthPayload);
+    if (parsed.accessToken) {
+      await AuthTokenStorage.setToken(parsed.accessToken);
+    }
     return {
       ok: true,
-      value: { accountId: payload.account_id, userId: payload.user_id },
+      value: { accountId: parsed.accountId, userId: parsed.userId },
     };
   }
 
@@ -89,8 +85,8 @@ class HttpAuthService implements IAuthService {
     try {
       response = await fetch(`${this.baseUrl}/auth/login`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({ email: input.email, password: input.password }),
+        headers: JSON_HEADERS,
+        body: JSON.stringify(input),
       });
     } catch {
       return { ok: false, error: { code: 'network' } };
@@ -100,14 +96,26 @@ class HttpAuthService implements IAuthService {
       return { ok: false, error: mapLoginError(response.status) };
     }
 
-    const payload = (await response.json()) as BackendAuthPayload;
+    const parsed = mapBackendAuthPayload((await response.json()) as BackendAuthPayload);
+    if (parsed.accessToken) {
+      await AuthTokenStorage.setToken(parsed.accessToken);
+    }
     return {
       ok: true,
-      value: { accountId: payload.account_id, userId: payload.user_id },
+      value: { accountId: parsed.accountId, userId: parsed.userId },
     };
   }
 
   async logout(): Promise<Result<void>> {
+    try {
+      await fetch(`${this.baseUrl}/auth/logout`, {
+        method: 'POST',
+        headers: JSON_HEADERS,
+      });
+    } catch {
+      // token will still be cleared locally
+    }
+    await AuthTokenStorage.clearToken();
     return { ok: true, value: undefined };
   }
 }
