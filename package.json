@@ -9,21 +9,7 @@
     "ios": "expo start --ios",
     "test": "vitest run --config vitest.config.ts",
     "test:watch": "vitest --config vitest.config.ts",
-    "lint": "eslint \"src/**/*.{ts,tsx}\" \"App.tsx\" \"tests/**/*.{ts,tsx}\"",
-    "lint:fix": "eslint --fix \"src/**/*.{ts,tsx}\" \"App.tsx\" \"tests/**/*.{ts,tsx}\"",
-    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
-    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
-    "typecheck": "tsc --noEmit",
-    "prepare": "husky"
-  },
-  "lint-staged": {
-    "*.{ts,tsx}": [
-      "eslint --fix",
-      "prettier --write"
-    ],
-    "*.{json,md}": [
-      "prettier --write"
-    ]
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.2",
@@ -49,14 +35,7 @@
   "devDependencies": {
     "@babel/core": "^7.25.2",
     "@types/react": "~19.1.10",
-    "@typescript-eslint/eslint-plugin": "^7.18.0",
-    "@typescript-eslint/parser": "^7.18.0",
     "babel-preset-expo": "~54.0.10",
-    "eslint": "^8.57.1",
-    "eslint-plugin-react-hooks": "^4.6.2",
-    "husky": "^9.1.7",
-    "lint-staged": "^15.5.2",
-    "prettier": "^3.8.3",
     "typescript": "^5.8.3",
     "vitest": "^2.1.8"
   }

@@ -1,9 +1,0 @@
-node_modules
-dist
-build
-.expo
-coverage
-babel.config.js
-metro.config.js
-*.config.js
-package-lock.json
