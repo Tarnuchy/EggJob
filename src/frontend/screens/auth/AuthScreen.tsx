@@ -8,8 +8,8 @@ import type { RootStackParamList } from '../../navigation/types';
 
 import { AppButton } from '../../components/common/AppButton';
 import { AppInput } from '../../components/common/AppInput';
-import { AuthBackground } from '../../components/common/AuthBackground';
-import { AuthTabSwitcher } from '../../components/common/AuthTabSwitcher';
+import { AuthBackground } from '../../components/auth/AuthBackground';
+import { AuthTabSwitcher } from '../../components/auth/AuthTabSwitcher';
 import { Spacer } from '../../components/common/Spacer';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
@@ -235,7 +235,7 @@ export const AuthScreen = () => {
                         <AppInput
                           label="Email"
                           placeholder="Your Email"
-                          message={email}
+                          value={email}
                           onChangeText={handleEmailChange}
                           onBlur={() => {
                             if (!shouldValidateOnBlur(email)) return;
@@ -251,7 +251,7 @@ export const AuthScreen = () => {
                         <AppInput
                           label="Password"
                           placeholder="Your Password"
-                          message={password}
+                          value={password}
                           onChangeText={handlePasswordChange}
                           onBlur={() => {
                             if (!shouldValidatePasswordOnBlur(password)) return;
@@ -276,7 +276,7 @@ export const AuthScreen = () => {
                         <AppInput
                           label="Email"
                           placeholder="Your Email"
-                          message={regEmail}
+                          value={regEmail}
                           onChangeText={handleRegEmailChange}
                           onBlur={() => {
                             if (!shouldValidateOnBlur(regEmail)) return;
@@ -292,7 +292,7 @@ export const AuthScreen = () => {
                         <AppInput
                           label="Password"
                           placeholder="Your Password"
-                          message={regPassword}
+                          value={regPassword}
                           onChangeText={handleRegPasswordChange}
                           onBlur={() => {
                             if (!shouldValidatePasswordOnBlur(regPassword)) return;
@@ -308,7 +308,7 @@ export const AuthScreen = () => {
                         <AppInput
                           label="Confirm Password"
                           placeholder="Confirm Password"
-                          message={regConfirm}
+                          value={regConfirm}
                           onChangeText={handleRegConfirmChange}
                           onBlur={() => {
                             if (!shouldValidatePasswordOnBlur(regConfirm)) return;
@@ -324,7 +324,7 @@ export const AuthScreen = () => {
                         <AppInput
                           label="Username"
                           placeholder="Your Username"
-                          message={regUsername}
+                          value={regUsername}
                           onChangeText={handleRegUsernameChange}
                           onBlur={() => {
                             if (!shouldValidateOnBlur(regUsername)) return;

@@ -9,7 +9,7 @@ interface Props extends Omit<TextInputProps, 'value' | 'onChangeText'> {
   label?: string;
   touched?: boolean;
   error?: string;
-  message?: string;
+  value?: string;
   onChangeText?: (text: string) => void;
   passwordVisible?: boolean;
   onTogglePasswordVisibility?: () => void;
@@ -19,7 +19,7 @@ export const AppInput = ({
   label,
   touched,
   error,
-  message,
+  value,
   placeholder,
   style,
   onChangeText,
@@ -82,7 +82,7 @@ export const AppInput = ({
             style={styles.input}
             placeholder={placeholder}
             placeholderTextColor={colors.muted}
-            value={message ?? ''}
+            value={value ?? ''}
             onChangeText={onChangeText}
             onFocus={handleFocus}
             onBlur={handleBlur}

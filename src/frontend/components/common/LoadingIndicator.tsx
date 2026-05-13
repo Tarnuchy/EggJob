@@ -19,7 +19,7 @@ export const LoadingIndicator = ({
     <View style={[styles.container, fullscreen && styles.fullscreen]}>
       <ActivityIndicator size={size} color={color} />
       {message ? (
-        <AppText color={colors.textPrimary} variant="default" style={styles.message}>
+        <AppText color="textPrimary" variant="body" style={styles.message}>
           {message}
         </AppText>
       ) : null}

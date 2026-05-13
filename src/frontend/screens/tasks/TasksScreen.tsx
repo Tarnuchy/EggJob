@@ -1,6 +1,4 @@
 import React from 'react';
-import { PlaceholderScreen } from '../../components/common/PlaceholderScreen';
+import { PlaceholderScreen } from '../../components/layout/PlaceholderScreen';
 
-export const TasksScreen = () => (
-  <PlaceholderScreen showTopBar title="Tasks" placeholderText="Tasks Placeholder" />
-);
+export const TasksScreen = () => <PlaceholderScreen title="Tasks" text="Tasks Placeholder" />;

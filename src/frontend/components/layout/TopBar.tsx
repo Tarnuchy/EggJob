@@ -11,7 +11,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../navigation/types';
 
-import { AppText } from './AppText';
+import { AppText } from '../common/AppText';
 import { colors } from '../../theme/colors';
 
 interface TopBarProps {
@@ -34,30 +34,21 @@ export const TopBar = ({ title = '', showIcons = true }: TopBarProps) => {
   return (
     <SafeAreaView style={[styles.safeArea, { paddingTop: androidTopInset }]}>
       <View style={styles.topBar}>
-        <AppText
-          color={colors.textPrimary}
-          children={title}
-          variant="default"
-          style={styles.title}
-        ></AppText>
+        <AppText color="textPrimary" variant="h2" style={styles.title}>
+          {title}
+        </AppText>
 
         {showIcons && (
           <View style={styles.iconContainer}>
             <TouchableOpacity onPress={handleNotifications} style={styles.iconButton}>
-              <AppText
-                color={colors.textPrimary}
-                children="🔔"
-                variant="default"
-                style={styles.icon}
-              ></AppText>
+              <AppText color="textPrimary" variant="body" style={styles.icon}>
+                🔔
+              </AppText>
             </TouchableOpacity>
             <TouchableOpacity onPress={handleSettings} style={styles.iconButton}>
-              <AppText
-                color={colors.textPrimary}
-                children="⚙️"
-                variant="default"
-                style={styles.icon}
-              ></AppText>
+              <AppText color="textPrimary" variant="body" style={styles.icon}>
+                ⚙️
+              </AppText>
             </TouchableOpacity>
           </View>
         )}

@@ -1,6 +1,6 @@
 import React from 'react';
-import { PlaceholderScreen } from '../../components/common/PlaceholderScreen';
+import { PlaceholderScreen } from '../../components/layout/PlaceholderScreen';
 
 export const NotificationScreen = () => (
-  <PlaceholderScreen placeholderText="Notifications Placeholder" />
+  <PlaceholderScreen title="Notifications" text="Notifications Placeholder" />
 );

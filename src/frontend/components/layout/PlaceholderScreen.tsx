@@ -2,20 +2,19 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { ScreenContainer } from './ScreenContainer';
 import { TopBar } from './TopBar';
-import { AppText } from './AppText';
-import { colors } from '../../theme/colors';
+import { AppText } from '../common/AppText';
 
 interface Props {
-  placeholderText: string;
+  text: string;
   title?: string;
   showTopBar?: boolean;
 }
 
-export const PlaceholderScreen = ({ placeholderText, title, showTopBar = false }: Props) => {
+export const PlaceholderScreen = ({ text, title, showTopBar = true }: Props) => {
   const body = (
     <ScreenContainer style={styles.container}>
-      <AppText color={colors.textPrimary} variant="default">
-        {placeholderText}
+      <AppText color="textPrimary" variant="body">
+        {text}
       </AppText>
     </ScreenContainer>
   );

@@ -4,6 +4,9 @@ import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import type { AuthTab } from '../../types';
 
+const PILL_PADDING = 3;
+const PILL_RADIUS = 11;
+
 interface Props {
   activeTab: AuthTab;
   onTabChange: (tab: AuthTab) => void;
@@ -70,9 +73,6 @@ export const AuthTabSwitcher = ({ activeTab, onTabChange }: Props) => {
     </View>
   );
 };
-
-const PILL_PADDING = 3;
-const PILL_RADIUS = 11;
 
 const styles = StyleSheet.create({
   container: {
