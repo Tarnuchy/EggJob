@@ -5,9 +5,10 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { AuthScreen } from '../screens/auth/AuthScreen';
 import { SettingsScreen } from '../screens/profile/SettingsScreen';
 import { NotificationScreen } from '../screens/social/NotificationScreen';
+import { strings } from '../i18n/strings';
+import { colors } from '../theme/colors';
 import { MainTabs } from './MainTabs';
 import type { RootStackParamList } from './types';
-import { colors } from '../theme/colors';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -23,31 +24,27 @@ const navigationTheme = {
   },
 };
 
+const headerScreenOptions = {
+  headerShown: true,
+  headerStyle: { backgroundColor: colors.surface },
+  headerTintColor: colors.textPrimary,
+};
+
 export function AppNavigator() {
   return (
     <NavigationContainer theme={navigationTheme}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="Auth" component={AuthScreen} />
-        <Stack.Screen name="BottomBar" component={MainTabs} />
+        <Stack.Screen name="Main" component={MainTabs} />
         <Stack.Screen
           name="Settings"
           component={SettingsScreen}
-          options={{
-            headerShown: true,
-            title: 'Settings',
-            headerStyle: { backgroundColor: colors.surface },
-            headerTintColor: colors.textPrimary,
-          }}
+          options={{ ...headerScreenOptions, title: strings.screens.settings }}
         />
         <Stack.Screen
           name="Notifications"
           component={NotificationScreen}
-          options={{
-            headerShown: true,
-            title: 'Notifications',
-            headerStyle: { backgroundColor: colors.surface },
-            headerTintColor: colors.textPrimary,
-          }}
+          options={{ ...headerScreenOptions, title: strings.screens.notifications }}
         />
       </Stack.Navigator>
     </NavigationContainer>

@@ -1,5 +1,6 @@
-import React from 'react';
-import { View } from 'react-native';
+import React, { useMemo } from 'react';
+import type { ViewStyle } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 interface Props {
   height?: number;
@@ -7,5 +8,6 @@ interface Props {
 }
 
 export const Spacer = ({ height, width }: Props) => {
-  return <View style={{ height, width }} />;
+  const style = useMemo<ViewStyle>(() => StyleSheet.flatten({ height, width }), [height, width]);
+  return <View style={style} />;
 };

@@ -1,9 +1,10 @@
 import React from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
 import { Text, StyleSheet, TouchableOpacity, Animated, ActivityIndicator } from 'react-native';
+import { minLoadTime as defaultMinLoadTime } from '../../theme/animations';
 import { colors } from '../../theme/colors';
-import { typography } from '../../theme/typography';
 import { shadows } from '../../theme/shadows';
+import { typography } from '../../theme/typography';
 import { useButtonAnimation } from '../../hooks/useButtonAnimation';
 
 interface Props {
@@ -25,7 +26,7 @@ export const AppButton = ({
   disabled,
   shakeCount,
   isLoading,
-  minLoadTime = 1000,
+  minLoadTime = defaultMinLoadTime,
   accessibilityLabel,
   accessibilityHint,
 }: Props) => {

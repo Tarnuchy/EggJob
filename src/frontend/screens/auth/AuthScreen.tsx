@@ -28,7 +28,7 @@ export const AuthScreen = () => {
   };
 
   const handleAuthSuccess = () => {
-    navigation.replace('BottomBar');
+    navigation.replace('Main');
   };
 
   return (

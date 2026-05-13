@@ -1,8 +1,8 @@
 export type RootStackParamList = {
   Auth: undefined;
+  Main: undefined;
   Notifications: undefined;
   Settings: undefined;
-  BottomBar: undefined;
 };
 
 export type TabParamList = {
