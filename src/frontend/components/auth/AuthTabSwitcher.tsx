@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated, Easing } from 'react-native';
+import { strings } from '../../i18n/strings';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import type { AuthTab } from '../../types';
@@ -54,7 +55,7 @@ export const AuthTabSwitcher = ({ activeTab, onTabChange }: Props) => {
           numberOfLines={1}
           adjustsFontSizeToFit={true}
         >
-          Login
+          {strings.auth.tabs.login}
         </Text>
       </TouchableOpacity>
       <TouchableOpacity
@@ -67,7 +68,7 @@ export const AuthTabSwitcher = ({ activeTab, onTabChange }: Props) => {
           numberOfLines={1}
           adjustsFontSizeToFit={true}
         >
-          Register
+          {strings.auth.tabs.register}
         </Text>
       </TouchableOpacity>
     </View>

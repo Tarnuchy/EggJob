@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAppState } from '../../../application/AppStateContext';
+import { strings } from '../../../i18n/strings';
 import { authService } from '../../../services';
 import {
   getEmailError,
@@ -68,7 +69,7 @@ export function useLoginForm({ onSuccess }: UseLoginFormOptions) {
     try {
       const result = await authService.login({ email: email.trim(), password });
       if (!result.ok) {
-        setLoginError('Invalid email or password.');
+        setLoginError(strings.auth.errors.loginFailed);
         setShakeCount((c) => c + 1);
         return;
       }

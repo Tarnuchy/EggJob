@@ -9,6 +9,7 @@ import type { RootStackParamList } from '../../navigation/types';
 import { AuthBackground } from '../../components/auth/AuthBackground';
 import { AuthTabSwitcher } from '../../components/auth/AuthTabSwitcher';
 import { Spacer } from '../../components/common/Spacer';
+import { strings } from '../../i18n/strings';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
@@ -41,7 +42,7 @@ export const AuthScreen = () => {
           style={styles.keyboard}
         >
           <View style={styles.content}>
-            <Text style={styles.appName}>EggJob</Text>
+            <Text style={styles.appName}>{strings.app.name}</Text>
             <Spacer height={spacing.md} />
 
             <Animated.View style={[styles.cardShadow, cardEntrance]}>

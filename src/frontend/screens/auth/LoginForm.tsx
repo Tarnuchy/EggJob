@@ -3,6 +3,7 @@ import { StyleSheet, Text } from 'react-native';
 import { AppButton } from '../../components/common/AppButton';
 import { AppInput } from '../../components/common/AppInput';
 import { Spacer } from '../../components/common/Spacer';
+import { strings } from '../../i18n/strings';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
@@ -23,8 +24,8 @@ export const LoginForm = ({ onSuccess, isActive }: Props) => {
   return (
     <>
       <AppInput
-        label="Email"
-        placeholder="Your Email"
+        label={strings.auth.fields.email}
+        placeholder={strings.auth.fields.emailPlaceholder}
         value={form.email}
         onChangeText={form.handleEmailChange}
         onBlur={form.handleEmailBlur}
@@ -35,8 +36,8 @@ export const LoginForm = ({ onSuccess, isActive }: Props) => {
         autoCorrect={false}
       />
       <AppInput
-        label="Password"
-        placeholder="Your Password"
+        label={strings.auth.fields.password}
+        placeholder={strings.auth.fields.passwordPlaceholder}
         value={form.password}
         onChangeText={form.handlePasswordChange}
         onBlur={form.handlePasswordBlur}
@@ -47,7 +48,7 @@ export const LoginForm = ({ onSuccess, isActive }: Props) => {
       {form.loginError ? <Text style={styles.errorText}>⚠️ {form.loginError}</Text> : null}
       <Spacer height={spacing.sm} />
       <AppButton
-        title="Log In"
+        title={strings.auth.cta.login}
         onPress={form.handleSubmit}
         shakeCount={form.shakeCount}
         isLoading={form.isLoading}

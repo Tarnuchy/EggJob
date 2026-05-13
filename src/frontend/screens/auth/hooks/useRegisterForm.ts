@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAppState } from '../../../application/AppStateContext';
+import { strings } from '../../../i18n/strings';
 import { authService } from '../../../services';
 import {
   getRegConfirmError,
@@ -116,12 +117,12 @@ export function useRegisterForm({ onSuccess }: UseRegisterFormOptions) {
       if (!result.ok) {
         if (result.error.field === 'email') {
           setEmailTouched(true);
-          setEmailError('This email is already in use.');
+          setEmailError(strings.auth.errors.emailInUse);
         } else if (result.error.field === 'username') {
           setUsernameTouched(true);
-          setUsernameError('This username is already taken.');
+          setUsernameError(strings.auth.errors.usernameTaken);
         } else {
-          setRegisterError('Registration failed. Please try again.');
+          setRegisterError(strings.auth.errors.registrationFailed);
         }
         setShakeCount((c) => c + 1);
         return;
