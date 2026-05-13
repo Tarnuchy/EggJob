@@ -1,4 +1,5 @@
 import type { ActionOf } from '../actions';
+import { cascadeDeleteGroup } from '../helpers/cascade';
 import type { ReducerResult } from '../reducer';
 import type { FrontendState } from '../state';
 
@@ -73,81 +74,7 @@ export function handleTaskGroups(state: FrontendState, action: TaskGroupAction):
   }
 
   if (action.type === 'task-groups/delete') {
-    const { groupId } = action;
-    const group = state.entities.taskGroups[groupId];
-    const { [groupId]: _g, ...remainingTaskGroups } = state.entities.taskGroups;
-
-    if (!group) {
-      return {
-        ok: true,
-        value: {
-          ...state,
-          entities: { ...state.entities, taskGroups: remainingTaskGroups },
-        },
-      };
-    }
-
-    const taskIdsToDelete = new Set(group.taskIds);
-
-    const remainingTasks = Object.fromEntries(
-      Object.entries(state.entities.tasks).filter(([taskId]) => !taskIdsToDelete.has(taskId)),
-    );
-
-    const progressIdsToDelete = new Set(
-      group.taskIds
-        .map((taskId) => state.entities.tasks[taskId]?.progressId)
-        .filter((progressId): progressId is string => Boolean(progressId)),
-    );
-
-    const remainingTaskProgresses = Object.fromEntries(
-      Object.entries(state.entities.taskProgresses).filter(
-        ([progressId]) => !progressIdsToDelete.has(progressId),
-      ),
-    );
-
-    const entryIdsToDelete = new Set(
-      Object.entries(state.entities.progressEntries)
-        .filter(([, entry]) => taskIdsToDelete.has(entry.taskId))
-        .map(([entryId]) => entryId),
-    );
-
-    const commentIdsToDelete = new Set<string>();
-    for (const entryId of entryIdsToDelete) {
-      const entry = state.entities.progressEntries[entryId];
-      if (!entry) {
-        continue;
-      }
-      for (const commentId of entry.commentIds) {
-        commentIdsToDelete.add(commentId);
-      }
-    }
-
-    const remainingProgressEntries = Object.fromEntries(
-      Object.entries(state.entities.progressEntries).filter(
-        ([entryId]) => !entryIdsToDelete.has(entryId),
-      ),
-    );
-
-    const remainingComments = Object.fromEntries(
-      Object.entries(state.entities.comments).filter(
-        ([commentId]) => !commentIdsToDelete.has(commentId),
-      ),
-    );
-
-    return {
-      ok: true,
-      value: {
-        ...state,
-        entities: {
-          ...state.entities,
-          taskGroups: remainingTaskGroups,
-          tasks: remainingTasks,
-          taskProgresses: remainingTaskProgresses,
-          progressEntries: remainingProgressEntries,
-          comments: remainingComments,
-        },
-      },
-    };
+    return { ok: true, value: cascadeDeleteGroup(state, action.groupId) };
   }
 
   if (action.type === 'task-groups/add-member') {
