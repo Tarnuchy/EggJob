@@ -1,28 +1,38 @@
-import React from 'react';
-import { View, ActivityIndicator } from 'react-native';
+import React, { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
+import * as SplashScreen from 'expo-splash-screen';
 import { AppStateProvider } from './src/frontend/application/AppStateContext';
+import { ErrorBoundary } from './src/frontend/components/common/ErrorBoundary';
 import { AppNavigator } from './src/frontend/navigation/AppNavigator';
 import { interFonts } from './src/frontend/theme';
-import { colors } from './src/frontend/theme/colors';
+
+SplashScreen.preventAutoHideAsync().catch(() => {
+  /* ignore */
+});
 
 export default function App() {
   const [fontsLoaded] = useFonts(interFonts);
 
-  /*if (!fontsLoaded) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
-        <ActivityIndicator color={colors.primary} />
-      </View>
-    );
-  }*/
+  useEffect(() => {
+    if (fontsLoaded) {
+      SplashScreen.hideAsync().catch(() => {
+        /* ignore */
+      });
+    }
+  }, [fontsLoaded]);
+
+  if (!fontsLoaded) {
+    return null;
+  }
 
   return (
     <SafeAreaProvider>
-      <AppStateProvider>
-        <AppNavigator />
-      </AppStateProvider>
+      <ErrorBoundary>
+        <AppStateProvider>
+          <AppNavigator />
+        </AppStateProvider>
+      </ErrorBoundary>
     </SafeAreaProvider>
   );
 }

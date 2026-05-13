@@ -5,18 +5,22 @@
     "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
+    "scheme": "eggjob",
+    "assetBundlePatterns": ["**/*"],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.eggjob.app"
     },
     "android": {
+      "package": "com.eggjob.app",
       "adaptiveIcon": {
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#A99A8A"
       }
     },
     "androidNavigationBar": {
       "backgroundColor": "#A99A8A",
       "barStyle": "dark-content"
     },
-    "plugins": ["expo-asset", "expo-font"]
+    "plugins": ["expo-asset", "expo-font", "expo-secure-store"]
   }
 }
