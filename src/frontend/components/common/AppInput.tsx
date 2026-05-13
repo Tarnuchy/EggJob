@@ -13,6 +13,8 @@ interface Props extends Omit<TextInputProps, 'value' | 'onChangeText'> {
   onChangeText?: (text: string) => void;
   passwordVisible?: boolean;
   onTogglePasswordVisibility?: () => void;
+  accessibilityLabel?: string;
+  accessibilityHint?: string;
 }
 
 export const AppInput = ({
@@ -30,6 +32,8 @@ export const AppInput = ({
   onBlur,
   passwordVisible,
   onTogglePasswordVisibility,
+  accessibilityLabel,
+  accessibilityHint,
   ...rest
 }: Props) => {
   const [isFocused, setIsFocused] = useState(false);
@@ -90,12 +94,16 @@ export const AppInput = ({
             autoCapitalize={resolvedAutoCapitalize}
             autoCorrect={resolvedAutoCorrect}
             selectionColor={colors.primary}
+            accessibilityLabel={accessibilityLabel ?? label}
+            accessibilityHint={accessibilityHint}
           />
           {isPassword ? (
             <TouchableOpacity
               style={styles.eyeButton}
               onPress={handleTogglePasswordVisibility}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              accessibilityRole="button"
+              accessibilityLabel={resolvedPasswordVisible ? 'Hide password' : 'Show password'}
             >
               <Text style={styles.eyeIcon}>{resolvedPasswordVisible ? '🙈' : '🐵'}</Text>
             </TouchableOpacity>

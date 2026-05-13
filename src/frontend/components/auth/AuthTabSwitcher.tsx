@@ -49,7 +49,14 @@ export const AuthTabSwitcher = ({ activeTab, onTabChange }: Props) => {
           { transform: [{ translateX: indicatorTranslateX }] },
         ]}
       />
-      <TouchableOpacity style={styles.tab} onPress={() => onTabChange('login')} activeOpacity={0.8}>
+      <TouchableOpacity
+        style={styles.tab}
+        onPress={() => onTabChange('login')}
+        activeOpacity={0.8}
+        accessibilityRole="tab"
+        accessibilityLabel={strings.auth.tabs.login}
+        accessibilityState={{ selected: activeTab === 'login' }}
+      >
         <Text
           style={[styles.label, activeTab === 'login' && styles.labelActive]}
           numberOfLines={1}
@@ -62,6 +69,9 @@ export const AuthTabSwitcher = ({ activeTab, onTabChange }: Props) => {
         style={styles.tab}
         onPress={() => onTabChange('register')}
         activeOpacity={0.8}
+        accessibilityRole="tab"
+        accessibilityLabel={strings.auth.tabs.register}
+        accessibilityState={{ selected: activeTab === 'register' }}
       >
         <Text
           style={[styles.label, activeTab === 'register' && styles.labelActive]}

@@ -40,12 +40,22 @@ export const TopBar = ({ title = '', showIcons = true }: TopBarProps) => {
 
         {showIcons && (
           <View style={styles.iconContainer}>
-            <TouchableOpacity onPress={handleNotifications} style={styles.iconButton}>
+            <TouchableOpacity
+              onPress={handleNotifications}
+              style={styles.iconButton}
+              accessibilityRole="button"
+              accessibilityLabel="Notifications"
+            >
               <AppText color="textPrimary" variant="body" style={styles.icon}>
                 🔔
               </AppText>
             </TouchableOpacity>
-            <TouchableOpacity onPress={handleSettings} style={styles.iconButton}>
+            <TouchableOpacity
+              onPress={handleSettings}
+              style={styles.iconButton}
+              accessibilityRole="button"
+              accessibilityLabel="Settings"
+            >
               <AppText color="textPrimary" variant="body" style={styles.icon}>
                 ⚙️
               </AppText>

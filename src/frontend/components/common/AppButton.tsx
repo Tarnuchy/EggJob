@@ -14,6 +14,8 @@ interface Props {
   shakeCount?: number;
   isLoading?: boolean;
   minLoadTime?: number;
+  accessibilityLabel?: string;
+  accessibilityHint?: string;
 }
 
 export const AppButton = ({
@@ -24,6 +26,8 @@ export const AppButton = ({
   shakeCount,
   isLoading,
   minLoadTime = 1000,
+  accessibilityLabel,
+  accessibilityHint,
 }: Props) => {
   const { scaleAnim, shakeAnim, isVisuallyLoading, handlePressIn, handlePressOut } =
     useButtonAnimation({ isLoading, shakeCount, minLoadTime });
@@ -48,6 +52,10 @@ export const AppButton = ({
         onPressOut={handlePressOut}
         activeOpacity={1}
         disabled={isDisabled}
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel ?? title}
+        accessibilityHint={accessibilityHint}
+        accessibilityState={{ disabled: Boolean(isDisabled), busy: isVisuallyLoading }}
       >
         {isVisuallyLoading ? (
           <ActivityIndicator color={colors.textOnPrimary} />
