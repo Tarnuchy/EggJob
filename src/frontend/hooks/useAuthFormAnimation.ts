@@ -15,7 +15,7 @@ export const useAuthFormAnimation = () => {
       easing: EASE,
       useNativeDriver: true,
     }).start();
-  }, []);
+  }, [staggerAnim]);
 
   useEffect(() => {
     if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {

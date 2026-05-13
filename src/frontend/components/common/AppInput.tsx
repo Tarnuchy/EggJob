@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import type { TextInputProps } from 'react-native';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
@@ -105,14 +106,32 @@ export const AppInput = ({
               accessibilityRole="button"
               accessibilityLabel={resolvedPasswordVisible ? 'Hide password' : 'Show password'}
             >
-              <Text style={styles.eyeIcon}>{resolvedPasswordVisible ? '🙈' : '🐵'}</Text>
+              <Ionicons
+                name={resolvedPasswordVisible ? 'eye-off-outline' : 'eye-outline'}
+                size={20}
+                color={colors.textPrimary}
+              />
             </TouchableOpacity>
           ) : null}
         </View>
       </View>
-      <Text style={styles.errorText} numberOfLines={1}>
-        {hasError ? `⚠️ ${error}` : ' '}
-      </Text>
+      <View style={styles.errorRow}>
+        {hasError ? (
+          <>
+            <Ionicons
+              name="warning-outline"
+              size={14}
+              color={colors.danger}
+              style={styles.errorIcon}
+            />
+            <Text style={styles.errorText} numberOfLines={1}>
+              {error}
+            </Text>
+          </>
+        ) : (
+          <Text style={styles.errorText}> </Text>
+        )}
+      </View>
     </View>
   );
 };
@@ -169,12 +188,16 @@ const styles = StyleSheet.create({
   eyeButton: {
     paddingLeft: 8,
   },
-  eyeIcon: {
-    fontSize: 18,
-  },
-  errorText: {
+  errorRow: {
     marginTop: 4,
     minHeight: 18,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  errorIcon: {
+    marginRight: 4,
+  },
+  errorText: {
     color: colors.danger,
     ...typography.caption,
   },

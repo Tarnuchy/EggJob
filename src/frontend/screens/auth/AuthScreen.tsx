@@ -1,25 +1,23 @@
 import React, { useState } from 'react';
 import { StyleSheet, View, Text, Animated, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { BlurView } from 'expo-blur';
-import type { RootStackParamList } from '../../navigation/types';
 
 import { AuthBackground } from '../../components/auth/AuthBackground';
 import { AuthTabSwitcher } from '../../components/auth/AuthTabSwitcher';
+import type { AuthTab } from '../../components/auth/AuthTabSwitcher';
 import { Spacer } from '../../components/common/Spacer';
+import { useAppNavigation } from '../../hooks/useAppNavigation';
+import { useAuthFormAnimation } from '../../hooks/useAuthFormAnimation';
 import { strings } from '../../i18n/strings';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
-import type { AuthTab } from '../../types';
-import { useAuthFormAnimation } from '../../hooks/useAuthFormAnimation';
 import { LoginForm } from './LoginForm';
 import { RegisterForm } from './RegisterForm';
 
 export const AuthScreen = () => {
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const navigation = useAppNavigation();
   const [activeTab, setActiveTab] = useState<AuthTab>('login');
   const { cardEntrance, formOpacity, animateTabSwitch } = useAuthFormAnimation();
 

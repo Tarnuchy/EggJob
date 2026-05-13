@@ -7,11 +7,11 @@ import {
   Platform,
   StatusBar,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import type { RootStackParamList } from '../../navigation/types';
+import { Ionicons } from '@expo/vector-icons';
 
 import { AppText } from '../common/AppText';
+import { useAppNavigation } from '../../hooks/useAppNavigation';
+import { strings } from '../../i18n/strings';
 import { colors } from '../../theme/colors';
 
 interface TopBarProps {
@@ -20,7 +20,7 @@ interface TopBarProps {
 }
 
 export const TopBar = ({ title = '', showIcons = true }: TopBarProps) => {
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const navigation = useAppNavigation();
   const androidTopInset = Platform.OS === 'android' ? (StatusBar.currentHeight ?? 0) : 0;
 
   const handleNotifications = () => {
@@ -44,21 +44,17 @@ export const TopBar = ({ title = '', showIcons = true }: TopBarProps) => {
               onPress={handleNotifications}
               style={styles.iconButton}
               accessibilityRole="button"
-              accessibilityLabel="Notifications"
+              accessibilityLabel={strings.screens.notifications}
             >
-              <AppText color="textPrimary" variant="body" style={styles.icon}>
-                🔔
-              </AppText>
+              <Ionicons name="notifications-outline" size={22} color={colors.textPrimary} />
             </TouchableOpacity>
             <TouchableOpacity
               onPress={handleSettings}
               style={styles.iconButton}
               accessibilityRole="button"
-              accessibilityLabel="Settings"
+              accessibilityLabel={strings.screens.settings}
             >
-              <AppText color="textPrimary" variant="body" style={styles.icon}>
-                ⚙️
-              </AppText>
+              <Ionicons name="settings-outline" size={22} color={colors.textPrimary} />
             </TouchableOpacity>
           </View>
         )}
@@ -91,8 +87,5 @@ const styles = StyleSheet.create({
   },
   iconButton: {
     padding: 8,
-  },
-  icon: {
-    fontSize: 20,
   },
 });

@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
-import { StyleSheet, Text } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { AppButton } from '../../components/common/AppButton';
 import { AppInput } from '../../components/common/AppInput';
 import { Spacer } from '../../components/common/Spacer';
@@ -70,7 +71,12 @@ export const RegisterForm = ({ onSuccess, isActive }: Props) => {
         autoCapitalize="none"
         autoCorrect={false}
       />
-      {form.registerError ? <Text style={styles.errorText}>⚠️ {form.registerError}</Text> : null}
+      {form.registerError ? (
+        <View style={styles.errorRow}>
+          <Ionicons name="warning-outline" size={14} color={colors.danger} />
+          <Text style={styles.errorText}>{form.registerError}</Text>
+        </View>
+      ) : null}
       <Spacer height={spacing.sm} />
       <AppButton
         title={strings.auth.cta.register}
@@ -83,8 +89,13 @@ export const RegisterForm = ({ onSuccess, isActive }: Props) => {
 };
 
 const styles = StyleSheet.create({
-  errorText: {
+  errorRow: {
     marginBottom: spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  errorText: {
     color: colors.danger,
     ...typography.caption,
   },

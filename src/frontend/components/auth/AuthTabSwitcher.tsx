@@ -3,10 +3,11 @@ import { View, Text, TouchableOpacity, StyleSheet, Animated, Easing } from 'reac
 import { strings } from '../../i18n/strings';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
-import type { AuthTab } from '../../types';
 
 const PILL_PADDING = 3;
 const PILL_RADIUS = 11;
+
+export type AuthTab = 'login' | 'register';
 
 interface Props {
   activeTab: AuthTab;

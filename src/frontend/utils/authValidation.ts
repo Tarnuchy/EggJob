@@ -1,5 +1,5 @@
 import { strings } from '../i18n/strings';
-import { isValidEmail, isValidPassword, isValidUsername, passwordsMatch } from './validation';
+import { isValidEmail, isValidUsername, passwordsMatch } from './validation';
 
 const errs = strings.auth.errors;
 
@@ -18,8 +18,12 @@ export const getRegUsernameError = (v: string): string => {
   return '';
 };
 
-export const getRegPasswordError = (v: string): string =>
-  !isValidPassword(v) ? errs.passwordTooShort : '';
+export const getRegPasswordError = (v: string): string => {
+  if (v.length < 8) return errs.passwordTooShort;
+  if (!/[A-Z]/.test(v)) return errs.passwordNeedsUppercase;
+  if (!/[0-9]/.test(v)) return errs.passwordNeedsDigit;
+  return '';
+};
 
 export const getRegConfirmError = (v: string, pw: string): string => {
   if (!v.trim()) return errs.confirmRequired;

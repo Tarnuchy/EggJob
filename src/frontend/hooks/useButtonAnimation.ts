@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, Easing } from 'react-native';
 import { duration } from '../theme/animations';
 
@@ -19,7 +19,7 @@ export const useButtonAnimation = ({ isLoading, shakeCount, minLoadTime = 1000 }
   const prevShakeCount = useRef(shakeCount);
   const pendingShake = useRef(false);
 
-  const triggerShake = () => {
+  const triggerShake = useCallback(() => {
     Animated.sequence([
       Animated.timing(shakeAnim, { toValue: 4, duration: 40, useNativeDriver: true }),
       Animated.timing(shakeAnim, { toValue: -4, duration: 40, useNativeDriver: true }),
@@ -27,28 +27,31 @@ export const useButtonAnimation = ({ isLoading, shakeCount, minLoadTime = 1000 }
       Animated.timing(shakeAnim, { toValue: -3, duration: 40, useNativeDriver: true }),
       Animated.timing(shakeAnim, { toValue: 0, duration: 40, useNativeDriver: true }),
     ]).start();
-  };
+  }, [shakeAnim]);
 
   useEffect(() => {
     if (isLoading) {
       setIsVisuallyLoading(true);
       loadingStartTime.current = Date.now();
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    } else if (isVisuallyLoading && loadingStartTime.current !== null) {
-      const timeElapsed = Date.now() - loadingStartTime.current;
-      const timeRemaining = minLoadTime - timeElapsed;
+      return;
+    }
 
-      if (timeRemaining > 0) {
-        timeoutRef.current = setTimeout(() => {
-          setIsVisuallyLoading(false);
-          loadingStartTime.current = null;
-        }, timeRemaining);
-      } else {
+    if (!isVisuallyLoading || loadingStartTime.current === null) return;
+
+    const timeElapsed = Date.now() - loadingStartTime.current;
+    const timeRemaining = minLoadTime - timeElapsed;
+
+    if (timeRemaining > 0) {
+      timeoutRef.current = setTimeout(() => {
         setIsVisuallyLoading(false);
         loadingStartTime.current = null;
-      }
+      }, timeRemaining);
+    } else {
+      setIsVisuallyLoading(false);
+      loadingStartTime.current = null;
     }
-  }, [isLoading, minLoadTime]);
+  }, [isLoading, minLoadTime, isVisuallyLoading]);
 
   useEffect(() => {
     return () => {
@@ -67,14 +70,14 @@ export const useButtonAnimation = ({ isLoading, shakeCount, minLoadTime = 1000 }
     } else {
       triggerShake();
     }
-  }, [shakeCount, isVisuallyLoading]);
+  }, [shakeCount, isVisuallyLoading, triggerShake]);
 
   useEffect(() => {
     if (!isVisuallyLoading && pendingShake.current) {
       pendingShake.current = false;
       triggerShake();
     }
-  }, [isVisuallyLoading]);
+  }, [isVisuallyLoading, triggerShake]);
 
   const ease = Easing.bezier(0.25, 1, 0.5, 1);
 
