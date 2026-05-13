@@ -1,6 +1,7 @@
 import React from 'react';
-import { PlaceholderScreen } from '../../components/common/PlaceholderScreen';
+import { PlaceholderScreen } from '../../components/layout/PlaceholderScreen';
+import { strings } from '../../i18n/strings';
 
 export const FriendsScreen = () => (
-    <PlaceholderScreen showTopBar title="Friends" placeholderText="Friends Placeholder" />
+  <PlaceholderScreen title={strings.screens.friends} text={strings.placeholders.friends} />
 );

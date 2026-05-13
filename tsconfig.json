@@ -5,12 +5,12 @@
     "skipLibCheck": true,
     "resolveJsonModule": true,
     "noEmit": true,
-    "jsx": "react-native"
+    "jsx": "react-native",
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "paths": {
+      "@/*": ["./src/frontend/*"]
+    }
   },
-  "include": [
-    "App.tsx",
-    "src/**/*.ts",
-    "src/**/*.tsx",
-    "babel.config.js"
-  ]
+  "include": ["App.tsx", "src/**/*.ts", "src/**/*.tsx", "babel.config.js"]
 }

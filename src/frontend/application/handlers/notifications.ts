@@ -1,14 +1,15 @@
-import type { ReducerResult } from "../reducer";
-import type { FrontendState } from "../state";
+import type { ActionOf } from '../actions';
+import type { ReducerResult } from '../reducer';
+import type { FrontendState } from '../state';
 
-type NotificationAction = { type: string; [key: string]: unknown };
+type NotificationAction = ActionOf<'notifications/add' | 'notifications/read'>;
 
 export function handleNotifications(
   state: FrontendState,
-  action: NotificationAction
+  action: NotificationAction,
 ): ReducerResult {
-  if (action.type === "notifications/add") {
-    const notificationId = action.notificationId as string;
+  if (action.type === 'notifications/add') {
+    const { notificationId } = action;
 
     return {
       ok: true,
@@ -25,27 +26,23 @@ export function handleNotifications(
     };
   }
 
-  if (action.type === "notifications/read") {
-    const notificationId = action.notificationId as string;
-    const existing = state.entities.notifications[notificationId];
-    if (!existing) {
-      return { ok: false, error: { code: "not-found" } };
-    }
-
-    return {
-      ok: true,
-      value: {
-        ...state,
-        entities: {
-          ...state.entities,
-          notifications: {
-            ...state.entities.notifications,
-            [notificationId]: { ...existing, active: false },
-          },
-        },
-      },
-    };
+  const { notificationId } = action;
+  const existing = state.entities.notifications[notificationId];
+  if (!existing) {
+    return { ok: false, error: { code: 'not-found' } };
   }
 
-  return { ok: false, error: { code: "unknown-action" } };
+  return {
+    ok: true,
+    value: {
+      ...state,
+      entities: {
+        ...state.entities,
+        notifications: {
+          ...state.entities.notifications,
+          [notificationId]: { ...existing, active: false },
+        },
+      },
+    },
+  };
 }

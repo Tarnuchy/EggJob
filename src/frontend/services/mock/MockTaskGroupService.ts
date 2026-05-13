@@ -1,5 +1,5 @@
-import type { ITaskGroupService } from "../types/ITaskGroupService";
-import type { Result } from "../types/index";
+import type { ITaskGroupService } from '../types/ITaskGroupService';
+import type { Result } from '../types/index';
 
 class MockTaskGroupService implements ITaskGroupService {
   private groups: Record<
@@ -13,20 +13,18 @@ class MockTaskGroupService implements ITaskGroupService {
       taskIds: string[];
     }
   > = {
-    "grp-seed-1": {
-      name: "Morning Run Club",
-      privacy: "friends",
-      inviteCode: "MORN01",
-      ownerUserId: "usr-seed-1",
-      memberIds: ["usr-seed-1"],
-      taskIds: ["tsk-seed-1", "tsk-seed-2"],
+    'grp-seed-1': {
+      name: 'Morning Run Club',
+      privacy: 'friends',
+      inviteCode: 'MORN01',
+      ownerUserId: 'usr-seed-1',
+      memberIds: ['usr-seed-1'],
+      taskIds: ['tsk-seed-1', 'tsk-seed-2'],
     },
   };
 
-  private invitations: Record<
-    string,
-    { groupId: string; fromUserId: string; toUserId: string }
-  > = {};
+  private invitations: Record<string, { groupId: string; fromUserId: string; toUserId: string }> =
+    {};
 
   async createGroup(input: {
     groupId: string;
@@ -36,13 +34,13 @@ class MockTaskGroupService implements ITaskGroupService {
     inviteCode?: string;
   }): Promise<Result<void>> {
     if (!input.name || input.name.trim().length === 0) {
-      return { ok: false, error: { code: "validation", field: "name" } };
+      return { ok: false, error: { code: 'validation', field: 'name' } };
     }
 
     this.groups[input.groupId] = {
       name: input.name.trim(),
       privacy: input.privacy,
-      inviteCode: input.inviteCode ?? "",
+      inviteCode: input.inviteCode ?? '',
       ownerUserId: input.ownerUserId,
       memberIds: [],
       taskIds: [],
@@ -53,11 +51,11 @@ class MockTaskGroupService implements ITaskGroupService {
 
   async editGroup(
     groupId: string,
-    input: { name?: string; privacy?: string }
+    input: { name?: string; privacy?: string },
   ): Promise<Result<void>> {
     const group = this.groups[groupId];
     if (!group) {
-      return { ok: false, error: { code: "not-found" } };
+      return { ok: false, error: { code: 'not-found' } };
     }
 
     if (input.name !== undefined) {
@@ -122,10 +120,10 @@ class MockTaskGroupService implements ITaskGroupService {
     void input.permissions;
     const group = this.groups[input.groupId];
     if (!group) {
-      return { ok: false, error: { code: "not-found" } };
+      return { ok: false, error: { code: 'not-found' } };
     }
     if (group.inviteCode && input.inviteCode !== group.inviteCode) {
-      return { ok: false, error: { code: "validation", field: "inviteCode" } };
+      return { ok: false, error: { code: 'validation', field: 'inviteCode' } };
     }
 
     this.invitations[input.invitationId] = {
@@ -161,7 +159,7 @@ class MockTaskGroupService implements ITaskGroupService {
   async addMember(groupId: string, userId: string): Promise<Result<void>> {
     const group = this.groups[groupId];
     if (!group) {
-      return { ok: false, error: { code: "not-found" } };
+      return { ok: false, error: { code: 'not-found' } };
     }
 
     if (!group.memberIds.includes(userId)) {
@@ -194,7 +192,7 @@ class MockTaskGroupService implements ITaskGroupService {
   > {
     const group = this.groups[groupId];
     if (!group) {
-      return { ok: false, error: { code: "not-found" } };
+      return { ok: false, error: { code: 'not-found' } };
     }
 
     return {

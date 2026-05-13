@@ -1,6 +1,7 @@
 import React from 'react';
-import { PlaceholderScreen } from '../../components/common/PlaceholderScreen';
+import { PlaceholderScreen } from '../../components/layout/PlaceholderScreen';
+import { strings } from '../../i18n/strings';
 
 export const ProfileScreen = () => (
-    <PlaceholderScreen showTopBar title="Profile" placeholderText="Profile Placeholder" />
+  <PlaceholderScreen title={strings.screens.profile} text={strings.placeholders.profile} />
 );

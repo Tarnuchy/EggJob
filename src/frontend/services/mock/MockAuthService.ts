@@ -1,6 +1,6 @@
-import { isValidEmail, isValidUsername } from "../../utils/validation";
-import type { IAuthService } from "../types/IAuthService";
-import type { Result } from "../types/index";
+import { isValidEmail, isValidUsername } from '../../utils/validation';
+import type { IAuthService } from '../types/IAuthService';
+import type { Result } from '../types/index';
 
 type SeedAccount = {
   accountId: string;
@@ -13,11 +13,11 @@ type SeedAccount = {
 class MockAuthService implements IAuthService {
   private accounts: SeedAccount[] = [
     {
-      accountId: "acc-seed-1",
-      userId: "usr-seed-1",
-      email: "alice@example.com",
-      username: "alice",
-      passwordHash: "seed-hash-alice",
+      accountId: 'acc-seed-1',
+      userId: 'usr-seed-1',
+      email: 'alice@example.com',
+      username: 'alice',
+      passwordHash: 'seed-hash-alice',
     },
   ];
 
@@ -27,16 +27,15 @@ class MockAuthService implements IAuthService {
     password: string;
   }): Promise<Result<{ accountId: string; userId: string }>> {
     if (!isValidEmail(input.email)) {
-      return { ok: false, error: { code: "validation", field: "email" } };
+      return { ok: false, error: { code: 'validation', field: 'email' } };
     }
     if (!isValidUsername(input.username)) {
-      return { ok: false, error: { code: "validation", field: "username" } };
+      return { ok: false, error: { code: 'validation', field: 'username' } };
     }
 
     const accountId = `acc-${Date.now()}`;
     const userId = `usr-${Date.now()}`;
 
-    
     this.accounts.push({
       accountId,
       userId,
@@ -54,14 +53,14 @@ class MockAuthService implements IAuthService {
   }): Promise<Result<{ accountId: string; userId: string }>> {
     const account = this.accounts.find((entry) => entry.email === input.email);
     if (!account) {
-      return { ok: false, error: { code: "not-found" } };
+      return { ok: false, error: { code: 'not-found' } };
     }
 
     const isValidPassword =
       account.passwordHash === `hash-${input.password}` ||
       account.passwordHash === `seed-hash-${input.password}`;
     if (!isValidPassword) {
-      return { ok: false, error: { code: "unauthorized" } };
+      return { ok: false, error: { code: 'unauthorized' } };
     }
 
     return {

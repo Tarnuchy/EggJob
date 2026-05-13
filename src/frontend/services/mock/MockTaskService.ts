@@ -1,28 +1,28 @@
-import type { ITaskService, TaskParams } from "../types/ITaskService";
-import type { Result } from "../types/index";
+import type { ITaskService, TaskParams } from '../types/ITaskService';
+import type { Result } from '../types/index';
 
 class MockTaskService implements ITaskService {
   private tasks: Record<
     string,
     { name: string; goal: number; progressId: string; params: TaskParams }
   > = {
-    "tsk-seed-1": {
-      name: "Run 5km",
+    'tsk-seed-1': {
+      name: 'Run 5km',
       goal: 5,
-      progressId: "prg-seed-1",
-      params: { photoRequired: false, color: "blue", notifications: true },
+      progressId: 'prg-seed-1',
+      params: { photoRequired: false, color: 'blue', notifications: true },
     },
-    "tsk-seed-2": {
-      name: "Push-ups 100",
+    'tsk-seed-2': {
+      name: 'Push-ups 100',
       goal: 100,
-      progressId: "prg-seed-2",
-      params: { photoRequired: false, color: "green", notifications: false },
+      progressId: 'prg-seed-2',
+      params: { photoRequired: false, color: 'green', notifications: false },
     },
   };
 
   private progresses: Record<string, { value: number }> = {
-    "prg-seed-1": { value: 3 },
-    "prg-seed-2": { value: 0 },
+    'prg-seed-1': { value: 3 },
+    'prg-seed-2': { value: 0 },
   };
 
   private entries: Record<string, { taskId: string; value: number; commentIds: string[] }> = {};
@@ -38,38 +38,25 @@ class MockTaskService implements ITaskService {
     kind: string;
     params: TaskParams;
   }): Promise<Result<void>> {
-    void input.groupId;
-    void input.status;
-    void input.kind;
-    this.tasks[input.taskId] = {
-      name: input.name,
-      goal: input.goal,
-      progressId: input.progressId,
-      params: input.params,
-    };
-    this.progresses[input.progressId] = { value: 0 };
+    const { taskId, progressId, name, goal, params } = input;
+    this.tasks[taskId] = { name, goal, progressId, params };
+    this.progresses[progressId] = { value: 0 };
     return { ok: true, value: undefined };
   }
 
   async editTask(
     taskId: string,
-    input: { name?: string; goal?: number; status?: string; params?: Partial<TaskParams> }
+    input: { name?: string; goal?: number; status?: string; params?: Partial<TaskParams> },
   ): Promise<Result<void>> {
-    void input.status;
+    const { name, goal, params } = input;
     const task = this.tasks[taskId];
     if (!task) {
-      return { ok: false, error: { code: "not-found" } };
+      return { ok: false, error: { code: 'not-found' } };
     }
 
-    if (input.name !== undefined) {
-      task.name = input.name;
-    }
-    if (input.goal !== undefined) {
-      task.goal = input.goal;
-    }
-    if (input.params) {
-      task.params = { ...task.params, ...input.params };
-    }
+    if (name !== undefined) task.name = name;
+    if (goal !== undefined) task.goal = goal;
+    if (params) task.params = { ...task.params, ...params };
 
     return { ok: true, value: undefined };
   }
@@ -86,26 +73,21 @@ class MockTaskService implements ITaskService {
     value: number;
     note: string;
   }): Promise<Result<void>> {
-    void input.authorUserId;
-    void input.note;
-    if (input.value < 0) {
-      return { ok: false, error: { code: "validation", field: "value" } };
+    const { entryId, taskId, value } = input;
+    if (value < 0) {
+      return { ok: false, error: { code: 'validation', field: 'value' } };
     }
 
-    const task = this.tasks[input.taskId];
+    const task = this.tasks[taskId];
     if (!task) {
-      return { ok: false, error: { code: "not-found" } };
+      return { ok: false, error: { code: 'not-found' } };
     }
 
-    this.entries[input.entryId] = {
-      taskId: input.taskId,
-      value: input.value,
-      commentIds: [],
-    };
+    this.entries[entryId] = { taskId, value, commentIds: [] };
 
     const progress = this.progresses[task.progressId];
     if (progress) {
-      progress.value += input.value;
+      progress.value += value;
     }
 
     return { ok: true, value: undefined };
@@ -117,11 +99,11 @@ class MockTaskService implements ITaskService {
     authorUserId: string;
     message: string;
   }): Promise<Result<void>> {
-    void input.authorUserId;
-    this.comments[input.commentId] = { message: input.message };
-    const entry = this.entries[input.progressEntryId];
+    const { commentId, progressEntryId, message } = input;
+    this.comments[commentId] = { message };
+    const entry = this.entries[progressEntryId];
     if (entry) {
-      entry.commentIds.push(input.commentId);
+      entry.commentIds.push(commentId);
     }
     return { ok: true, value: undefined };
   }
@@ -138,19 +120,19 @@ class MockTaskService implements ITaskService {
     return { ok: true, value: undefined };
   }
 
-  async getTask(taskId: string): Promise<
-    Result<{ name: string; goal: number; progressId: string; params: TaskParams }>
-  > {
+  async getTask(
+    taskId: string,
+  ): Promise<Result<{ name: string; goal: number; progressId: string; params: TaskParams }>> {
     const task = this.tasks[taskId];
     if (!task) {
-      return { ok: false, error: { code: "not-found" } };
+      return { ok: false, error: { code: 'not-found' } };
     }
 
     return { ok: true, value: { ...task } };
   }
 
   async getProgressEntries(
-    taskId: string
+    taskId: string,
   ): Promise<Result<Array<{ entryId: string; value: number; commentIds: string[] }>>> {
     const result = Object.entries(this.entries)
       .filter(([, entry]) => entry.taskId === taskId)

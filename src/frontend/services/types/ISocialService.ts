@@ -1,4 +1,4 @@
-import type { Result } from "./index";
+import type { Result } from './index';
 
 export interface ISocialService {
   inviteFriend(input: {
@@ -7,10 +7,7 @@ export interface ISocialService {
     toUserId: string;
   }): Promise<Result<void>>;
 
-  acceptFriendInvite(input: {
-    invitationId: string;
-    friendshipId: string;
-  }): Promise<Result<void>>;
+  acceptFriendInvite(input: { invitationId: string; friendshipId: string }): Promise<Result<void>>;
 
   rejectFriendInvite(invitationId: string): Promise<Result<void>>;
 

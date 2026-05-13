@@ -1,9 +1,9 @@
-import type { Result } from "./index";
+import type { Result } from './index';
 
 export interface IProfileService {
   editProfile(
     userId: string,
-    input: { username?: string; photoUrl?: string }
+    input: { username?: string; photoUrl?: string },
   ): Promise<Result<void>>;
 
   deleteAccount(accountId: string, userId: string): Promise<Result<void>>;

@@ -6,7 +6,7 @@ Ten dokument opisuje jak uruchomic frontend, jak zweryfikowac jego poprawne dzia
 
 - Node.js 18 LTS lub 20 LTS
 - npm 9+
-- Expo SDK 52 (instalowane z package.json)
+- Expo SDK 54 (instalowane z package.json)
 - Dla urzadzen mobilnych:
   - Android Studio (emulator Android)
   - Xcode (symulator iOS, tylko macOS)
@@ -20,100 +20,91 @@ W katalogu repozytorium uruchom:
 npm install
 ```
 
-To polecenie instaluje zaleznosci frontendowe, w tym React Navigation oraz biblioteki wymagane przez Expo.
-
 ## 3) Uruchamianie aplikacji
-
-### Tryb developerski (Expo)
 
 ```bash
 npm run start
-```
-
-Nastepnie w konsoli Expo wybierz jedna z opcji:
-- `a` - uruchom Android
-- `i` - uruchom iOS (macOS)
-- skan QR - uruchom na telefonie przez Expo Go
-
-### Szybkie skroty z package.json
-
-```bash
 npm run android
 npm run ios
 ```
 
 ## 4) Walidacja frontendu
 
-### Testy jednostkowe frontendu
-
 ```bash
-npm run test:frontend
+npm run lint        # ESLint
+npm run format:check
+npm run typecheck   # tsc --noEmit
+npm test            # vitest 42/42
 ```
 
-Aktualny stan docelowy: 9 plikow testowych, 42 testy przechodza.
+Pre-commit (husky + lint-staged) automatycznie odpala `eslint --fix` i `prettier --write` na staged plikach.
 
-### Typecheck (kompilacja TS bez emitowania)
+## 5) Struktura frontendu
 
-```bash
-npx tsc --project tsconfig.json --noEmit
-npx tsc --project tsconfig.test.json --noEmit
+```
+src/frontend/
+  application/
+    actions.ts            # discriminated union AppAction
+    AppStateContext.tsx   # Provider, useMemo + dispatch zwraca ReducerResult
+    reducer.ts
+    state.ts              # eksportowane typy domain (Account, User, Task, ...)
+    selectors.ts
+    helpers/cascade.ts    # cascadeDeleteTask, cascadeDeleteGroup
+    handlers/             # 7 handlerow per domena
+  components/
+    auth/                 # AuthBackground, AuthTabSwitcher
+    common/               # AppButton, AppInput, AppText, Spacer, ErrorBoundary, LoadingIndicator
+    layout/               # ScreenContainer, TopBar, PlaceholderScreen
+  hooks/                  # useAppNavigation, useAuthFormAnimation, useButtonAnimation
+  i18n/                   # strings.ts - keyed copy
+  navigation/             # AppNavigator, MainTabs, types
+  screens/
+    auth/                 # AuthScreen (shell) + LoginForm + RegisterForm + hooks/
+    profile/ social/ tasks/   # placeholder screens
+    ErrorScreen.tsx
+  services/
+    ServiceContainer.ts   # HTTP vs Mock per env
+    http/                 # HttpAuthService, AuthTokenStorage, mappers
+    mock/                 # MockAuthService, MockTaskService, ...
+    types/
+  theme/                  # colors, typography, shadows, animations, spacing
+  utils/                  # validation, authValidation, mapReducerError
 ```
 
-Oba polecenia powinny konczyc sie bez bledow.
+## 6) Tooling
 
-## 5) Struktura frontendu (najwazniejsze katalogi)
+- **ESLint** 8 + `@typescript-eslint` + `react-hooks/exhaustive-deps`
+- **Prettier** 3 (2 spaces, trailing comma, single quotes)
+- **Husky** 9 + **lint-staged** dla pre-commit
+- **EditorConfig**
+- **TypeScript** strict + `noUnusedLocals` + `noUnusedParameters` + path alias `@/*`
 
-- `src/frontend/application` - logika domenowa stanu (reducer + handlery)
-- `src/frontend/services/types` - kontrakty API
-- `src/frontend/services/mock` - mockowane serwisy in-memory
-- `src/frontend/navigation` - nawigacja stack + tabs
-- `src/frontend/screens` - ekrany podzielone na `auth`, `profile`, `social`, `tasks`
-- `src/frontend/components/common` - komponenty wspolne
-- `tests/frontend/unit` - testy jednostkowe warstwy frontendowej
+## 7) State management
 
-## 6) Co jest zaimplementowane
+- `useAppState()` zwraca `{ state, dispatch }`. `dispatch(action)` zwraca `ReducerResult` (`{ ok: true, value }` lub `{ ok: false, error }`).
+- Wszystkie akcje przez `AppAction` (discriminated union) - TypeScript narrowing eliminuje runtime cast'y.
+- Cascade deletes uzywaja `helpers/cascade.ts`.
+- Bledy reducer'a mapowane przez `utils/mapReducerError.ts` na komunikaty z `i18n/strings.ts`.
 
-- Pelna warstwa reducer + handlery dla use case'ow frontendowych
-- Mock API services zgodne z interfejsami
-- Pokrycie testowe kluczowych scenariuszy i edge case'ow
-- Integracja nawigacji ekranow frontend/navigation do frontend/main
+## 8) i18n
 
-## 7) Istotne uwagi
+Wszystkie teksty UI w `src/frontend/i18n/strings.ts`. Helper `t()` zostanie wprowadzony w Sprint 4 (i18next).
 
-- W testach moze pojawic sie ostrzezenie:
-  - `The CJS build of Vite's Node API is deprecated`
-  To ostrzezenie nie blokuje testow i nie powoduje faila.
+## 9) Accessibility
 
-- Po merge zaleznosci musza byc zawsze dociagniete lokalnie (`npm install`),
-  w przeciwnym razie TypeScript zglosi brak modulow React Navigation.
+Interaktywne komponenty (`AppButton`, `AppInput`, `TopBar` icons, `AuthTabSwitcher`) maja `accessibilityRole`, `accessibilityLabel` i `accessibilityState`.
 
-- `npm audit` aktualnie raportuje podatnosci (moderate/high) po stronie zaleznosci transitive.
-  Przed wydaniem produkcyjnym warto wykonac osobny sprint aktualizacji zaleznosci.
+## 10) Service container
 
-## 8) Najczestsze problemy i szybkie rozwiazania
+`process.env.EXPO_PUBLIC_USE_HTTP_SERVICES === 'true'` przelacza `authService` na `HttpAuthService` (token w `expo-secure-store`). Reszta serwisow nadal idzie do Mock - HTTP impl powstanie w Sprint 3.
 
-1. Blad `Cannot find module '@react-navigation/...`:
-   - uruchom `npm install`
-
-2. Testy nie uruchamiaja sie:
-   - sprawdz, czy jestes w katalogu repozytorium
-   - uruchom ponownie `npm install`
-   - uruchom `npm run test:frontend`
-
-3. Aplikacja nie startuje w Expo:
-   - usun cache Expo i uruchom ponownie:
-
-```bash
-npx expo start -c
-```
-
-## 9) Minimalny workflow przed push
+## 11) Minimalny workflow przed push
 
 ```bash
 npm install
-npx tsc --project tsconfig.json --noEmit
-npx tsc --project tsconfig.test.json --noEmit
-npm run test:frontend
+npm run lint
+npm run typecheck
+npm test
 ```
 
-Dopiero po zielonych wynikach rob commit/push.
+Husky pre-commit zrobi to automatycznie na staged plikach.
