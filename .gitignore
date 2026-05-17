@@ -1,2 +1,11 @@
 *cache*
 node_modules/
+.expo/
+dist/
+npm-debug.*
+yarn-error.*
+
+# Environment files
+.env
+.env.*
+!.env.example

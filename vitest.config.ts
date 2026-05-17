@@ -7,5 +7,8 @@ export default defineConfig({
 		environment: "node",
 		clearMocks: true,
 		restoreMocks: true,
+		typecheck: {
+			tsconfig: "./tsconfig.test.json",
+		},
 	},
 });
