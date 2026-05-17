@@ -642,6 +642,12 @@ class CompetetiveTaskGroup(TaskGroup):
         else:
             raise ValidationError("Invalid task type")
 
+        new_task.name = (taskparams.get("name", "") or "").strip()
+        if new_task.name == "":
+            raise ValidationError("Task name cannot be empty")
+        new_task.description = taskparams.get("description") or ""
+        new_task.goal = taskparams.get("goal")
+        new_task.unit = taskparams.get("unit")
         new_task.groupID = self.id
         new_task.ownerID = user_id
         new_task.type = type.value
@@ -785,6 +791,12 @@ class CooperativeTaskGroup(TaskGroup):
         else:
             raise ValidationError("Invalid task type")
 
+        new_task.name = (taskparams.get("name", "") or "").strip()
+        if new_task.name == "":
+            raise ValidationError("Task name cannot be empty")
+        new_task.description = taskparams.get("description") or ""
+        new_task.goal = taskparams.get("goal")
+        new_task.unit = taskparams.get("unit")
         new_task.groupID = self.id
         new_task.ownerID = user_id
         new_task.type = type.value
