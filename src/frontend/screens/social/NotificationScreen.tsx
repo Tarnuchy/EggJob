@@ -6,5 +6,6 @@ export const NotificationScreen = () => (
   <PlaceholderScreen
     title={strings.screens.notifications}
     text={strings.placeholders.notifications}
+    showTopBar={false}
   />
 );
