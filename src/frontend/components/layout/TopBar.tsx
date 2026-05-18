@@ -1,91 +1,143 @@
 import React from 'react';
-import {
-  View,
-  StyleSheet,
-  TouchableOpacity,
-  SafeAreaView,
-  Platform,
-  StatusBar,
-} from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRoute } from '@react-navigation/native';
+import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
-
 import { AppText } from '../common/AppText';
-import { useAppNavigation } from '../../hooks/useAppNavigation';
-import { strings } from '../../i18n/strings';
 import { colors } from '../../theme/colors';
+import { spacing } from '../../theme/spacing';
+import { strings } from '../../i18n/strings';
+import { isSectionName, SECTION_CONFIG } from '../../navigation/sectionConfig';
+import { usePanelContext } from '../../navigation/PanelContext';
 
-interface TopBarProps {
-  title?: string;
-  showIcons?: boolean;
-}
+export const TopBar = () => {
+  const insets = useSafeAreaInsets();
+  const route = useRoute();
 
-export const TopBar = ({ title = '', showIcons = true }: TopBarProps) => {
-  const navigation = useAppNavigation();
-  const androidTopInset = Platform.OS === 'android' ? (StatusBar.currentHeight ?? 0) : 0;
-
-  const handleNotifications = () => {
-    navigation.navigate('Notifications');
-  };
-
-  const handleSettings = () => {
-    navigation.navigate('Settings');
-  };
+  if (!isSectionName(route.name)) return null;
+  const config = SECTION_CONFIG[route.name];
 
   return (
-    <SafeAreaView style={[styles.safeArea, { paddingTop: androidTopInset }]}>
-      <View style={styles.topBar}>
-        <AppText color="textPrimary" variant="h2" style={styles.title}>
-          {title}
-        </AppText>
-
-        {showIcons && (
-          <View style={styles.iconContainer}>
-            <TouchableOpacity
-              onPress={handleNotifications}
-              style={styles.iconButton}
-              accessibilityRole="button"
-              accessibilityLabel={strings.screens.notifications}
-            >
-              <Ionicons name="notifications-outline" size={22} color={colors.textPrimary} />
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={handleSettings}
-              style={styles.iconButton}
-              accessibilityRole="button"
-              accessibilityLabel={strings.screens.settings}
-            >
-              <Ionicons name="settings-outline" size={22} color={colors.textPrimary} />
-            </TouchableOpacity>
+    <View style={styles.host}>
+      <BlurView intensity={20} tint="light" style={styles.blur}>
+        <View style={[styles.bg, { paddingTop: insets.top }]}>
+          <View style={styles.row}>
+            <View style={styles.left}>
+              <Ionicons name={config.iconFilled} size={22} color={colors.primary} />
+              <AppText variant="h2" color="textPrimary">
+                {config.label}
+              </AppText>
+            </View>
+            <View style={styles.right}>
+              <RightActionsPill />
+            </View>
           </View>
-        )}
-      </View>
-    </SafeAreaView>
+        </View>
+      </BlurView>
+    </View>
+  );
+};
+
+const RightActionsPill = () => {
+  const { openPanel, setOpenPanel } = usePanelContext();
+  const notificationsConfig = SECTION_CONFIG.Notifications;
+  const settingsConfig = SECTION_CONFIG.Settings;
+
+  return (
+    <View style={pillStyles.pill}>
+      <Pressable
+        style={({ pressed }) => [pillStyles.button, pressed && pillStyles.buttonPressed]}
+        onPress={() => setOpenPanel('notifications')}
+        accessibilityRole="button"
+        accessibilityLabel={strings.topBar.notifications}
+      >
+        <Ionicons
+          name={
+            openPanel === 'notifications'
+              ? notificationsConfig.iconFilled
+              : notificationsConfig.iconOutline
+          }
+          size={20}
+          color={colors.primary}
+        />
+      </Pressable>
+      <View style={pillStyles.divider} />
+      <Pressable
+        style={({ pressed }) => [pillStyles.button, pressed && pillStyles.buttonPressed]}
+        onPress={() => setOpenPanel('settings')}
+        accessibilityRole="button"
+        accessibilityLabel={strings.topBar.settings}
+      >
+        <Ionicons
+          name={
+            openPanel === 'settings' ? settingsConfig.iconFilled : settingsConfig.iconOutline
+          }
+          size={20}
+          color={colors.primary}
+        />
+      </Pressable>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  safeArea: {
-    backgroundColor: colors.surface,
+  host: {
+    backgroundColor: 'transparent',
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
+    shadowOffset: { width: 0, height: 8 },
   },
-  topBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    backgroundColor: colors.surface,
+  blur: {
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
+    overflow: 'hidden',
+  },
+  bg: {
+    backgroundColor: colors.cardSurfaceTranslucent,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderBottomColor: colors.cardBorderTranslucent,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
   },
-  title: {
-    fontSize: 20,
-    fontWeight: '600',
-  },
-  iconContainer: {
+  row: {
     flexDirection: 'row',
-    gap: 15,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.lg,
+    height: 64,
   },
-  iconButton: {
-    padding: 8,
+  left: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  right: {},
+});
+
+const pillStyles = StyleSheet.create({
+  pill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 40,
+    borderRadius: 20,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.cardBorderTranslucent,
+    backgroundColor: colors.cardSurfaceTranslucent,
+  },
+  button: {
+    width: 44,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  buttonPressed: {
+    backgroundColor: 'rgba(107, 63, 34, 0.08)',
+  },
+  divider: {
+    width: 1,
+    height: 22,
+    backgroundColor: colors.cardBorderTranslucent,
   },
 });

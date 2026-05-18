@@ -58,6 +58,16 @@ export const strings = {
     profile: 'Profile',
     settings: 'Settings',
   },
+  quickAction: {
+    accessibilityLabel: 'Quick add task',
+    regularTask: 'Regular task',
+    bingoTask: 'Bingo task',
+  },
+  topBar: {
+    back: 'Back',
+    notifications: 'Open notifications',
+    settings: 'Open settings',
+  },
   reducerErrors: {
     validationEmail: 'Invalid email address.',
     validationUsername: 'Invalid username.',

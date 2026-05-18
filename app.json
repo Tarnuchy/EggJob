@@ -5,6 +5,7 @@
     "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
+    "backgroundColor": "#A99A8A",
     "scheme": "eggjob",
     "assetBundlePatterns": ["**/*"],
     "ios": {
@@ -13,6 +14,7 @@
     },
     "android": {
       "package": "com.eggjob.app",
+      "backgroundColor": "#A99A8A",
       "adaptiveIcon": {
         "backgroundColor": "#A99A8A"
       }

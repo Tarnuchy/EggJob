@@ -1,0 +1,181 @@
+import React, { useState } from 'react';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { BlurView } from 'expo-blur';
+import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import { TabBarItem } from './TabBarItem';
+import { QuickActionFab } from './QuickActionFab';
+import { QuickActionMenu } from './QuickActionMenu';
+import { colors } from '../../../theme/colors';
+import { shadows } from '../../../theme/shadows';
+import { strings } from '../../../i18n/strings';
+import { SECTION_CONFIG } from '../../../navigation/sectionConfig';
+import type { TabParamList } from '../../../navigation/types';
+
+type TabName = keyof TabParamList;
+
+const FAB_GAP = 88;
+
+const TAB_NAMES: readonly TabName[] = ['Home', 'Tasks', 'Friends', 'Profile'];
+
+const isTabName = (name: string): name is TabName =>
+  (TAB_NAMES as readonly string[]).includes(name);
+
+export const CustomTabBar = ({ state, navigation }: BottomTabBarProps) => {
+  const insets = useSafeAreaInsets();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  const tabRoutes = state.routes.filter((route) => isTabName(route.name));
+  const midpoint = Math.ceil(tabRoutes.length / 2);
+  const leftRoutes = tabRoutes.slice(0, midpoint);
+  const rightRoutes = tabRoutes.slice(midpoint);
+
+  const handlePress = (routeKey: string, routeName: string, isFocused: boolean) => {
+    const event = navigation.emit({
+      type: 'tabPress',
+      target: routeKey,
+      canPreventDefault: true,
+    });
+    if (!isFocused && !event.defaultPrevented) {
+      navigation.navigate(routeName as never);
+    }
+  };
+
+  const handleLongPress = (routeKey: string) => {
+    navigation.emit({ type: 'tabLongPress', target: routeKey });
+  };
+
+  const closeMenu = () => setIsMenuOpen(false);
+
+  const handleSelectRegular = () => {
+    // TODO: Navigate to create-task screen (regular task) when CreateTaskScreen exists.
+    closeMenu();
+  };
+
+  const handleSelectBingo = () => {
+    // TODO: Navigate to create-task screen (bingo task) when CreateTaskScreen exists.
+    closeMenu();
+  };
+
+  const renderItem = (route: BottomTabBarProps['state']['routes'][number]) => {
+    if (!isTabName(route.name)) return null;
+    const config = SECTION_CONFIG[route.name];
+    const isFocused = state.routes[state.index]?.key === route.key;
+    return (
+      <TabBarItem
+        key={route.key}
+        label={config.label}
+        iconFilled={config.iconFilled}
+        iconOutline={config.iconOutline}
+        isFocused={isFocused}
+        onPress={() => handlePress(route.key, route.name, isFocused)}
+        onLongPress={() => handleLongPress(route.key)}
+        accessibilityLabel={config.label}
+      />
+    );
+  };
+
+  return (
+    <View pointerEvents="box-none" style={styles.host}>
+      {isMenuOpen && (
+        <Pressable
+          style={StyleSheet.absoluteFillObject}
+          onPress={closeMenu}
+          accessibilityRole="button"
+          accessibilityLabel="Close menu"
+        />
+      )}
+
+      <View style={styles.barShadow}>
+        <BlurView intensity={20} tint="light" style={styles.blur}>
+          <View style={styles.barInner}>
+            <View style={styles.tabsRow}>
+              <View style={styles.side}>{leftRoutes.map(renderItem)}</View>
+              <View style={styles.fabGap} />
+              <View style={styles.side}>{rightRoutes.map(renderItem)}</View>
+            </View>
+            {insets.bottom > 0 && <View style={{ height: insets.bottom }} />}
+          </View>
+        </BlurView>
+      </View>
+
+      <View
+        pointerEvents="box-none"
+        style={[styles.fabAnchor, { bottom: insets.bottom + 2 }]}
+      >
+        <QuickActionFab
+          isOpen={isMenuOpen}
+          onPress={() => setIsMenuOpen((open) => !open)}
+          accessibilityLabel={strings.quickAction.accessibilityLabel}
+        />
+      </View>
+
+      <View
+        pointerEvents="box-none"
+        style={[styles.menuAnchor, { bottom: insets.bottom + 84 }]}
+      >
+        <QuickActionMenu
+          isOpen={isMenuOpen}
+          onSelectRegular={handleSelectRegular}
+          onSelectBingo={handleSelectBingo}
+          regularLabel={strings.quickAction.regularTask}
+          bingoLabel={strings.quickAction.bingoTask}
+        />
+      </View>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  host: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  barShadow: {
+    backgroundColor: 'transparent',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    ...shadows.level2,
+    shadowOffset: { width: 0, height: -8 },
+  },
+  blur: {
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    overflow: 'hidden',
+  },
+  barInner: {
+    backgroundColor: colors.cardSurfaceTranslucent,
+    borderTopWidth: 1,
+    borderTopColor: colors.cardBorderTranslucent,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+  },
+  tabsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 68,
+  },
+  side: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+  },
+  fabGap: {
+    width: FAB_GAP,
+  },
+  fabAnchor: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+  },
+  menuAnchor: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+  },
+});

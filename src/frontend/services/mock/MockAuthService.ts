@@ -19,6 +19,13 @@ class MockAuthService implements IAuthService {
       username: 'alice',
       passwordHash: 'seed-hash-alice',
     },
+    {
+      accountId: 'acc-seed-dario',
+      userId: 'usr-seed-dario',
+      email: 'Dario',
+      username: 'Dario',
+      passwordHash: 'hash-Abcd1234',
+    },
   ];
 
   async register(input: {
