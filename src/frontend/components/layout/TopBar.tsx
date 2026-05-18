@@ -40,7 +40,9 @@ export const TopBar = () => {
 };
 
 const RightActionsPill = () => {
-  const { setOpenPanel } = usePanelContext();
+  const { openPanel, setOpenPanel } = usePanelContext();
+  const notificationsConfig = SECTION_CONFIG.Notifications;
+  const settingsConfig = SECTION_CONFIG.Settings;
 
   return (
     <View style={pillStyles.pill}>
@@ -50,7 +52,15 @@ const RightActionsPill = () => {
         accessibilityRole="button"
         accessibilityLabel={strings.topBar.notifications}
       >
-        <Ionicons name="notifications-outline" size={20} color={colors.primary} />
+        <Ionicons
+          name={
+            openPanel === 'notifications'
+              ? notificationsConfig.iconFilled
+              : notificationsConfig.iconOutline
+          }
+          size={20}
+          color={colors.primary}
+        />
       </Pressable>
       <View style={pillStyles.divider} />
       <Pressable
@@ -59,7 +69,13 @@ const RightActionsPill = () => {
         accessibilityRole="button"
         accessibilityLabel={strings.topBar.settings}
       >
-        <Ionicons name="settings-outline" size={20} color={colors.primary} />
+        <Ionicons
+          name={
+            openPanel === 'settings' ? settingsConfig.iconFilled : settingsConfig.iconOutline
+          }
+          size={20}
+          color={colors.primary}
+        />
       </Pressable>
     </View>
   );

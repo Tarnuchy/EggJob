@@ -6,8 +6,9 @@ import { NotificationScreen } from '../../screens/social/NotificationScreen';
 import { SECTION_CONFIG } from '../../navigation/sectionConfig';
 import type { PanelKind } from '../../navigation/PanelContext';
 import { colors } from '../../theme/colors';
+import { duration } from '../../theme/animations';
 
-const ANIMATION_DURATION = 280;
+const ANIMATION_DURATION = duration.medium;
 
 interface Props {
   panel: PanelKind;
