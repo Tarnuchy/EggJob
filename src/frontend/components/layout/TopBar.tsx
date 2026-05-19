@@ -84,21 +84,15 @@ const RightActionsPill = () => {
 const styles = StyleSheet.create({
   host: {
     backgroundColor: 'transparent',
-    borderBottomLeftRadius: 28,
-    borderBottomRightRadius: 28,
     shadowOffset: { width: 0, height: 8 },
   },
   blur: {
-    borderBottomLeftRadius: 28,
-    borderBottomRightRadius: 28,
     overflow: 'hidden',
   },
   bg: {
     backgroundColor: colors.cardSurfaceTranslucent,
     borderBottomWidth: 1,
     borderBottomColor: colors.cardBorderTranslucent,
-    borderBottomLeftRadius: 28,
-    borderBottomRightRadius: 28,
   },
   row: {
     flexDirection: 'row',

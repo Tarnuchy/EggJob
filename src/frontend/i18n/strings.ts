@@ -68,6 +68,34 @@ export const strings = {
     notifications: 'Open notifications',
     settings: 'Open settings',
   },
+  friends: {
+    tabs: {
+      myFriends: 'My Friends',
+      addFriend: 'Add Friend',
+      invitations: 'Invitations',
+    },
+    searchPlaceholder: 'Search users...',
+    empty: {
+      myFriendsTitle: 'No friends yet',
+      myFriendsMessage: 'Invite someone and start collaborating!',
+      addFriendTitle: 'Find new friends',
+      addFriendMessage: 'Start typing a username to discover people.',
+      addFriendNoResults: 'No users match your search.',
+      invitationsTitle: 'No invitations',
+      invitationsMessage: "You don't have any pending invitations right now.",
+    },
+    actions: {
+      add: 'Add',
+      accept: 'Accept',
+      reject: 'Reject',
+      pending: 'Pending',
+    },
+    profile: {
+      title: 'Profile',
+      placeholder: 'Profile coming soon.',
+      unknownUser: 'Unknown user',
+    },
+  },
   reducerErrors: {
     validationEmail: 'Invalid email address.',
     validationUsername: 'Invalid username.',
