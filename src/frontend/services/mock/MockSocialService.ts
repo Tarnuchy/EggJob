@@ -1,11 +1,16 @@
-import type { ISocialService } from '../types/ISocialService';
+import type { ISocialService, UserSearchResult } from '../types/ISocialService';
 import type { Result } from '../types/index';
+import { mockProfileService } from './MockProfileService';
 
 class MockSocialService implements ISocialService {
-  private invitations: Record<string, { fromUserId: string; toUserId: string }> = {};
+  private invitations: Record<string, { fromUserId: string; toUserId: string }> = {
+    'inv-seed-1': { fromUserId: 'usr-seed-3', toUserId: 'usr-seed-1' },
+    'inv-seed-2': { fromUserId: 'usr-seed-4', toUserId: 'usr-seed-1' },
+  };
 
   private friendships: Record<string, { userId: string; friendUserId: string }> = {
     'fr-seed-1': { userId: 'usr-seed-1', friendUserId: 'usr-seed-2' },
+    'fr-seed-2': { userId: 'usr-seed-1', friendUserId: 'usr-seed-5' },
   };
 
   async inviteFriend(input: {
@@ -70,6 +75,44 @@ class MockSocialService implements ISocialService {
       .map(([invitationId, invitation]) => ({
         invitationId,
         fromUserId: invitation.fromUserId,
+      }));
+
+    return { ok: true, value: result };
+  }
+
+  async searchUsers(
+    query: string,
+    currentUserId: string,
+  ): Promise<Result<UserSearchResult[]>> {
+    const normalized = query.trim().toLowerCase();
+    if (!normalized) {
+      return { ok: true, value: [] };
+    }
+
+    const friendIds = new Set(
+      Object.values(this.friendships)
+        .filter((f) => f.userId === currentUserId || f.friendUserId === currentUserId)
+        .map((f) => (f.userId === currentUserId ? f.friendUserId : f.userId)),
+    );
+    const pendingFromMe = new Set(
+      Object.values(this.invitations)
+        .filter((inv) => inv.fromUserId === currentUserId)
+        .map((inv) => inv.toUserId),
+    );
+
+    const result = mockProfileService
+      .getAllProfiles()
+      .filter(
+        (profile) =>
+          profile.userId !== currentUserId &&
+          !friendIds.has(profile.userId) &&
+          !pendingFromMe.has(profile.userId) &&
+          profile.username.toLowerCase().includes(normalized),
+      )
+      .map((profile) => ({
+        userId: profile.userId,
+        username: profile.username,
+        photoUrl: profile.photoUrl,
       }));
 
     return { ok: true, value: result };

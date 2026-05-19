@@ -1,5 +1,11 @@
 import type { Result } from './index';
 
+export interface UserSearchResult {
+  userId: string;
+  username: string;
+  photoUrl?: string;
+}
+
 export interface ISocialService {
   inviteFriend(input: {
     invitationId: string;
@@ -30,4 +36,6 @@ export interface ISocialService {
       }>
     >
   >;
+
+  searchUsers(query: string, currentUserId: string): Promise<Result<UserSearchResult[]>>;
 }
