@@ -9,3 +9,6 @@ yarn-error.*
 .env
 .env.*
 !.env.example
+
+# Claude environment files
+.claude
