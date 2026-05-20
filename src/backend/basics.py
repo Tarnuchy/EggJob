@@ -1,20 +1,33 @@
+from datetime import datetime, timedelta
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from src.backend.database import get_db
-from src.backend.exceptions import NotFoundError
+from src.backend.exceptions import AppError, ConflictError, NotFoundError, ValidationError
 from src.backend.models import (
+    ChallengeTask,
     Comment,
     Friendship,
     GroupMember,
+    GroupRole,
     Invitation,
     Notification,
+    OneTimeTask,
     ProgressEntry,
+    RepeatableTaskProgress,
+    EndlessTaskProgress,
+    OneTimeTaskProgress,
+    ChallengeTaskProgress,
     Task,
     TaskGroup,
     TaskProgress,
+    TaskStatus,
+    TaskType,
+    TaskGroupType,
+    TaskParams,
+    PrivacyLevel,
     User,
 )
 from src.backend.response import (
@@ -25,16 +38,24 @@ from src.backend.response import (
     GroupMemberSummaryResponse,
     InvitationListResponse,
     InvitationSummaryResponse,
+    MessageResponse,
     NotificationListResponse,
     NotificationSummaryResponse,
     ProgressEntryListResponse,
     ProgressEntrySummaryResponse,
     TaskGroupListResponse,
+    TaskGroupResponse,
     TaskListResponse,
+    TaskDetailResponse,
+    TaskParamsResponse,
     TaskProgressListResponse,
     TaskProgressSummaryResponse,
     TaskResponse,
     UserSummaryResponse,
+    UserFeedResponse,
+    FeedItemResponse,
+    UserStatsResponse,
+    RepeatableStreakResponse,
 )
 
 router = APIRouter(prefix="", tags=["basics"])
@@ -45,6 +66,27 @@ def _user_payload(user: User) -> UserSummaryResponse:
         id=str(user.id),
         username=user.username,
         photo_url=user.photoUrl,
+    )
+
+
+def _task_payload(task: Task) -> TaskResponse:
+    return TaskResponse(
+        id=str(task.id),
+        name=task.name,
+        description=task.description,
+        goal=task.goal,
+        unit=task.unit,
+        type=task.type.value if hasattr(task.type, "value") else task.type,
+        group_id=str(task.groupID),
+        owner_id=str(task.ownerID) if task.ownerID else None,
+    )
+
+
+def _task_params_payload(params: TaskParams) -> TaskParamsResponse:
+    return TaskParamsResponse(
+        photo_required=params.photoRequired,
+        color=params.color,
+        notifications=params.notifications,
     )
 
 
@@ -69,6 +111,15 @@ def list_user_friends(user_id: UUID, db: Session = Depends(get_db)):
         count=len(friends),
         items=[_user_payload(friend) for friend in friends],
     )
+
+
+@router.get("/users/{user_id}", response_model=UserSummaryResponse)
+def get_user(user_id: UUID, db: Session = Depends(get_db)):
+    user = db.query(User).filter_by(id=user_id).first()
+    if user is None:
+        raise NotFoundError("User not found")
+
+    return _user_payload(user)
 
 
 @router.get("/users/{user_id}/taskgroups", response_model=TaskGroupListResponse)
@@ -102,6 +153,357 @@ def list_user_taskgroups(user_id: UUID, db: Session = Depends(get_db)):
         count=len(items),
         items=items,
     )
+
+
+@router.get("/taskgroups/{group_id}", response_model=TaskGroupResponse)
+def get_taskgroup(group_id: UUID, db: Session = Depends(get_db)):
+    group = db.query(TaskGroup).filter_by(id=group_id).first()
+    if group is None:
+        raise NotFoundError("TaskGroup not found")
+
+    return TaskGroupResponse(
+        id=str(group.id),
+        name=group.name,
+        privacy=group.privacy.value if group.privacy else None,
+        type=group.type.value if group.type else None,
+        is_bingo=group.isBingo,
+        task_count=group.taskCount,
+        invite_code=group.inviteCode,
+    )
+
+
+@router.get("/tasks/{task_id}", response_model=TaskDetailResponse)
+def get_task(task_id: UUID, db: Session = Depends(get_db)):
+    task = db.query(Task).filter_by(id=task_id).first()
+    if task is None:
+        raise NotFoundError("Task not found")
+
+    params = task.params
+    return TaskDetailResponse(
+        task=_task_payload(task),
+        params=_task_params_payload(params) if params else None,
+    )
+
+
+@router.get("/task-params/{task_id}", response_model=TaskParamsResponse)
+def get_task_params(task_id: UUID, db: Session = Depends(get_db)):
+    params = db.query(TaskParams).filter_by(taskID=task_id).first()
+    if params is None:
+        raise NotFoundError("TaskParams not found")
+
+    return _task_params_payload(params)
+
+
+@router.get("/users/search", response_model=FriendsListResponse)
+def search_users(
+    q: str = Query(min_length=1),
+    exclude_user_id: UUID | None = Query(default=None),
+    limit: int = Query(default=20, ge=1, le=100),
+    db: Session = Depends(get_db),
+):
+    query = db.query(User).filter(User.username.ilike(f"%{q}%"))
+    if exclude_user_id is not None:
+        query = query.filter(User.id != exclude_user_id)
+
+    users = query.order_by(User.username.asc()).limit(limit).all()
+    return FriendsListResponse(
+        count=len(users),
+        items=[_user_payload(user) for user in users],
+    )
+
+
+@router.get("/taskgroups/search", response_model=TaskGroupListResponse)
+def search_taskgroups(
+    q: str = Query(min_length=1),
+    privacy: str | None = Query(default="public"),
+    limit: int = Query(default=20, ge=1, le=100),
+    db: Session = Depends(get_db),
+):
+    query = db.query(TaskGroup).filter(TaskGroup.name.ilike(f"%{q}%"))
+
+    if privacy is not None:
+        try:
+            privacy_value = PrivacyLevel(privacy)
+        except ValueError as exc:
+            raise ValidationError("Invalid privacy") from exc
+        query = query.filter(TaskGroup.privacy == privacy_value)
+
+    groups = query.order_by(TaskGroup.name.asc()).limit(limit).all()
+    items = [
+        {
+            "group_id": str(group.id),
+            "name": group.name,
+            "privacy": group.privacy.value if group.privacy else None,
+            "type": group.type.value if group.type else None,
+            "role": None,
+            "is_bingo": group.isBingo,
+            "task_count": group.taskCount,
+        }
+        for group in groups
+    ]
+
+    return TaskGroupListResponse(count=len(items), items=items)
+
+
+@router.post("/taskgroups/join/{invite_code}", response_model=MessageResponse)
+def join_taskgroup(
+    invite_code: str,
+    user_id: UUID = Query(...),
+    db: Session = Depends(get_db),
+):
+    user = db.query(User).filter_by(id=user_id).first()
+    if user is None:
+        raise NotFoundError("User not found")
+
+    group = db.query(TaskGroup).filter_by(inviteCode=invite_code).first()
+    if group is None:
+        raise NotFoundError("TaskGroup not found")
+
+    member = db.query(GroupMember).filter_by(groupID=group.id, userID=user.id).first()
+    if member is not None and member.active:
+        raise ConflictError("User is already a member of this group")
+
+    try:
+        if member is None:
+            member = GroupMember()
+            member.groupID = group.id
+            member.userID = user.id
+            member.role = GroupRole.MEMBER
+            db.add(member)
+            db.flush()
+        else:
+            member.active = True
+            member.role = GroupRole.MEMBER
+
+        group_type = group.type if isinstance(group.type, TaskGroupType) else TaskGroupType(group.type)
+        if group_type == TaskGroupType.COMPETITIVE:
+            tasks = db.query(Task).filter_by(groupID=group.id).all()
+            for task in tasks:
+                existing = db.query(TaskProgress).filter_by(
+                    groupMemberID=member.id,
+                    taskID=task.id,
+                ).first()
+                if existing is not None:
+                    continue
+                task_type = task.type if isinstance(task.type, TaskType) else TaskType(task.type)
+                if task_type == TaskType.ENDLESS:
+                    progress = EndlessTaskProgress()
+                elif task_type == TaskType.ONE_TIME:
+                    progress = OneTimeTaskProgress()
+                elif task_type == TaskType.REPEATABLE:
+                    progress = RepeatableTaskProgress()
+                else:
+                    progress = ChallengeTaskProgress()
+                progress.groupMemberID = member.id
+                progress.taskID = task.id
+                progress.type = task_type.value
+                db.add(progress)
+
+        db.commit()
+    except AppError:
+        db.rollback()
+        raise
+    except Exception:
+        db.rollback()
+        raise
+
+    return MessageResponse(message="group_joined")
+
+
+@router.get("/users/{user_id}/feed", response_model=UserFeedResponse)
+def user_feed(
+    user_id: UUID,
+    limit: int = Query(default=20, ge=1, le=100),
+    db: Session = Depends(get_db),
+):
+    user = db.query(User).filter_by(id=user_id).first()
+    if user is None:
+        raise NotFoundError("User not found")
+
+    friendships = db.query(Friendship).filter(
+        (Friendship.userOneID == user.id) | (Friendship.userTwoID == user.id)
+    ).all()
+    friend_ids = [
+        f.userTwoID if f.userOneID == user.id else f.userOneID
+        for f in friendships
+    ]
+    if not friend_ids:
+        return UserFeedResponse(count=0, items=[])
+
+    group_ids = [
+        gm.groupID
+        for gm in db.query(GroupMember)
+        .filter_by(userID=user.id, active=True)
+        .all()
+    ]
+    if not group_ids:
+        return UserFeedResponse(count=0, items=[])
+
+    fetch_limit = limit * 2
+    progress_rows = (
+        db.query(ProgressEntry, Task, TaskGroup, User)
+        .join(TaskProgress, ProgressEntry.TaskProgressID == TaskProgress.id)
+        .join(Task, TaskProgress.taskID == Task.id)
+        .join(TaskGroup, Task.groupID == TaskGroup.id)
+        .join(GroupMember, ProgressEntry.memberID == GroupMember.id)
+        .join(User, GroupMember.userID == User.id)
+        .filter(GroupMember.userID.in_(friend_ids), Task.groupID.in_(group_ids))
+        .order_by(ProgressEntry.createdAt.desc())
+        .limit(fetch_limit)
+        .all()
+    )
+
+    comment_rows = (
+        db.query(Comment, Task, TaskGroup, User)
+        .join(User, Comment.userID == User.id)
+        .join(ProgressEntry, Comment.progressEntryID == ProgressEntry.id)
+        .join(TaskProgress, ProgressEntry.TaskProgressID == TaskProgress.id)
+        .join(Task, TaskProgress.taskID == Task.id)
+        .join(TaskGroup, Task.groupID == TaskGroup.id)
+        .filter(Comment.userID.in_(friend_ids), Task.groupID.in_(group_ids))
+        .order_by(Comment.date.desc())
+        .limit(fetch_limit)
+        .all()
+    )
+
+    items: list[FeedItemResponse] = []
+    for entry, task, group, author in progress_rows:
+        items.append(
+            FeedItemResponse(
+                type="progress_entry",
+                created_at=entry.createdAt,
+                user_id=str(author.id),
+                username=author.username,
+                task_id=str(task.id),
+                group_id=str(group.id),
+                message=entry.message,
+                value=entry.value,
+                photo_url=entry.photoUrl,
+            )
+        )
+
+    for comment, task, group, author in comment_rows:
+        items.append(
+            FeedItemResponse(
+                type="comment",
+                created_at=comment.date,
+                user_id=str(author.id),
+                username=author.username,
+                task_id=str(task.id),
+                group_id=str(group.id),
+                message=comment.message,
+            )
+        )
+
+    items.sort(key=lambda item: item.created_at, reverse=True)
+    items = items[:limit]
+
+    return UserFeedResponse(count=len(items), items=items)
+
+
+@router.get("/users/{user_id}/stats", response_model=UserStatsResponse)
+def user_stats(user_id: UUID, db: Session = Depends(get_db)):
+    user = db.query(User).filter_by(id=user_id).first()
+    if user is None:
+        raise NotFoundError("User not found")
+
+    friendships = db.query(Friendship).filter(
+        (Friendship.userOneID == user.id) | (Friendship.userTwoID == user.id)
+    ).all()
+    friend_ids = [
+        f.userTwoID if f.userOneID == user.id else f.userOneID
+        for f in friendships
+    ]
+
+    progress_rows = (
+        db.query(TaskProgress)
+        .join(GroupMember, TaskProgress.groupMemberID == GroupMember.id)
+        .filter(GroupMember.userID == user.id, GroupMember.active.is_(True))
+        .all()
+    )
+    done_value = TaskStatus.DONE.value
+    active_tasks = sum(
+        1
+        for progress in progress_rows
+        if (progress.status.value if hasattr(progress.status, "value") else progress.status)
+        != done_value
+    )
+    completed_tasks = sum(
+        1
+        for progress in progress_rows
+        if (progress.status.value if hasattr(progress.status, "value") else progress.status)
+        == done_value
+    )
+
+    streak_rows = (
+        db.query(RepeatableTaskProgress)
+        .join(GroupMember, RepeatableTaskProgress.groupMemberID == GroupMember.id)
+        .filter(GroupMember.userID == user.id, GroupMember.active.is_(True))
+        .all()
+    )
+    streaks = [
+        RepeatableStreakResponse(
+            progress_id=str(progress.id),
+            task_id=str(progress.taskID),
+            streak=progress.streak,
+            counter=progress.counter,
+        )
+        for progress in streak_rows
+        if progress.streak > 0
+    ]
+
+    return UserStatsResponse(
+        active_tasks=active_tasks,
+        completed_tasks=completed_tasks,
+        friends_count=len(friend_ids),
+        streaks=streaks,
+    )
+
+
+@router.get("/users/{user_id}/upcoming", response_model=TaskListResponse)
+def user_upcoming(user_id: UUID, db: Session = Depends(get_db)):
+    user = db.query(User).filter_by(id=user_id).first()
+    if user is None:
+        raise NotFoundError("User not found")
+
+    group_ids = [
+        gm.groupID
+        for gm in db.query(GroupMember)
+        .filter_by(userID=user.id, active=True)
+        .all()
+    ]
+    if not group_ids:
+        return TaskListResponse(count=0, items=[])
+
+    now = datetime.utcnow()
+    upcoming_limit = now + timedelta(days=7)
+
+    one_time = (
+        db.query(OneTimeTask)
+        .filter(
+            OneTimeTask.groupID.in_(group_ids),
+            OneTimeTask.deadline.isnot(None),
+            OneTimeTask.deadline >= now,
+            OneTimeTask.deadline <= upcoming_limit,
+        )
+        .all()
+    )
+    challenge = (
+        db.query(ChallengeTask)
+        .filter(
+            ChallengeTask.groupID.in_(group_ids),
+            ChallengeTask.deadline.isnot(None),
+            ChallengeTask.deadline >= now,
+            ChallengeTask.deadline <= upcoming_limit,
+        )
+        .all()
+    )
+
+    tasks = one_time + challenge
+    tasks.sort(key=lambda task: task.deadline or upcoming_limit)
+    items = [_task_payload(task) for task in tasks]
+
+    return TaskListResponse(count=len(items), items=items)
 
 
 @router.get("/users/{user_id}/notifications", response_model=NotificationListResponse)
