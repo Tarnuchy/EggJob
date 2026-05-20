@@ -61,6 +61,17 @@ class TaskResponse(BaseModel):
     owner_id: str | None = None
 
 
+class TaskParamsResponse(BaseModel):
+    photo_required: bool
+    color: str | None = None
+    notifications: bool
+
+
+class TaskDetailResponse(BaseModel):
+    task: TaskResponse
+    params: TaskParamsResponse | None = None
+
+
 class TaskListResponse(BaseModel):
     count: int
     items: list[TaskResponse]
@@ -147,3 +158,34 @@ class CommentListResponse(BaseModel):
 
 class ProgressValidationResponse(BaseModel):
     is_valid: bool
+
+
+class FeedItemResponse(BaseModel):
+    type: str
+    created_at: datetime
+    user_id: str
+    username: str | None = None
+    task_id: str | None = None
+    group_id: str | None = None
+    message: str
+    value: float | None = None
+    photo_url: str | None = None
+
+
+class UserFeedResponse(BaseModel):
+    count: int
+    items: list[FeedItemResponse]
+
+
+class RepeatableStreakResponse(BaseModel):
+    progress_id: str
+    task_id: str
+    streak: int
+    counter: int
+
+
+class UserStatsResponse(BaseModel):
+    active_tasks: int
+    completed_tasks: int
+    friends_count: int
+    streaks: list[RepeatableStreakResponse]
