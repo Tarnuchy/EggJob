@@ -3,6 +3,7 @@ import { BackHandler, StyleSheet, View } from 'react-native';
 import { MainTabs } from './MainTabs';
 import { SlideOverPanel } from '../components/layout/SlideOverPanel';
 import { PanelContext, type PanelKind } from './PanelContext';
+import { NotificationsProvider } from '../application/NotificationsContext';
 
 export const PanelHost = () => {
   const [openPanel, setOpenPanel] = useState<PanelKind>(null);
@@ -22,10 +23,12 @@ export const PanelHost = () => {
 
   return (
     <PanelContext.Provider value={contextValue}>
-      <View style={styles.container}>
-        <MainTabs />
-        <SlideOverPanel panel={openPanel} onClose={handleClose} />
-      </View>
+      <NotificationsProvider>
+        <View style={styles.container}>
+          <MainTabs />
+          <SlideOverPanel panel={openPanel} onClose={handleClose} />
+        </View>
+      </NotificationsProvider>
     </PanelContext.Provider>
   );
 };
