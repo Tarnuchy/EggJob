@@ -7,7 +7,9 @@
     "userInterfaceStyle": "light",
     "backgroundColor": "#A99A8A",
     "scheme": "eggjob",
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.eggjob.app"
@@ -23,6 +25,11 @@
       "backgroundColor": "#A99A8A",
       "barStyle": "dark-content"
     },
-    "plugins": ["expo-asset", "expo-font", "expo-secure-store"]
+    "plugins": [
+      "expo-asset",
+      "expo-font",
+      "expo-secure-store",
+      "expo-localization"
+    ]
   }
 }
