@@ -3,10 +3,10 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { AppText } from '../common/AppText';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
-import { strings } from '../../i18n/strings';
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
 
@@ -18,6 +18,7 @@ interface Props {
 
 export const PanelHeader = ({ title, iconFilled, onClose }: Props) => {
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
   return (
     <View style={styles.host}>
       <BlurView intensity={20} tint="light" style={styles.blur}>
@@ -37,7 +38,7 @@ export const PanelHeader = ({ title, iconFilled, onClose }: Props) => {
                 ]}
                 onPress={onClose}
                 accessibilityRole="button"
-                accessibilityLabel={strings.topBar.back}
+                accessibilityLabel={t('topBar.back')}
               >
                 <Ionicons name="arrow-back" size={22} color={colors.primary} />
               </Pressable>

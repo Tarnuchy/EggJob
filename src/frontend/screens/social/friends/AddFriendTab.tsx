@@ -4,8 +4,8 @@ import { SearchBar } from '../../../components/common/SearchBar';
 import { UserListItem } from '../../../components/common/UserListItem';
 import { EmptyState } from '../../../components/common/EmptyState';
 import { AppText } from '../../../components/common/AppText';
+import { useTranslation } from 'react-i18next';
 import { socialService } from '../../../services';
-import { strings } from '../../../i18n/strings';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { useAppNavigation } from '../../../hooks/useAppNavigation';
@@ -18,6 +18,7 @@ const generateId = (prefix: string) =>
 export const AddFriendTab = () => {
   const currentUserId = useCurrentUserId();
   const navigation = useAppNavigation();
+  const { t } = useTranslation();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<ResolvedUser[]>([]);
   const [pendingUserIds, setPendingUserIds] = useState<Set<string>>(new Set());
@@ -78,13 +79,13 @@ export const AddFriendTab = () => {
       <SearchBar
         value={query}
         onChangeText={setQuery}
-        placeholder={strings.friends.searchPlaceholder}
+        placeholder={t('friends.searchPlaceholder')}
       />
       {!hasQuery ? (
         <EmptyState
           icon="search-outline"
-          title={strings.friends.empty.addFriendTitle}
-          message={strings.friends.empty.addFriendMessage}
+          title={t('friends.empty.addFriendTitle')}
+          message={t('friends.empty.addFriendMessage')}
         />
       ) : loading ? (
         <View style={styles.center}>
@@ -93,8 +94,8 @@ export const AddFriendTab = () => {
       ) : results.length === 0 ? (
         <EmptyState
           icon="person-outline"
-          title={strings.friends.empty.addFriendTitle}
-          message={strings.friends.empty.addFriendNoResults}
+          title={t('friends.empty.addFriendTitle')}
+          message={t('friends.empty.addFriendNoResults')}
         />
       ) : (
         <FlatList
@@ -119,14 +120,14 @@ export const AddFriendTab = () => {
                     ]}
                     accessibilityRole="button"
                     accessibilityLabel={
-                      isPending ? strings.friends.actions.pending : strings.friends.actions.add
+                      isPending ? t('friends.actions.pending') : t('friends.actions.add')
                     }
                   >
                     <AppText
                       variant="button"
                       color={isPending ? 'muted' : 'textOnPrimary'}
                     >
-                      {isPending ? strings.friends.actions.pending : strings.friends.actions.add}
+                      {isPending ? t('friends.actions.pending') : t('friends.actions.add')}
                     </AppText>
                   </Pressable>
                 }

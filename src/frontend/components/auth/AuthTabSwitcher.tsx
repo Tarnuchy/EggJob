@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { strings } from '../../i18n/strings';
+import { useTranslation } from 'react-i18next';
 import {
   SegmentedControl,
   type SegmentedControlOption,
@@ -13,12 +13,13 @@ interface Props {
 }
 
 export const AuthTabSwitcher = ({ activeTab, onTabChange }: Props) => {
+  const { t } = useTranslation();
   const options = useMemo<ReadonlyArray<SegmentedControlOption<AuthTab>>>(
     () => [
-      { value: 'login', label: strings.auth.tabs.login },
-      { value: 'register', label: strings.auth.tabs.register },
+      { value: 'login', label: t('auth.tabs.login') },
+      { value: 'register', label: t('auth.tabs.register') },
     ],
-    [],
+    [t],
   );
 
   return (

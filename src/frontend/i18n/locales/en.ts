@@ -1,4 +1,4 @@
-export const strings = {
+const en = {
   app: {
     name: 'EggJob',
   },
@@ -96,6 +96,21 @@ export const strings = {
       unknownUser: 'Unknown user',
     },
   },
+  settings: {
+    sections: {
+      preferences: 'Preferences',
+    },
+    rows: {
+      language: 'Language',
+    },
+    languagePicker: {
+      title: 'Choose language',
+      system: 'Use system language',
+      english: 'English',
+      polish: 'Polski',
+      close: 'Close',
+    },
+  },
   reducerErrors: {
     validationEmail: 'Invalid email address.',
     validationUsername: 'Invalid username.',
@@ -108,3 +123,15 @@ export const strings = {
     unknownAction: 'Unknown action.',
   },
 } as const;
+
+export default en;
+
+type Stringify<T> = T extends string
+  ? string
+  : T extends readonly (infer U)[]
+    ? Stringify<U>[]
+    : T extends object
+      ? { [K in keyof T]: Stringify<T[K]> }
+      : T;
+
+export type Translation = Stringify<typeof en>;

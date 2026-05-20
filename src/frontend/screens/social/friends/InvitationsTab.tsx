@@ -4,8 +4,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { SearchBar } from '../../../components/common/SearchBar';
 import { UserListItem } from '../../../components/common/UserListItem';
 import { EmptyState } from '../../../components/common/EmptyState';
+import { useTranslation } from 'react-i18next';
 import { profileService, socialService } from '../../../services';
-import { strings } from '../../../i18n/strings';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { useAppNavigation } from '../../../hooks/useAppNavigation';
@@ -18,6 +18,7 @@ const generateId = (prefix: string) =>
 export const InvitationsTab = () => {
   const currentUserId = useCurrentUserId();
   const navigation = useAppNavigation();
+  const { t } = useTranslation();
   const [query, setQuery] = useState('');
   const [invitations, setInvitations] = useState<ResolvedInvitation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -34,7 +35,7 @@ export const InvitationsTab = () => {
     const resolved = await Promise.all(
       result.value.map(async ({ invitationId, fromUserId }) => {
         const profile = await profileService.getProfile(fromUserId);
-        const username = profile.ok ? profile.value.username : strings.friends.profile.unknownUser;
+        const username = profile.ok ? profile.value.username : t('friends.profile.unknownUser');
         const photoUrl = profile.ok ? profile.value.photoUrl : undefined;
         return { invitationId, userId: fromUserId, username, photoUrl };
       }),
@@ -42,7 +43,7 @@ export const InvitationsTab = () => {
 
     setInvitations(resolved);
     setLoading(false);
-  }, [currentUserId]);
+  }, [currentUserId, t]);
 
   useEffect(() => {
     void loadInvitations();
@@ -78,7 +79,7 @@ export const InvitationsTab = () => {
       <SearchBar
         value={query}
         onChangeText={setQuery}
-        placeholder={strings.friends.searchPlaceholder}
+        placeholder={t('friends.searchPlaceholder')}
       />
       {loading ? (
         <View style={styles.center}>
@@ -87,8 +88,8 @@ export const InvitationsTab = () => {
       ) : invitations.length === 0 ? (
         <EmptyState
           icon="mail-open-outline"
-          title={strings.friends.empty.invitationsTitle}
-          message={strings.friends.empty.invitationsMessage}
+          title={t('friends.empty.invitationsTitle')}
+          message={t('friends.empty.invitationsMessage')}
         />
       ) : (
         <FlatList
@@ -107,7 +108,7 @@ export const InvitationsTab = () => {
                     style={({ pressed }) => [styles.iconButton, pressed && styles.iconButtonPressed]}
                     hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                     accessibilityRole="button"
-                    accessibilityLabel={strings.friends.actions.accept}
+                    accessibilityLabel={t('friends.actions.accept')}
                   >
                     <Ionicons name="checkmark-circle" size={28} color={colors.primary} />
                   </Pressable>
@@ -116,7 +117,7 @@ export const InvitationsTab = () => {
                     style={({ pressed }) => [styles.iconButton, pressed && styles.iconButtonPressed]}
                     hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                     accessibilityRole="button"
-                    accessibilityLabel={strings.friends.actions.reject}
+                    accessibilityLabel={t('friends.actions.reject')}
                   >
                     <Ionicons name="close-circle" size={28} color={colors.danger} />
                   </Pressable>

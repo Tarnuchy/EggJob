@@ -1,11 +1,11 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { useTranslation } from 'react-i18next';
 
 import { HomeScreen } from '../screens/tasks/HomeScreen';
 import { TasksScreen } from '../screens/tasks/TasksScreen';
 import { FriendsScreen } from '../screens/social/FriendsScreen';
 import { ProfileScreen } from '../screens/profile/ProfileScreen';
-import { strings } from '../i18n/strings';
 import { colors } from '../theme/colors';
 import { CustomTabBar } from '../components/layout/tabs';
 import type { TabParamList } from './types';
@@ -13,6 +13,7 @@ import type { TabParamList } from './types';
 const Tab = createBottomTabNavigator<TabParamList>();
 
 export const MainTabs = () => {
+  const { t } = useTranslation();
   return (
     <Tab.Navigator
       tabBar={(props) => <CustomTabBar {...props} />}
@@ -21,17 +22,17 @@ export const MainTabs = () => {
         sceneStyle: { backgroundColor: colors.background },
       }}
     >
-      <Tab.Screen name="Home" component={HomeScreen} options={{ title: strings.screens.home }} />
-      <Tab.Screen name="Tasks" component={TasksScreen} options={{ title: strings.screens.tasks }} />
+      <Tab.Screen name="Home" component={HomeScreen} options={{ title: t('screens.home') }} />
+      <Tab.Screen name="Tasks" component={TasksScreen} options={{ title: t('screens.tasks') }} />
       <Tab.Screen
         name="Friends"
         component={FriendsScreen}
-        options={{ title: strings.screens.friends }}
+        options={{ title: t('screens.friends') }}
       />
       <Tab.Screen
         name="Profile"
         component={ProfileScreen}
-        options={{ title: strings.screens.profile }}
+        options={{ title: t('screens.profile') }}
       />
     </Tab.Navigator>
   );

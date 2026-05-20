@@ -9,7 +9,7 @@ import type { AuthTab } from '../../components/auth/AuthTabSwitcher';
 import { Spacer } from '../../components/common/Spacer';
 import { useAppNavigation } from '../../hooks/useAppNavigation';
 import { useAuthFormAnimation } from '../../hooks/useAuthFormAnimation';
-import { strings } from '../../i18n/strings';
+import { useTranslation } from 'react-i18next';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
@@ -18,6 +18,7 @@ import { RegisterForm } from './RegisterForm';
 
 export const AuthScreen = () => {
   const navigation = useAppNavigation();
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<AuthTab>('login');
   const { cardEntrance, formOpacity, animateTabSwitch } = useAuthFormAnimation();
 
@@ -40,7 +41,7 @@ export const AuthScreen = () => {
           style={styles.keyboard}
         >
           <View style={styles.content}>
-            <Text style={styles.appName}>{strings.app.name}</Text>
+            <Text style={styles.appName}>{t('app.name')}</Text>
             <Spacer height={spacing.md} />
 
             <Animated.View style={[styles.cardShadow, cardEntrance]}>
