@@ -1,16 +1,65 @@
-import type { ISocialService, UserSearchResult } from '../types/ISocialService';
+import type { FeedItem, ISocialService, UserSearchResult } from '../types/ISocialService';
 import type { Result } from '../types/index';
 import { mockProfileService } from './MockProfileService';
+
+const HOUR = 60 * 60 * 1000;
+const DAY = 24 * HOUR;
 
 class MockSocialService implements ISocialService {
   private invitations: Record<string, { fromUserId: string; toUserId: string }> = {
     'inv-seed-1': { fromUserId: 'usr-seed-3', toUserId: 'usr-seed-1' },
     'inv-seed-2': { fromUserId: 'usr-seed-4', toUserId: 'usr-seed-1' },
+    'inv-seed-3': { fromUserId: 'usr-seed-1', toUserId: 'usr-seed-6' },
   };
 
   private friendships: Record<string, { userId: string; friendUserId: string }> = {
     'fr-seed-1': { userId: 'usr-seed-1', friendUserId: 'usr-seed-2' },
     'fr-seed-2': { userId: 'usr-seed-1', friendUserId: 'usr-seed-5' },
+  };
+
+  /** Friend activity, keyed by the viewer whose feed it belongs to. */
+  private feeds: Record<string, FeedItem[]> = {
+    'usr-seed-1': [
+      {
+        type: 'progress_entry',
+        createdAt: new Date(Date.now() - 3 * HOUR).toISOString(),
+        userId: 'usr-seed-2',
+        username: 'bob',
+        taskId: 'tsk-seed-1',
+        groupId: 'grp-seed-1',
+        message: 'Ran 5 km before work.',
+        value: 5,
+      },
+      {
+        type: 'comment',
+        createdAt: new Date(Date.now() - 1 * DAY).toISOString(),
+        userId: 'usr-seed-5',
+        username: 'erin',
+        taskId: 'tsk-seed-2',
+        groupId: 'grp-seed-1',
+        message: 'Great pace, keep it up!',
+      },
+      {
+        type: 'progress_entry',
+        createdAt: new Date(Date.now() - 4 * DAY).toISOString(),
+        userId: 'usr-seed-5',
+        username: 'erin',
+        taskId: 'tsk-seed-3',
+        groupId: 'grp-seed-2',
+        message: 'Finished chapter 3 of the reading challenge.',
+        value: 3,
+      },
+      {
+        type: 'progress_entry',
+        createdAt: new Date(Date.now() - 6 * DAY).toISOString(),
+        userId: 'usr-seed-2',
+        username: 'bob',
+        taskId: 'tsk-seed-1',
+        groupId: 'grp-seed-1',
+        message: 'Logged a 30-minute workout.',
+        value: 1,
+      },
+    ],
   };
 
   async inviteFriend(input: {
@@ -43,6 +92,14 @@ class MockSocialService implements ISocialService {
   }
 
   async rejectFriendInvite(invitationId: string): Promise<Result<void>> {
+    delete this.invitations[invitationId];
+    return { ok: true, value: undefined };
+  }
+
+  async cancelInvitation(invitationId: string): Promise<Result<void>> {
+    if (!this.invitations[invitationId]) {
+      return { ok: false, error: { code: 'not-found' } };
+    }
     delete this.invitations[invitationId];
     return { ok: true, value: undefined };
   }
@@ -80,10 +137,20 @@ class MockSocialService implements ISocialService {
     return { ok: true, value: result };
   }
 
-  async searchUsers(
-    query: string,
-    currentUserId: string,
-  ): Promise<Result<UserSearchResult[]>> {
+  async getSentInvitations(
+    userId: string,
+  ): Promise<Result<Array<{ invitationId: string; toUserId: string }>>> {
+    const result = Object.entries(this.invitations)
+      .filter(([, invitation]) => invitation.fromUserId === userId)
+      .map(([invitationId, invitation]) => ({
+        invitationId,
+        toUserId: invitation.toUserId,
+      }));
+
+    return { ok: true, value: result };
+  }
+
+  async searchUsers(query: string, currentUserId: string): Promise<Result<UserSearchResult[]>> {
     const normalized = query.trim().toLowerCase();
     if (!normalized) {
       return { ok: true, value: [] };
@@ -117,6 +184,14 @@ class MockSocialService implements ISocialService {
 
     return { ok: true, value: result };
   }
+
+  async getUserFeed(userId: string): Promise<Result<FeedItem[]>> {
+    const items = [...(this.feeds[userId] ?? [])].sort((a, b) =>
+      b.createdAt.localeCompare(a.createdAt),
+    );
+    return { ok: true, value: items };
+  }
 }
 
 export const mockSocialService = new MockSocialService();
+export { MockSocialService };

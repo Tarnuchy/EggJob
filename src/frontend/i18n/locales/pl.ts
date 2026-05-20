@@ -47,10 +47,6 @@ const pl: Translation = {
   placeholders: {
     home: 'Ekran główny — placeholder',
     tasks: 'Zadania — placeholder',
-    friends: 'Znajomi — placeholder',
-    notifications: 'Powiadomienia — placeholder',
-    profile: 'Profil — placeholder',
-    settings: 'Ustawienia — placeholder',
   },
   screens: {
     home: 'Główna',
@@ -94,8 +90,25 @@ const pl: Translation = {
     },
     profile: {
       title: 'Profil',
-      placeholder: 'Profil już wkrótce.',
       unknownUser: 'Nieznany użytkownik',
+      actions: {
+        add: 'Dodaj do znajomych',
+        remove: 'Usuń ze znajomych',
+        cancel: 'Anuluj zaproszenie',
+        accept: 'Akceptuj',
+        reject: 'Odrzuć',
+      },
+      status: {
+        friend: 'Jesteście znajomymi',
+        inviteSent: 'Zaproszenie wysłane',
+        inviteReceived: 'Chce dodać Cię do znajomych',
+      },
+      activity: {
+        title: 'Ostatnia aktywność',
+        empty: 'Brak ostatniej aktywności.',
+        progressEntry: 'Aktualizacja postępu',
+        comment: 'Komentarz',
+      },
     },
   },
   settings: {
@@ -111,6 +124,45 @@ const pl: Translation = {
       english: 'English',
       polish: 'Polski',
       close: 'Zamknij',
+    },
+  },
+  relativeTime: {
+    now: 'przed chwilą',
+    minutes: '{{count}} min temu',
+    hours: '{{count}} godz. temu',
+    days: '{{count}} dni temu',
+    weeks: '{{count}} tyg. temu',
+  },
+  notifications: {
+    empty: {
+      title: 'Brak powiadomień',
+      message: 'Wszystko na bieżąco.',
+    },
+    markAllAsRead: 'Oznacz wszystkie jako przeczytane',
+  },
+  profile: {
+    title: 'Profil',
+    loadError: 'Nie udało się wczytać tego profilu.',
+    stats: {
+      activeTasks: 'Aktywne zadania',
+      completedTasks: 'Ukończone',
+      friends: 'Znajomi',
+      bestStreak: 'Najlepsza seria: {{count}}',
+    },
+    actions: {
+      edit: 'Edytuj profil',
+      settings: 'Ustawienia',
+    },
+    edit: {
+      title: 'Edytuj profil',
+      usernameLabel: 'Nazwa użytkownika',
+      usernamePlaceholder: 'Twoja nazwa użytkownika',
+      photoLabel: 'Adres URL zdjęcia',
+      photoPlaceholder: 'https://…',
+      photoHint: 'Wklej link do obrazu. Zostaw puste, aby użyć domyślnego awatara.',
+      save: 'Zapisz zmiany',
+      saveError: 'Coś poszło nie tak. Spróbuj ponownie.',
+      photoInvalid: 'Podaj poprawny link https do obrazu.',
     },
   },
   reducerErrors: {
