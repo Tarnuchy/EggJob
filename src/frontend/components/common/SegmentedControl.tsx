@@ -83,7 +83,7 @@ export function SegmentedControl<T extends string>({
             <Text
               style={[styles.label, isActive && styles.labelActive]}
               numberOfLines={1}
-              adjustsFontSizeToFit={true}
+              ellipsizeMode="tail"
             >
               {option.label}
             </Text>
@@ -115,9 +115,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: PILL_RADIUS,
+    paddingHorizontal: 4,
   },
   label: {
     ...typography.label,
+    fontSize: 13,
+    lineHeight: 16,
     color: colors.muted,
   },
   labelActive: {

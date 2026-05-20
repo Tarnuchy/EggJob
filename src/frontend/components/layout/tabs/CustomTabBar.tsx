@@ -66,7 +66,6 @@ export const CustomTabBar = ({ state, navigation }: BottomTabBarProps) => {
     return (
       <TabBarItem
         key={route.key}
-        label={config.label}
         iconFilled={config.iconFilled}
         iconOutline={config.iconOutline}
         isFocused={isFocused}

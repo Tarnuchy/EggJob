@@ -1,7 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, Pressable, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { AppText } from '../../common/AppText';
 import { colors } from '../../../theme/colors';
 import { duration, easing } from '../../../theme/animations';
 import { spacing } from '../../../theme/spacing';
@@ -9,7 +8,6 @@ import { spacing } from '../../../theme/spacing';
 type IoniconName = keyof typeof Ionicons.glyphMap;
 
 interface Props {
-  label: string;
   iconFilled: IoniconName;
   iconOutline: IoniconName;
   isFocused: boolean;
@@ -19,7 +17,6 @@ interface Props {
 }
 
 export const TabBarItem = ({
-  label,
   iconFilled,
   iconOutline,
   isFocused,
@@ -78,18 +75,10 @@ export const TabBarItem = ({
           <View style={styles.iconWrap}>
             <Ionicons
               name={isFocused ? iconFilled : iconOutline}
-              size={22}
+              size={26}
               color={isFocused ? colors.primary : colors.muted}
             />
           </View>
-          <AppText
-            variant="caption"
-            color={isFocused ? 'primary' : 'muted'}
-            style={[styles.label, !isFocused && styles.labelDimmed]}
-            numberOfLines={1}
-          >
-            {label}
-          </AppText>
         </Animated.View>
       </Animated.View>
     </Pressable>
@@ -106,22 +95,14 @@ const styles = StyleSheet.create({
   pill: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
-    borderRadius: 16,
-    minWidth: 64,
+    borderRadius: 999,
+    width: 44,
+    height: 44,
   },
   iconWrap: {
-    height: 24,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  label: {
-    marginTop: 2,
-    fontSize: 11,
-    lineHeight: 14,
-  },
-  labelDimmed: {
-    opacity: 0.85,
   },
 });
