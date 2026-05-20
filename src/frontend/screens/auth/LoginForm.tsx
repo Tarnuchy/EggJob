@@ -1,10 +1,10 @@
 import React, { useEffect } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { AppButton } from '../../components/common/AppButton';
 import { AppInput } from '../../components/common/AppInput';
 import { Spacer } from '../../components/common/Spacer';
-import { strings } from '../../i18n/strings';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
@@ -16,6 +16,7 @@ interface Props {
 }
 
 export const LoginForm = ({ onSuccess, isActive }: Props) => {
+  const { t } = useTranslation();
   const form = useLoginForm({ onSuccess });
 
   useEffect(() => {
@@ -25,8 +26,8 @@ export const LoginForm = ({ onSuccess, isActive }: Props) => {
   return (
     <>
       <AppInput
-        label={strings.auth.fields.email}
-        placeholder={strings.auth.fields.emailPlaceholder}
+        label={t('auth.fields.email')}
+        placeholder={t('auth.fields.emailPlaceholder')}
         value={form.email}
         onChangeText={form.handleEmailChange}
         onBlur={form.handleEmailBlur}
@@ -37,8 +38,8 @@ export const LoginForm = ({ onSuccess, isActive }: Props) => {
         autoCorrect={false}
       />
       <AppInput
-        label={strings.auth.fields.password}
-        placeholder={strings.auth.fields.passwordPlaceholder}
+        label={t('auth.fields.password')}
+        placeholder={t('auth.fields.passwordPlaceholder')}
         value={form.password}
         onChangeText={form.handlePasswordChange}
         onBlur={form.handlePasswordBlur}
@@ -54,7 +55,7 @@ export const LoginForm = ({ onSuccess, isActive }: Props) => {
       ) : null}
       <Spacer height={spacing.sm} />
       <AppButton
-        title={strings.auth.cta.login}
+        title={t('auth.cta.login')}
         onPress={form.handleSubmit}
         shakeCount={form.shakeCount}
         isLoading={form.isLoading}

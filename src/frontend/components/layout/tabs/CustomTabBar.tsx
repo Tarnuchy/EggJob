@@ -2,14 +2,14 @@ import React, { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
+import { useTranslation } from 'react-i18next';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { TabBarItem } from './TabBarItem';
 import { QuickActionFab } from './QuickActionFab';
 import { QuickActionMenu } from './QuickActionMenu';
 import { colors } from '../../../theme/colors';
 import { shadows } from '../../../theme/shadows';
-import { strings } from '../../../i18n/strings';
-import { SECTION_CONFIG } from '../../../navigation/sectionConfig';
+import { createSectionConfig } from '../../../navigation/sectionConfig';
 import type { TabParamList } from '../../../navigation/types';
 
 type TabName = keyof TabParamList;
@@ -23,6 +23,8 @@ const isTabName = (name: string): name is TabName =>
 
 export const CustomTabBar = ({ state, navigation }: BottomTabBarProps) => {
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
+  const sectionConfig = createSectionConfig(t);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const tabRoutes = state.routes.filter((route) => isTabName(route.name));
@@ -59,7 +61,7 @@ export const CustomTabBar = ({ state, navigation }: BottomTabBarProps) => {
 
   const renderItem = (route: BottomTabBarProps['state']['routes'][number]) => {
     if (!isTabName(route.name)) return null;
-    const config = SECTION_CONFIG[route.name];
+    const config = sectionConfig[route.name];
     const isFocused = state.routes[state.index]?.key === route.key;
     return (
       <TabBarItem
@@ -106,7 +108,7 @@ export const CustomTabBar = ({ state, navigation }: BottomTabBarProps) => {
         <QuickActionFab
           isOpen={isMenuOpen}
           onPress={() => setIsMenuOpen((open) => !open)}
-          accessibilityLabel={strings.quickAction.accessibilityLabel}
+          accessibilityLabel={t('quickAction.accessibilityLabel')}
         />
       </View>
 
@@ -118,8 +120,8 @@ export const CustomTabBar = ({ state, navigation }: BottomTabBarProps) => {
           isOpen={isMenuOpen}
           onSelectRegular={handleSelectRegular}
           onSelectBingo={handleSelectBingo}
-          regularLabel={strings.quickAction.regularTask}
-          bingoLabel={strings.quickAction.bingoTask}
+          regularLabel={t('quickAction.regularTask')}
+          bingoLabel={t('quickAction.bingoTask')}
         />
       </View>
     </View>

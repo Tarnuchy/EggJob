@@ -4,10 +4,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRoute, type RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 
+import { useTranslation } from 'react-i18next';
 import { Avatar } from '../../components/common/Avatar';
 import { AppText } from '../../components/common/AppText';
 import { profileService } from '../../services';
-import { strings } from '../../i18n/strings';
 import { colors } from '../../theme/colors';
 import { spacing, SCREEN_PADDING_H } from '../../theme/spacing';
 import { useAppNavigation } from '../../hooks/useAppNavigation';
@@ -18,6 +18,7 @@ type Route = RouteProp<RootStackParamList, 'UserProfile'>;
 export const UserProfileScreen = () => {
   const navigation = useAppNavigation();
   const route = useRoute<Route>();
+  const { t } = useTranslation();
   const { userId } = route.params;
 
   const [username, setUsername] = useState<string | null>(null);
@@ -50,12 +51,12 @@ export const UserProfileScreen = () => {
           style={({ pressed }) => [styles.backButton, pressed && styles.backButtonPressed]}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           accessibilityRole="button"
-          accessibilityLabel={strings.topBar.back}
+          accessibilityLabel={t('topBar.back')}
         >
           <Ionicons name="chevron-back" size={26} color={colors.primary} />
         </Pressable>
         <AppText variant="h2" color="textPrimary">
-          {strings.friends.profile.title}
+          {t('friends.profile.title')}
         </AppText>
         <View style={styles.headerSpacer} />
       </View>
@@ -66,10 +67,10 @@ export const UserProfileScreen = () => {
           <>
             <Avatar photoUrl={photoUrl} size={120} />
             <AppText variant="h1" color="textPrimary" style={styles.username}>
-              {username ?? strings.friends.profile.unknownUser}
+              {username ?? t('friends.profile.unknownUser')}
             </AppText>
             <AppText variant="body" color="textSecondary" style={styles.placeholder}>
-              {strings.friends.profile.placeholder}
+              {t('friends.profile.placeholder')}
             </AppText>
           </>
         )}

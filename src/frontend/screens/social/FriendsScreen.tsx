@@ -1,12 +1,12 @@
 import React, { useMemo, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { TopBar } from '../../components/layout/TopBar';
 import {
   SegmentedControl,
   type SegmentedControlOption,
 } from '../../components/common/SegmentedControl';
-import { strings } from '../../i18n/strings';
 import { colors } from '../../theme/colors';
 import { spacing, SCREEN_PADDING_H } from '../../theme/spacing';
 import { MyFriendsTab } from './friends/MyFriendsTab';
@@ -15,15 +15,16 @@ import { InvitationsTab } from './friends/InvitationsTab';
 import type { FriendsTab } from './friends/types';
 
 export const FriendsScreen = () => {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<FriendsTab>('myFriends');
 
   const tabOptions = useMemo<ReadonlyArray<SegmentedControlOption<FriendsTab>>>(
     () => [
-      { value: 'myFriends', label: strings.friends.tabs.myFriends },
-      { value: 'addFriend', label: strings.friends.tabs.addFriend },
-      { value: 'invitations', label: strings.friends.tabs.invitations },
+      { value: 'myFriends', label: t('friends.tabs.myFriends') },
+      { value: 'addFriend', label: t('friends.tabs.addFriend') },
+      { value: 'invitations', label: t('friends.tabs.invitations') },
     ],
-    [],
+    [t],
   );
 
   return (

@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { PanelHeader } from './PanelHeader';
 import { SettingsScreen } from '../../screens/profile/SettingsScreen';
 import { NotificationScreen } from '../../screens/social/NotificationScreen';
-import { SECTION_CONFIG } from '../../navigation/sectionConfig';
+import { createSectionConfig } from '../../navigation/sectionConfig';
 import type { PanelKind } from '../../navigation/PanelContext';
 import { colors } from '../../theme/colors';
 import { duration } from '../../theme/animations';
@@ -17,6 +18,7 @@ interface Props {
 
 export const SlideOverPanel = ({ panel, onClose }: Props) => {
   const { width: screenWidth } = useWindowDimensions();
+  const { t } = useTranslation();
   const isOpen = panel !== null;
   const openAnim = useRef(new Animated.Value(isOpen ? 1 : 0)).current;
   const [mountedPanel, setMountedPanel] = useState<PanelKind>(panel);
@@ -56,7 +58,7 @@ export const SlideOverPanel = ({ panel, onClose }: Props) => {
   });
 
   const sectionKey = mountedPanel === 'settings' ? 'Settings' : 'Notifications';
-  const config = SECTION_CONFIG[sectionKey];
+  const config = createSectionConfig(t)[sectionKey];
 
   return (
     <Animated.View

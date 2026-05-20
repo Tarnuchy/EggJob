@@ -4,19 +4,20 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRoute } from '@react-navigation/native';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { AppText } from '../common/AppText';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
-import { strings } from '../../i18n/strings';
-import { isSectionName, SECTION_CONFIG } from '../../navigation/sectionConfig';
+import { createSectionConfig, isSectionName } from '../../navigation/sectionConfig';
 import { usePanelContext } from '../../navigation/PanelContext';
 
 export const TopBar = () => {
   const insets = useSafeAreaInsets();
   const route = useRoute();
+  const { t } = useTranslation();
 
   if (!isSectionName(route.name)) return null;
-  const config = SECTION_CONFIG[route.name];
+  const config = createSectionConfig(t)[route.name];
 
   return (
     <View style={styles.host}>
@@ -41,8 +42,10 @@ export const TopBar = () => {
 
 const RightActionsPill = () => {
   const { openPanel, setOpenPanel } = usePanelContext();
-  const notificationsConfig = SECTION_CONFIG.Notifications;
-  const settingsConfig = SECTION_CONFIG.Settings;
+  const { t } = useTranslation();
+  const sectionConfig = createSectionConfig(t);
+  const notificationsConfig = sectionConfig.Notifications;
+  const settingsConfig = sectionConfig.Settings;
 
   return (
     <View style={pillStyles.pill}>
@@ -50,7 +53,7 @@ const RightActionsPill = () => {
         style={({ pressed }) => [pillStyles.button, pressed && pillStyles.buttonPressed]}
         onPress={() => setOpenPanel('notifications')}
         accessibilityRole="button"
-        accessibilityLabel={strings.topBar.notifications}
+        accessibilityLabel={t('topBar.notifications')}
       >
         <Ionicons
           name={
@@ -67,7 +70,7 @@ const RightActionsPill = () => {
         style={({ pressed }) => [pillStyles.button, pressed && pillStyles.buttonPressed]}
         onPress={() => setOpenPanel('settings')}
         accessibilityRole="button"
-        accessibilityLabel={strings.topBar.settings}
+        accessibilityLabel={t('topBar.settings')}
       >
         <Ionicons
           name={

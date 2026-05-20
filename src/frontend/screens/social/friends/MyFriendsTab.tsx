@@ -3,8 +3,8 @@ import { View, FlatList, StyleSheet, ActivityIndicator } from 'react-native';
 import { SearchBar } from '../../../components/common/SearchBar';
 import { UserListItem } from '../../../components/common/UserListItem';
 import { EmptyState } from '../../../components/common/EmptyState';
+import { useTranslation } from 'react-i18next';
 import { profileService, socialService } from '../../../services';
-import { strings } from '../../../i18n/strings';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { useAppNavigation } from '../../../hooks/useAppNavigation';
@@ -14,6 +14,7 @@ import type { ResolvedFriend } from './types';
 export const MyFriendsTab = () => {
   const currentUserId = useCurrentUserId();
   const navigation = useAppNavigation();
+  const { t } = useTranslation();
   const [query, setQuery] = useState('');
   const [friends, setFriends] = useState<ResolvedFriend[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,7 +31,7 @@ export const MyFriendsTab = () => {
     const resolved = await Promise.all(
       result.value.map(async ({ friendshipId, friendUserId }) => {
         const profile = await profileService.getProfile(friendUserId);
-        const username = profile.ok ? profile.value.username : strings.friends.profile.unknownUser;
+        const username = profile.ok ? profile.value.username : t('friends.profile.unknownUser');
         const photoUrl = profile.ok ? profile.value.photoUrl : undefined;
         return { friendshipId, userId: friendUserId, username, photoUrl };
       }),
@@ -38,7 +39,7 @@ export const MyFriendsTab = () => {
 
     setFriends(resolved);
     setLoading(false);
-  }, [currentUserId]);
+  }, [currentUserId, t]);
 
   useEffect(() => {
     void loadFriends();
@@ -59,7 +60,7 @@ export const MyFriendsTab = () => {
       <SearchBar
         value={query}
         onChangeText={setQuery}
-        placeholder={strings.friends.searchPlaceholder}
+        placeholder={t('friends.searchPlaceholder')}
       />
       {loading ? (
         <View style={styles.center}>
@@ -68,8 +69,8 @@ export const MyFriendsTab = () => {
       ) : friends.length === 0 ? (
         <EmptyState
           icon="people-outline"
-          title={strings.friends.empty.myFriendsTitle}
-          message={strings.friends.empty.myFriendsMessage}
+          title={t('friends.empty.myFriendsTitle')}
+          message={t('friends.empty.myFriendsMessage')}
         />
       ) : (
         <FlatList

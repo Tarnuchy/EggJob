@@ -1,33 +1,33 @@
-import { strings } from '../i18n/strings';
+import type { TFunction } from 'i18next';
 import { isValidEmail, isValidUsername, passwordsMatch } from './validation';
 
-const errs = strings.auth.errors;
+export const getEmailError = (t: TFunction, v: string): string =>
+  !v.trim() ? t('auth.errors.emailRequired') : '';
 
-export const getEmailError = (v: string): string => (!v.trim() ? errs.emailRequired : '');
+export const getPasswordError = (t: TFunction, v: string): string =>
+  !v.trim() ? t('auth.errors.passwordRequired') : '';
 
-export const getPasswordError = (v: string): string => (!v.trim() ? errs.passwordRequired : '');
+export const getRegEmailError = (t: TFunction, v: string): string =>
+  !isValidEmail(v.trim()) ? t('auth.errors.emailInvalid') : '';
 
-export const getRegEmailError = (v: string): string =>
-  !isValidEmail(v.trim()) ? errs.emailInvalid : '';
-
-export const getRegUsernameError = (v: string): string => {
+export const getRegUsernameError = (t: TFunction, v: string): string => {
   const trimmed = v.trim();
-  if (trimmed.length < 3) return errs.usernameTooShort;
-  if (trimmed.length > 24) return errs.usernameTooLong;
-  if (!isValidUsername(trimmed)) return errs.usernameInvalidChars;
+  if (trimmed.length < 3) return t('auth.errors.usernameTooShort');
+  if (trimmed.length > 24) return t('auth.errors.usernameTooLong');
+  if (!isValidUsername(trimmed)) return t('auth.errors.usernameInvalidChars');
   return '';
 };
 
-export const getRegPasswordError = (v: string): string => {
-  if (v.length < 8) return errs.passwordTooShort;
-  if (!/[A-Z]/.test(v)) return errs.passwordNeedsUppercase;
-  if (!/[0-9]/.test(v)) return errs.passwordNeedsDigit;
+export const getRegPasswordError = (t: TFunction, v: string): string => {
+  if (v.length < 8) return t('auth.errors.passwordTooShort');
+  if (!/[A-Z]/.test(v)) return t('auth.errors.passwordNeedsUppercase');
+  if (!/[0-9]/.test(v)) return t('auth.errors.passwordNeedsDigit');
   return '';
 };
 
-export const getRegConfirmError = (v: string, pw: string): string => {
-  if (!v.trim()) return errs.confirmRequired;
-  if (!passwordsMatch(pw, v)) return errs.passwordsDoNotMatch;
+export const getRegConfirmError = (t: TFunction, v: string, pw: string): string => {
+  if (!v.trim()) return t('auth.errors.confirmRequired');
+  if (!passwordsMatch(pw, v)) return t('auth.errors.passwordsDoNotMatch');
   return '';
 };
 
