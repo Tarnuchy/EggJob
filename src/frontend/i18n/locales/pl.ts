@@ -1,0 +1,129 @@
+import type { Translation } from './en';
+
+const pl: Translation = {
+  app: {
+    name: 'EggJob',
+  },
+  common: {
+    loading: 'Ładowanie...',
+  },
+  auth: {
+    tabs: {
+      login: 'Logowanie',
+      register: 'Rejestracja',
+    },
+    fields: {
+      email: 'E-mail',
+      emailPlaceholder: 'Twój e-mail',
+      password: 'Hasło',
+      passwordPlaceholder: 'Twoje hasło',
+      confirmPassword: 'Potwierdź hasło',
+      confirmPasswordPlaceholder: 'Potwierdź hasło',
+      username: 'Nazwa użytkownika',
+      usernamePlaceholder: 'Twoja nazwa użytkownika',
+    },
+    cta: {
+      login: 'Zaloguj się',
+      register: 'Załóż konto',
+    },
+    errors: {
+      emailRequired: 'E-mail jest wymagany.',
+      passwordRequired: 'Hasło jest wymagane.',
+      emailInvalid: 'Wprowadź poprawny adres e-mail.',
+      usernameTooShort: 'Minimum 3 znaki.',
+      usernameTooLong: 'Maksimum 24 znaki.',
+      usernameInvalidChars: 'Dozwolone są tylko litery, cyfry i podkreślnik.',
+      passwordTooShort: 'Minimum 8 znaków.',
+      passwordNeedsUppercase: 'Co najmniej 1 wielka litera.',
+      passwordNeedsDigit: 'Co najmniej 1 cyfra.',
+      confirmRequired: 'Potwierdź swoje hasło.',
+      passwordsDoNotMatch: 'Hasła nie są zgodne.',
+      loginFailed: 'Nieprawidłowy e-mail lub hasło.',
+      emailInUse: 'Ten e-mail jest już używany.',
+      usernameTaken: 'Ta nazwa użytkownika jest już zajęta.',
+      registrationFailed: 'Rejestracja nie powiodła się. Spróbuj ponownie.',
+    },
+  },
+  placeholders: {
+    home: 'Ekran główny — placeholder',
+    tasks: 'Zadania — placeholder',
+    friends: 'Znajomi — placeholder',
+    notifications: 'Powiadomienia — placeholder',
+    profile: 'Profil — placeholder',
+    settings: 'Ustawienia — placeholder',
+  },
+  screens: {
+    home: 'Główna',
+    tasks: 'Zadania',
+    friends: 'Znajomi',
+    notifications: 'Powiadomienia',
+    profile: 'Profil',
+    settings: 'Ustawienia',
+  },
+  quickAction: {
+    accessibilityLabel: 'Szybkie dodawanie zadania',
+    regularTask: 'Zwykłe zadanie',
+    bingoTask: 'Zadanie bingo',
+  },
+  topBar: {
+    back: 'Wstecz',
+    notifications: 'Otwórz powiadomienia',
+    settings: 'Otwórz ustawienia',
+  },
+  friends: {
+    tabs: {
+      myFriends: 'Moi znajomi',
+      addFriend: 'Dodaj znajomego',
+      invitations: 'Zaproszenia',
+    },
+    searchPlaceholder: 'Szukaj użytkowników...',
+    empty: {
+      myFriendsTitle: 'Brak znajomych',
+      myFriendsMessage: 'Zaproś kogoś i zacznijcie współpracę!',
+      addFriendTitle: 'Znajdź nowych znajomych',
+      addFriendMessage: 'Wpisz nazwę użytkownika, aby znaleźć osoby.',
+      addFriendNoResults: 'Żaden użytkownik nie pasuje do wyszukiwania.',
+      invitationsTitle: 'Brak zaproszeń',
+      invitationsMessage: 'Nie masz teraz żadnych oczekujących zaproszeń.',
+    },
+    actions: {
+      add: 'Dodaj',
+      accept: 'Akceptuj',
+      reject: 'Odrzuć',
+      pending: 'Oczekuje',
+    },
+    profile: {
+      title: 'Profil',
+      placeholder: 'Profil już wkrótce.',
+      unknownUser: 'Nieznany użytkownik',
+    },
+  },
+  settings: {
+    sections: {
+      preferences: 'Preferencje',
+    },
+    rows: {
+      language: 'Język',
+    },
+    languagePicker: {
+      title: 'Wybierz język',
+      system: 'Użyj języka systemu',
+      english: 'English',
+      polish: 'Polski',
+      close: 'Zamknij',
+    },
+  },
+  reducerErrors: {
+    validationEmail: 'Nieprawidłowy adres e-mail.',
+    validationUsername: 'Nieprawidłowa nazwa użytkownika.',
+    validationName: 'Nazwa nie może być pusta.',
+    validationInviteCode: 'Nieprawidłowy kod zaproszenia.',
+    validationValue: 'Nieprawidłowa wartość.',
+    validationGeneric: 'Walidacja nie powiodła się.',
+    notFound: 'Nie znaleziono zasobu.',
+    unknown: 'Coś poszło nie tak.',
+    unknownAction: 'Nieznana akcja.',
+  },
+};
+
+export default pl;
