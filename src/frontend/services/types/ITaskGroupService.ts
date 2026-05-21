@@ -1,6 +1,8 @@
 import type { Result } from './index';
 
 export interface ITaskGroupService {
+  joinByInviteCode(input: { inviteCode: string; userId: string }): Promise<Result<void>>;
+
   createGroup(input: {
     groupId: string;
     ownerUserId: string;

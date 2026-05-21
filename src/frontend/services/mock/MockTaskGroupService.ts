@@ -26,6 +26,19 @@ class MockTaskGroupService implements ITaskGroupService {
   private invitations: Record<string, { groupId: string; fromUserId: string; toUserId: string }> =
     {};
 
+  async joinByInviteCode(input: { inviteCode: string; userId: string }): Promise<Result<void>> {
+    const group = Object.values(this.groups).find(
+      (item) => item.inviteCode.toUpperCase() === input.inviteCode.toUpperCase(),
+    );
+    if (!group) {
+      return { ok: false, error: { code: 'not-found' } };
+    }
+    if (!group.memberIds.includes(input.userId)) {
+      group.memberIds.push(input.userId);
+    }
+    return { ok: true, value: undefined };
+  }
+
   async createGroup(input: {
     groupId: string;
     ownerUserId: string;
