@@ -45,10 +45,6 @@ const en = {
   placeholders: {
     home: 'Home Placeholder',
     tasks: 'Tasks Placeholder',
-    friends: 'Friends Placeholder',
-    notifications: 'Notifications Placeholder',
-    profile: 'Profile Placeholder',
-    settings: 'Settings Placeholder',
   },
   screens: {
     home: 'Home',
@@ -92,8 +88,25 @@ const en = {
     },
     profile: {
       title: 'Profile',
-      placeholder: 'Profile coming soon.',
       unknownUser: 'Unknown user',
+      actions: {
+        add: 'Add Friend',
+        remove: 'Remove Friend',
+        cancel: 'Cancel Invite',
+        accept: 'Accept',
+        reject: 'Reject',
+      },
+      status: {
+        friend: 'You are friends',
+        inviteSent: 'Invitation sent',
+        inviteReceived: 'Wants to be your friend',
+      },
+      activity: {
+        title: 'Recent activity',
+        empty: 'No recent activity yet.',
+        progressEntry: 'Progress update',
+        comment: 'Comment',
+      },
     },
   },
   tasks: {
@@ -139,6 +152,45 @@ const en = {
       english: 'English',
       polish: 'Polski',
       close: 'Close',
+    },
+  },
+  relativeTime: {
+    now: 'just now',
+    minutes: '{{count}} min ago',
+    hours: '{{count}} h ago',
+    days: '{{count}} d ago',
+    weeks: '{{count}} w ago',
+  },
+  notifications: {
+    empty: {
+      title: 'No notifications',
+      message: "You're all caught up.",
+    },
+    markAllAsRead: 'Mark all as read',
+  },
+  profile: {
+    title: 'Profile',
+    loadError: 'We could not load this profile.',
+    stats: {
+      activeTasks: 'Active tasks',
+      completedTasks: 'Completed',
+      friends: 'Friends',
+      bestStreak: 'Best streak: {{count}}',
+    },
+    actions: {
+      edit: 'Edit Profile',
+      settings: 'Settings',
+    },
+    edit: {
+      title: 'Edit Profile',
+      usernameLabel: 'Username',
+      usernamePlaceholder: 'Your Username',
+      photoLabel: 'Photo URL',
+      photoPlaceholder: 'https://…',
+      photoHint: 'Paste a link to an image. Leave empty to use the default avatar.',
+      save: 'Save Changes',
+      saveError: 'Something went wrong. Please try again.',
+      photoInvalid: 'Enter a valid https image link.',
     },
   },
   reducerErrors: {

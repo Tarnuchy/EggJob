@@ -10,6 +10,7 @@ import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { createSectionConfig, isSectionName } from '../../navigation/sectionConfig';
 import { usePanelContext } from '../../navigation/PanelContext';
+import { useNotifications } from '../../application/NotificationsContext';
 
 export const TopBar = () => {
   const insets = useSafeAreaInsets();
@@ -42,6 +43,7 @@ export const TopBar = () => {
 
 const RightActionsPill = () => {
   const { openPanel, setOpenPanel } = usePanelContext();
+  const { unreadCount } = useNotifications();
   const { t } = useTranslation();
   const sectionConfig = createSectionConfig(t);
   const notificationsConfig = sectionConfig.Notifications;
@@ -64,6 +66,13 @@ const RightActionsPill = () => {
           size={20}
           color={colors.primary}
         />
+        {unreadCount > 0 ? (
+          <View style={pillStyles.badge}>
+            <AppText variant="caption" color="textOnPrimary" style={pillStyles.badgeText}>
+              {unreadCount > 9 ? '9+' : String(unreadCount)}
+            </AppText>
+          </View>
+        ) : null}
       </Pressable>
       <View style={pillStyles.divider} />
       <Pressable
@@ -136,5 +145,21 @@ const pillStyles = StyleSheet.create({
     width: 1,
     height: 22,
     backgroundColor: colors.cardBorderTranslucent,
+  },
+  badge: {
+    position: 'absolute',
+    top: 4,
+    right: 6,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    paddingHorizontal: 3,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badgeText: {
+    fontSize: 10,
+    lineHeight: 12,
   },
 });
