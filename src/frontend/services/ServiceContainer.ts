@@ -7,6 +7,7 @@ import { mockProfileService } from './mock/MockProfileService';
 import { mockSocialService } from './mock/MockSocialService';
 import { mockTaskGroupService } from './mock/MockTaskGroupService';
 import { mockTaskService } from './mock/MockTaskService';
+import { httpTaskService } from './http/HttpTaskService';
 import type {
   IAuthService,
   INotificationService,
@@ -30,6 +31,6 @@ export const services: ServiceContainer = {
   profileService: mockProfileService,
   socialService: mockSocialService,
   taskGroupService: USE_HTTP_SERVICES ? httpTaskGroupService : mockTaskGroupService,
-  taskService: mockTaskService,
+  taskService: USE_HTTP_SERVICES ? httpTaskService : mockTaskService,
   notificationService: mockNotificationService,
 };

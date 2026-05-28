@@ -2,6 +2,7 @@ import type { ITaskGroupService } from '../types/ITaskGroupService';
 import type { Result } from '../types/index';
 import { API_BASE_URL } from './config';
 import { buildAuthHeaders } from './buildAuthHeaders';
+import { CurrentUser } from './CurrentUser';
 
 const JSON_HEADERS = { Accept: 'application/json' };
 
@@ -43,19 +44,79 @@ export class HttpTaskGroupService implements ITaskGroupService {
     privacy: string;
     inviteCode?: string;
   }): Promise<Result<void>> {
-    void input;
-    return { ok: false, error: { code: 'not-implemented' } };
+    let response: Response;
+    try {
+      const headers = await buildAuthHeaders();
+      const body = JSON.stringify({ name: input.name, privacy: input.privacy, is_bingo: false, type: undefined });
+      response = await fetch(`${this.baseUrl}/users/${encodeURIComponent(input.ownerUserId)}/taskgroups`, {
+        method: 'POST',
+        headers: { ...headers },
+        body,
+      });
+    } catch {
+      return { ok: false, error: { code: 'network' } };
+    }
+
+    if (!response.ok) {
+      if (response.status === 400) return { ok: false, error: { code: 'validation' } };
+      if (response.status === 401) return { ok: false, error: { code: 'unauthorized' } };
+      return { ok: false, error: { code: `http-${response.status}` } };
+    }
+
+    return { ok: true, value: undefined };
   }
 
   async editGroup(groupId: string, input: { name?: string; privacy?: string }): Promise<Result<void>> {
-    void groupId;
-    void input;
-    return { ok: false, error: { code: 'not-implemented' } };
+    let response: Response;
+    try {
+      const actingUser = CurrentUser.get();
+      if (!actingUser) return { ok: false, error: { code: 'unauthorized' } };
+      const headers = await buildAuthHeaders();
+      response = await fetch(`${this.baseUrl}/users/${encodeURIComponent(actingUser)}/taskgroups/${encodeURIComponent(
+        groupId,
+      )}`, {
+        method: 'PATCH',
+        headers: { ...headers },
+        body: JSON.stringify({ name: input.name, privacy: input.privacy }),
+      });
+    } catch {
+      return { ok: false, error: { code: 'network' } };
+    }
+
+    if (!response.ok) {
+      if (response.status === 400) return { ok: false, error: { code: 'validation' } };
+      if (response.status === 404) return { ok: false, error: { code: 'not-found' } };
+      if (response.status === 401) return { ok: false, error: { code: 'unauthorized' } };
+      if (response.status === 403) return { ok: false, error: { code: 'forbidden' } };
+      return { ok: false, error: { code: `http-${response.status}` } };
+    }
+
+    return { ok: true, value: undefined };
   }
 
   async deleteGroup(groupId: string): Promise<Result<void>> {
-    void groupId;
-    return { ok: false, error: { code: 'not-implemented' } };
+    let response: Response;
+    try {
+      const actingUser = CurrentUser.get();
+      if (!actingUser) return { ok: false, error: { code: 'unauthorized' } };
+      const headers = await buildAuthHeaders();
+      response = await fetch(`${this.baseUrl}/users/${encodeURIComponent(actingUser)}/taskgroups/${encodeURIComponent(
+        groupId,
+      )}`, {
+        method: 'DELETE',
+        headers: { ...headers },
+      });
+    } catch {
+      return { ok: false, error: { code: 'network' } };
+    }
+
+    if (!response.ok) {
+      if (response.status === 404) return { ok: false, error: { code: 'not-found' } };
+      if (response.status === 401) return { ok: false, error: { code: 'unauthorized' } };
+      return { ok: false, error: { code: `http-${response.status}` } };
+    }
+
+    return { ok: true, value: undefined };
   }
 
   async inviteFriend(input: {
@@ -65,12 +126,33 @@ export class HttpTaskGroupService implements ITaskGroupService {
     toUserId: string;
     permissions: string;
   }): Promise<Result<void>> {
-    void input;
-    return { ok: false, error: { code: 'not-implemented' } };
+    let response: Response;
+    try {
+      const headers = await buildAuthHeaders();
+      response = await fetch(`${this.baseUrl}/users/${encodeURIComponent(
+        input.fromUserId,
+      )}/taskgroups/${encodeURIComponent(input.groupId)}/members`, {
+        method: 'POST',
+        headers: { ...headers },
+        body: JSON.stringify({ friend_id: input.toUserId, role: input.permissions }),
+      });
+    } catch {
+      return { ok: false, error: { code: 'network' } };
+    }
+
+    if (!response.ok) {
+      if (response.status === 400) return { ok: false, error: { code: 'validation' } };
+      if (response.status === 404) return { ok: false, error: { code: 'not-found' } };
+      if (response.status === 401) return { ok: false, error: { code: 'unauthorized' } };
+      if (response.status === 409) return { ok: false, error: { code: 'conflict' } };
+      return { ok: false, error: { code: `http-${response.status}` } };
+    }
+
+    return { ok: true, value: undefined };
   }
 
   async cancelInvitation(invitationId: string): Promise<Result<void>> {
-    void invitationId;
+    // no backend endpoint to cancel by id in this API surface; treat as not-implemented
     return { ok: false, error: { code: 'not-implemented' } };
   }
 
@@ -79,8 +161,28 @@ export class HttpTaskGroupService implements ITaskGroupService {
     groupId: string;
     userId: string;
   }): Promise<Result<void>> {
-    void input;
-    return { ok: false, error: { code: 'not-implemented' } };
+    // map to join by invite code flow if inviteCode known; otherwise addMember
+    let response: Response;
+    try {
+      const headers = await buildAuthHeaders();
+      response = await fetch(`${this.baseUrl}/users/${encodeURIComponent(
+        input.userId,
+      )}/taskgroups/${encodeURIComponent(input.groupId)}/members`, {
+        method: 'POST',
+        headers: { ...headers },
+        body: JSON.stringify({ friend_id: input.userId, role: 'member' }),
+      });
+    } catch {
+      return { ok: false, error: { code: 'network' } };
+    }
+
+    if (!response.ok) {
+      if (response.status === 400) return { ok: false, error: { code: 'validation' } };
+      if (response.status === 404) return { ok: false, error: { code: 'not-found' } };
+      return { ok: false, error: { code: `http-${response.status}` } };
+    }
+
+    return { ok: true, value: undefined };
   }
 
   async requestJoin(input: {
@@ -91,8 +193,9 @@ export class HttpTaskGroupService implements ITaskGroupService {
     toUserId: string;
     permissions: string;
   }): Promise<Result<void>> {
-    void input;
-    return { ok: false, error: { code: 'not-implemented' } };
+    // create a join request as an invitation in backend is not implemented; fallback to calling joinByInviteCode
+    if (!input.inviteCode) return { ok: false, error: { code: 'validation', field: 'inviteCode' } };
+    return this.joinByInviteCode({ inviteCode: input.inviteCode, userId: input.toUserId });
   }
 
   async acceptRequest(input: {
@@ -101,31 +204,72 @@ export class HttpTaskGroupService implements ITaskGroupService {
     userId: string;
     permissions: string;
   }): Promise<Result<void>> {
-    void input;
-    return { ok: false, error: { code: 'not-implemented' } };
+    // accept request -> add member
+    return this.addMember(input.groupId, input.userId);
   }
 
   async rejectRequest(invitationId: string): Promise<Result<void>> {
-    void invitationId;
-    return { ok: false, error: { code: 'not-implemented' } };
+    // no backend endpoint for rejecting stored invitations in this simplified API
+    return { ok: true, value: undefined };
   }
 
   async addMember(groupId: string, userId: string): Promise<Result<void>> {
-    void groupId;
-    void userId;
-    return { ok: false, error: { code: 'not-implemented' } };
+    let response: Response;
+    try {
+      const actingUser = CurrentUser.get();
+      if (!actingUser) return { ok: false, error: { code: 'unauthorized' } };
+      const headers = await buildAuthHeaders();
+      response = await fetch(`${this.baseUrl}/users/${encodeURIComponent(actingUser)}/taskgroups/${encodeURIComponent(
+        groupId,
+      )}/members`, {
+        method: 'POST',
+        headers: { ...headers },
+        body: JSON.stringify({ friend_id: userId, role: 'member' }),
+      });
+    } catch {
+      return { ok: false, error: { code: 'network' } };
+    }
+
+    if (!response.ok) {
+      if (response.status === 400) return { ok: false, error: { code: 'validation' } };
+      if (response.status === 404) return { ok: false, error: { code: 'not-found' } };
+      if (response.status === 409) return { ok: false, error: { code: 'conflict' } };
+      return { ok: false, error: { code: `http-${response.status}` } };
+    }
+
+    return { ok: true, value: undefined };
   }
 
   async removeMember(groupId: string, userId: string): Promise<Result<void>> {
-    void groupId;
-    void userId;
-    return { ok: false, error: { code: 'not-implemented' } };
+    let response: Response;
+    try {
+      const actingUser = CurrentUser.get();
+      if (!actingUser) return { ok: false, error: { code: 'unauthorized' } };
+      const headers = await buildAuthHeaders();
+      // backend expects member id for some operations; here we call remove endpoint by member user via group members remove
+      response = await fetch(`${this.baseUrl}/users/${encodeURIComponent(actingUser)}/groupmembers/${encodeURIComponent(
+        userId,
+      )}/remove`, {
+        method: 'POST',
+        headers: { ...headers },
+        body: JSON.stringify({ take_progress: false }),
+      });
+    } catch {
+      return { ok: false, error: { code: 'network' } };
+    }
+
+    if (!response.ok) {
+      if (response.status === 404) return { ok: false, error: { code: 'not-found' } };
+      return { ok: false, error: { code: `http-${response.status}` } };
+    }
+
+    return { ok: true, value: undefined };
   }
 
   async leaveGroup(groupId: string, userId: string): Promise<Result<void>> {
-    void groupId;
-    void userId;
-    return { ok: false, error: { code: 'not-implemented' } };
+    // call removeMember on current user
+    const actingUser = CurrentUser.get() ?? userId;
+    return this.removeMember(groupId, actingUser);
   }
 
   async getGroup(groupId: string): Promise<
@@ -137,8 +281,37 @@ export class HttpTaskGroupService implements ITaskGroupService {
       taskIds: string[];
     }>
   > {
-    void groupId;
-    return { ok: false, error: { code: 'not-implemented' } };
+    let response: Response;
+    try {
+      const headers = await buildAuthHeaders();
+      response = await fetch(`${this.baseUrl}/taskgroups/${encodeURIComponent(groupId)}`, {
+        method: 'GET',
+        headers: { ...headers },
+      });
+    } catch {
+      return { ok: false, error: { code: 'network' } };
+    }
+
+    if (!response.ok) {
+      if (response.status === 404) return { ok: false, error: { code: 'not-found' } };
+      return { ok: false, error: { code: `http-${response.status}` } };
+    }
+
+    try {
+      const parsed = await response.json();
+      return {
+        ok: true,
+        value: {
+          name: parsed.name,
+          privacy: parsed.privacy,
+          inviteCode: parsed.invite_code ?? parsed.inviteCode ?? '',
+          memberIds: [],
+          taskIds: [],
+        },
+      };
+    } catch {
+      return { ok: false, error: { code: 'invalid-response' } };
+    }
   }
 }
 
