@@ -5,6 +5,8 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { AuthScreen } from '../screens/auth/AuthScreen';
 import { UserProfileScreen } from '../screens/social/UserProfileScreen';
 import { EditProfileScreen } from '../screens/profile/EditProfileScreen';
+import { CreateGroupScreen } from '../screens/tasks/CreateGroupScreen';
+import { JoinGroupScreen } from '../screens/tasks/JoinGroupScreen';
 import { colors } from '../theme/colors';
 import { PanelHost } from './PanelHost';
 import type { RootStackParamList } from './types';
@@ -24,6 +26,9 @@ const navigationTheme = {
 };
 
 export function AppNavigator() {
+  // require dynamically to avoid static resolution issues when file is added at runtime
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const EditGroupScreen = require('../screens/tasks/EditGroupScreen').default;
   return (
     <NavigationContainer theme={navigationTheme}>
       <Stack.Navigator
@@ -34,6 +39,9 @@ export function AppNavigator() {
       >
         <Stack.Screen name="Auth" component={AuthScreen} />
         <Stack.Screen name="Main" component={PanelHost} />
+        <Stack.Screen name="CreateGroup" component={CreateGroupScreen} />
+        <Stack.Screen name="JoinGroup" component={JoinGroupScreen} />
+        <Stack.Screen name="EditGroup" component={EditGroupScreen} />
         <Stack.Screen name="UserProfile" component={UserProfileScreen} />
         <Stack.Screen name="EditProfile" component={EditProfileScreen} />
       </Stack.Navigator>

@@ -3,6 +3,9 @@ export type RootStackParamList = {
   Main: undefined;
   UserProfile: { userId: string };
   EditProfile: undefined;
+  CreateGroup: undefined;
+  JoinGroup: undefined;
+  EditGroup: { groupId: string };
 };
 
 export type TabParamList = {

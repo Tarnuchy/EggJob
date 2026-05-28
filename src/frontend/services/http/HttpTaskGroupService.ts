@@ -9,6 +9,38 @@ const JSON_HEADERS = { Accept: 'application/json' };
 export class HttpTaskGroupService implements ITaskGroupService {
   constructor(private readonly baseUrl: string = API_BASE_URL) {}
 
+  private async resolveGroupMemberId(groupId: string, userId: string): Promise<Result<string>> {
+    let response: Response;
+    try {
+      const headers = await buildAuthHeaders();
+      response = await fetch(`${this.baseUrl}/taskgroups/${encodeURIComponent(groupId)}/members`, {
+        method: 'GET',
+        headers: { ...headers, ...JSON_HEADERS },
+      });
+    } catch {
+      return { ok: false, error: { code: 'network' } };
+    }
+
+    if (!response.ok) {
+      if (response.status === 404) return { ok: false, error: { code: 'not-found' } };
+      if (response.status === 401) return { ok: false, error: { code: 'unauthorized' } };
+      return { ok: false, error: { code: `http-${response.status}` } };
+    }
+
+    try {
+      const parsed = await response.json();
+      const member = Array.isArray(parsed?.items)
+        ? parsed.items.find((item: { user_id?: string }) => item?.user_id === userId)
+        : null;
+      if (!member?.id) {
+        return { ok: false, error: { code: 'not-found' } };
+      }
+      return { ok: true, value: member.id };
+    } catch {
+      return { ok: false, error: { code: 'invalid-response' } };
+    }
+  }
+
   async joinByInviteCode(input: { inviteCode: string; userId: string }): Promise<Result<void>> {
     let response: Response;
     try {
@@ -42,15 +74,21 @@ export class HttpTaskGroupService implements ITaskGroupService {
     ownerUserId: string;
     name: string;
     privacy: string;
-    inviteCode?: string;
-  }): Promise<Result<void>> {
+    isBingo: boolean;
+    type: 'cooperative' | 'competitive';
+  }): Promise<Result<{ id?: string; inviteCode?: string }>> {
     let response: Response;
     try {
       const headers = await buildAuthHeaders();
-      const body = JSON.stringify({ name: input.name, privacy: input.privacy, is_bingo: false, type: undefined });
+      const body = JSON.stringify({
+        name: input.name,
+        privacy: input.privacy,
+        is_bingo: input.isBingo,
+        type: input.type,
+      });
       response = await fetch(`${this.baseUrl}/users/${encodeURIComponent(input.ownerUserId)}/taskgroups`, {
         method: 'POST',
-        headers: { ...headers },
+        headers: { ...headers, ...JSON_HEADERS },
         body,
       });
     } catch {
@@ -63,21 +101,32 @@ export class HttpTaskGroupService implements ITaskGroupService {
       return { ok: false, error: { code: `http-${response.status}` } };
     }
 
-    return { ok: true, value: undefined };
+    try {
+      const parsed = await response.json();
+      return { ok: true, value: { id: parsed.id, inviteCode: parsed.invite_code ?? parsed.inviteCode } };
+    } catch {
+      return { ok: true, value: {} };
+    }
   }
 
-  async editGroup(groupId: string, input: { name?: string; privacy?: string }): Promise<Result<void>> {
+  async editGroup(groupId: string, input: { name?: string; privacy?: string; type?: 'cooperative' | 'competitive'; isBingo?: boolean }): Promise<Result<void>> {
     let response: Response;
     try {
       const actingUser = CurrentUser.get();
       if (!actingUser) return { ok: false, error: { code: 'unauthorized' } };
       const headers = await buildAuthHeaders();
+      const bodyPayload: Record<string, unknown> = {};
+      if (input.name !== undefined) bodyPayload.name = input.name;
+      if (input.privacy !== undefined) bodyPayload.privacy = input.privacy;
+      if (input.type !== undefined) bodyPayload.type = input.type;
+      if (input.isBingo !== undefined) bodyPayload.is_bingo = input.isBingo;
+
       response = await fetch(`${this.baseUrl}/users/${encodeURIComponent(actingUser)}/taskgroups/${encodeURIComponent(
         groupId,
       )}`, {
         method: 'PATCH',
-        headers: { ...headers },
-        body: JSON.stringify({ name: input.name, privacy: input.privacy }),
+        headers: { ...headers, ...JSON_HEADERS },
+        body: JSON.stringify(bodyPayload),
       });
     } catch {
       return { ok: false, error: { code: 'network' } };
@@ -245,10 +294,12 @@ export class HttpTaskGroupService implements ITaskGroupService {
     try {
       const actingUser = CurrentUser.get();
       if (!actingUser) return { ok: false, error: { code: 'unauthorized' } };
+      const memberIdResult = await this.resolveGroupMemberId(groupId, userId);
+      if (!memberIdResult.ok) return memberIdResult;
       const headers = await buildAuthHeaders();
       // backend expects member id for some operations; here we call remove endpoint by member user via group members remove
       response = await fetch(`${this.baseUrl}/users/${encodeURIComponent(actingUser)}/groupmembers/${encodeURIComponent(
-        userId,
+        memberIdResult.value,
       )}/remove`, {
         method: 'POST',
         headers: { ...headers },
@@ -266,6 +317,32 @@ export class HttpTaskGroupService implements ITaskGroupService {
     return { ok: true, value: undefined };
   }
 
+  async changeRole(groupId: string, userId: string, role: string): Promise<Result<void>> {
+    let response: Response;
+    try {
+      const actingUser = CurrentUser.get();
+      if (!actingUser) return { ok: false, error: { code: 'unauthorized' } };
+      const memberIdResult = await this.resolveGroupMemberId(groupId, userId);
+      if (!memberIdResult.ok) return memberIdResult;
+      const headers = await buildAuthHeaders();
+      response = await fetch(`${this.baseUrl}/users/${encodeURIComponent(actingUser)}/groupmembers/${encodeURIComponent(memberIdResult.value)}/role`, {
+        method: 'POST',
+        headers: { ...headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ new_role: role }),
+      });
+    } catch {
+      return { ok: false, error: { code: 'network' } };
+    }
+
+    if (!response.ok) {
+      if (response.status === 404) return { ok: false, error: { code: 'not-found' } };
+      if (response.status === 403) return { ok: false, error: { code: 'forbidden' } };
+      return { ok: false, error: { code: `http-${response.status}` } };
+    }
+
+    return { ok: true, value: undefined };
+  }
+
   async leaveGroup(groupId: string, userId: string): Promise<Result<void>> {
     // call removeMember on current user
     const actingUser = CurrentUser.get() ?? userId;
@@ -276,6 +353,8 @@ export class HttpTaskGroupService implements ITaskGroupService {
     Result<{
       name: string;
       privacy: string;
+      type: string;
+      isBingo: boolean;
       inviteCode: string;
       memberIds: string[];
       taskIds: string[];
@@ -304,6 +383,8 @@ export class HttpTaskGroupService implements ITaskGroupService {
         value: {
           name: parsed.name,
           privacy: parsed.privacy,
+          type: parsed.type ?? 'cooperative',
+          isBingo: Boolean(parsed.is_bingo ?? parsed.isBingo),
           inviteCode: parsed.invite_code ?? parsed.inviteCode ?? '',
           memberIds: [],
           taskIds: [],

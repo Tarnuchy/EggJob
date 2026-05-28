@@ -1,4 +1,4 @@
-import type { TaskGroupPrivacy, TaskParams } from './state';
+import type { TaskGroupPrivacy, TaskGroupType, TaskParams, MemberRole } from './state';
 
 export type AppAction =
   | {
@@ -54,6 +54,8 @@ export type AppAction =
       ownerUserId: string;
       name: string;
       privacy: TaskGroupPrivacy;
+      groupType: TaskGroupType;
+      isBingo: boolean;
       inviteCode?: string;
       createdAt?: Date;
     }
@@ -76,6 +78,12 @@ export type AppAction =
       type: 'task-groups/remove-member';
       groupId: string;
       userId: string;
+    }
+  | {
+      type: 'task-groups/change-role';
+      groupId: string;
+      userId: string;
+      role: MemberRole;
     }
   | {
       type: 'task-groups/leave';

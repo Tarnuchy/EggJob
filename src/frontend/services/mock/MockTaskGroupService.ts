@@ -7,18 +7,24 @@ class MockTaskGroupService implements ITaskGroupService {
     {
       name: string;
       privacy: string;
+      type: 'cooperative' | 'competitive';
+      isBingo: boolean;
       inviteCode: string;
       ownerUserId: string;
       memberIds: string[];
+      memberRoles: Record<string, string>;
       taskIds: string[];
     }
   > = {
     'grp-seed-1': {
       name: 'Morning Run Club',
       privacy: 'friends',
+      type: 'cooperative',
+      isBingo: false,
       inviteCode: 'MORN01',
       ownerUserId: 'usr-seed-1',
       memberIds: ['usr-seed-1'],
+      memberRoles: { 'usr-seed-1': 'owner' },
       taskIds: ['tsk-seed-1', 'tsk-seed-2'],
     },
   };
@@ -35,6 +41,7 @@ class MockTaskGroupService implements ITaskGroupService {
     }
     if (!group.memberIds.includes(input.userId)) {
       group.memberIds.push(input.userId);
+      group.memberRoles[input.userId] = 'member';
     }
     return { ok: true, value: undefined };
   }
@@ -44,27 +51,37 @@ class MockTaskGroupService implements ITaskGroupService {
     ownerUserId: string;
     name: string;
     privacy: string;
-    inviteCode?: string;
-  }): Promise<Result<void>> {
+    isBingo: boolean;
+    type: 'cooperative' | 'competitive';
+  }): Promise<Result<{ id?: string; inviteCode?: string }>> {
     if (!input.name || input.name.trim().length === 0) {
       return { ok: false, error: { code: 'validation', field: 'name' } };
     }
+    const existingCodes = new Set(Object.values(this.groups).map((g) => g.inviteCode.toUpperCase()));
+    let code: string;
+    // generate until unique (extremely unlikely to loop more than once)
+    do {
+      code = `MOCK-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+    } while (existingCodes.has(code));
 
     this.groups[input.groupId] = {
       name: input.name.trim(),
       privacy: input.privacy,
-      inviteCode: input.inviteCode ?? '',
+      type: input.type,
+      isBingo: input.isBingo,
+      inviteCode: code,
       ownerUserId: input.ownerUserId,
       memberIds: [],
+      memberRoles: { [input.ownerUserId]: 'owner' },
       taskIds: [],
     };
 
-    return { ok: true, value: undefined };
+    return { ok: true, value: { id: input.groupId, inviteCode: code } };
   }
 
   async editGroup(
     groupId: string,
-    input: { name?: string; privacy?: string },
+    input: { name?: string; privacy?: string; type?: 'cooperative' | 'competitive'; isBingo?: boolean },
   ): Promise<Result<void>> {
     const group = this.groups[groupId];
     if (!group) {
@@ -76,6 +93,12 @@ class MockTaskGroupService implements ITaskGroupService {
     }
     if (input.privacy !== undefined) {
       group.privacy = input.privacy;
+    }
+    if (input.type !== undefined) {
+      group.type = input.type;
+    }
+    if (input.isBingo !== undefined) {
+      group.isBingo = input.isBingo;
     }
 
     return { ok: true, value: undefined };
@@ -177,6 +200,7 @@ class MockTaskGroupService implements ITaskGroupService {
 
     if (!group.memberIds.includes(userId)) {
       group.memberIds.push(userId);
+      group.memberRoles[userId] = 'member';
     }
 
     return { ok: true, value: undefined };
@@ -186,7 +210,22 @@ class MockTaskGroupService implements ITaskGroupService {
     const group = this.groups[groupId];
     if (group) {
       group.memberIds = group.memberIds.filter((id) => id !== userId);
+      delete group.memberRoles[userId];
     }
+    return { ok: true, value: undefined };
+  }
+
+  async changeRole(groupId: string, userId: string, role: string): Promise<Result<void>> {
+    const group = this.groups[groupId];
+    if (!group) {
+      return { ok: false, error: { code: 'not-found' } };
+    }
+
+    if (!group.memberIds.includes(userId)) {
+      return { ok: false, error: { code: 'not-found' } };
+    }
+
+    group.memberRoles[userId] = role;
     return { ok: true, value: undefined };
   }
 
@@ -198,8 +237,11 @@ class MockTaskGroupService implements ITaskGroupService {
     Result<{
       name: string;
       privacy: string;
+      type: 'cooperative' | 'competitive';
+      isBingo: boolean;
       inviteCode: string;
       memberIds: string[];
+      memberRoles: Record<string, string>;
       taskIds: string[];
     }>
   > {
@@ -213,8 +255,11 @@ class MockTaskGroupService implements ITaskGroupService {
       value: {
         name: group.name,
         privacy: group.privacy,
+        type: group.type,
+        isBingo: group.isBingo,
         inviteCode: group.inviteCode,
         memberIds: [...group.memberIds],
+        memberRoles: { ...group.memberRoles },
         taskIds: [...group.taskIds],
       },
     };

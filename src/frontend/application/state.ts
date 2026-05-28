@@ -1,6 +1,8 @@
 export type TaskColor = 'red' | 'orange' | 'yellow' | 'green' | 'blue' | 'purple';
 
 export type TaskGroupPrivacy = 'public' | 'private' | 'friends';
+export type TaskGroupType = 'cooperative' | 'competitive';
+export type MemberRole = 'member' | 'admin' | 'owner';
 
 export type InvitationKind = 'friend' | 'task-group' | 'task-group-request';
 
@@ -17,9 +19,12 @@ export type TaskGroup = {
   name: string;
   ownerUserId: string;
   privacy: TaskGroupPrivacy;
+  type: TaskGroupType;
+  isBingo: boolean;
   inviteCode: string;
   taskIds: string[];
   memberIds: string[];
+  memberRoles: Record<string, MemberRole>;
 };
 
 export type TaskParams = {

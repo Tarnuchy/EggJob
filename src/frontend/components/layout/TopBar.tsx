@@ -2,6 +2,7 @@ import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRoute } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -12,13 +13,22 @@ import { createSectionConfig, isSectionName } from '../../navigation/sectionConf
 import { usePanelContext } from '../../navigation/PanelContext';
 import { useNotifications } from '../../application/NotificationsContext';
 
-export const TopBar = () => {
+interface Props {
+  title?: string;
+  showBackButton?: boolean;
+  showRightActions?: boolean;
+}
+
+export const TopBar = ({ title, showBackButton = false, showRightActions = true }: Props) => {
   const insets = useSafeAreaInsets();
   const route = useRoute();
+  const navigation = useNavigation<any>();
   const { t } = useTranslation();
 
-  if (!isSectionName(route.name)) return null;
-  const config = createSectionConfig(t)[route.name];
+  const isSection = isSectionName(route.name);
+  const config = isSection ? createSectionConfig(t)[route.name] : null;
+
+  if (!config && !title) return null;
 
   return (
     <View style={styles.host}>
@@ -26,13 +36,24 @@ export const TopBar = () => {
         <View style={[styles.bg, { paddingTop: insets.top }]}>
           <View style={styles.row}>
             <View style={styles.left}>
-              <Ionicons name={config.iconFilled} size={22} color={colors.primary} />
+              {showBackButton ? (
+                <Pressable
+                  onPress={() => navigation.goBack()}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('topBar.back')}
+                  style={({ pressed }) => [styles.backButton, pressed && styles.backButtonPressed]}
+                >
+                  <Ionicons name="arrow-back" size={20} color={colors.primary} />
+                </Pressable>
+              ) : config ? (
+                <Ionicons name={config.iconFilled} size={22} color={colors.primary} />
+              ) : null}
               <AppText variant="h2" color="textPrimary">
-                {config.label}
+                {title ?? config?.label}
               </AppText>
             </View>
             <View style={styles.right}>
-              <RightActionsPill />
+              {showRightActions && isSection ? <RightActionsPill /> : null}
             </View>
           </View>
         </View>
@@ -119,6 +140,17 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   right: {},
+  backButton: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 16,
+    backgroundColor: 'rgba(107, 63, 34, 0.08)',
+  },
+  backButtonPressed: {
+    backgroundColor: 'rgba(107, 63, 34, 0.14)',
+  },
 });
 
 const pillStyles = StyleSheet.create({

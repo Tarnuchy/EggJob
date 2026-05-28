@@ -12,6 +12,7 @@ import { AppText } from '../../components/common/AppText';
 import { AppButton } from '../../components/common/AppButton';
 import { AppInput } from '../../components/common/AppInput';
 import { EmptyState } from '../../components/common/EmptyState';
+import { taskGroupService, taskService } from '../../services';
 import { colors } from '../../theme/colors';
 import { shadows } from '../../theme/shadows';
 import { spacing, SCREEN_PADDING_H } from '../../theme/spacing';
@@ -19,9 +20,9 @@ import type { TaskColor, TaskGroupPrivacy } from '../../application/state';
 import { useAppState } from '../../application/AppStateContext';
 import { selectAllTaskGroups, selectTasksByGroup, selectTaskGroupsByMember } from '../../application/selectors';
 import { useCurrentUserId } from '../../hooks/useCurrentUserId';
+import { useAppNavigation } from '../../hooks/useAppNavigation';
 
 type TasksTab = 'tasks' | 'groups';
-type GroupSubscreen = 'join-group' | 'create-group' | null;
 type TaskSubscreen = 'create-task' | null;
 
 const TASK_COLORS: TaskColor[] = ['red', 'orange', 'yellow', 'green', 'blue', 'purple'];
@@ -30,24 +31,20 @@ const GROUP_PRIVACY_VALUES: TaskGroupPrivacy[] = ['private', 'friends', 'public'
 const generateId = (prefix: string) =>
   `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 
-const generateInviteCode = () => Math.random().toString(36).slice(2, 8).toUpperCase();
 
 export const TasksScreen = () => {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<TasksTab>('tasks');
   const { state, dispatch } = useAppState();
   const currentUserId = useCurrentUserId();
-  const [groupSubscreen, setGroupSubscreen] = useState<GroupSubscreen>(null);
+  const navigation = useAppNavigation();
   const [taskSubscreen, setTaskSubscreen] = useState<TaskSubscreen>(null);
   const [openedGroupId, setOpenedGroupId] = useState<string | null>(null);
 
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 
-  const [joinCode, setJoinCode] = useState('');
-  const [groupName, setGroupName] = useState('');
-  const [groupPrivacy, setGroupPrivacy] = useState<TaskGroupPrivacy>('friends');
-  const [groupInviteCode, setGroupInviteCode] = useState('');
+  
   const [editGroupName, setEditGroupName] = useState('');
   const [editGroupPrivacy, setEditGroupPrivacy] = useState<TaskGroupPrivacy>('friends');
   const [memberUserId, setMemberUserId] = useState('');
@@ -108,6 +105,8 @@ export const TasksScreen = () => {
       ownerUserId: currentUserId,
       name: 'Road to Marathon',
       privacy: 'friends',
+      groupType: 'competitive',
+      isBingo: false,
       inviteCode: 'RUN2026',
     });
     dispatch({
@@ -116,6 +115,8 @@ export const TasksScreen = () => {
       ownerUserId: currentUserId,
       name: 'Weekend Cooking',
       privacy: 'private',
+      groupType: 'cooperative',
+      isBingo: false,
       inviteCode: 'COOK42',
     });
     dispatch({
@@ -124,6 +125,8 @@ export const TasksScreen = () => {
       ownerUserId: 'usr-seed-2',
       name: 'Open Bingo Crew',
       privacy: 'public',
+      groupType: 'competitive',
+      isBingo: true,
       inviteCode: 'BINGO1',
     });
 
@@ -151,6 +154,13 @@ export const TasksScreen = () => {
       authorUserId: currentUserId,
       value: 2,
       note: 'Warm-up run',
+    });
+    dispatch({
+      type: 'task-groups/invite-friend',
+      invitationId: 'inv-starter-1',
+      groupId: starterGroupId,
+      fromUserId: 'usr-seed-3',
+      toUserId: currentUserId,
     });
   }, [allGroups.length, currentUserId, dispatch]);
 
@@ -208,81 +218,22 @@ export const TasksScreen = () => {
     ? Math.min(100, Math.round((selectedTaskProgressValue / Math.max(1, selectedTask.goal)) * 100))
     : 0;
 
-  const handleJoinGroup = async () => {
-    const trimmedCode = joinCode.trim();
-    if (!trimmedCode) {
-      Alert.alert(t('tasks.groups.joinEmptyTitle'), t('tasks.groups.joinEmptyMessage'));
-      return;
-    }
+  
 
-    const match = allGroups.find(
-      ({ group }) => group.inviteCode.toUpperCase() === trimmedCode.toUpperCase(),
-    );
-    if (!match) {
-      Alert.alert(t('tasks.groups.joinErrorTitle'), t('tasks.groups.joinNotFound'));
-      return;
-    }
-
-    const alreadyMember =
-      match.group.ownerUserId === currentUserId || match.group.memberIds.includes(currentUserId);
-    if (alreadyMember) {
-      Alert.alert(t('tasks.groups.joinErrorTitle'), t('tasks.groups.joinConflict'));
-      return;
-    }
-
-    const result = dispatch({
-      type: 'task-groups/add-member',
-      groupId: match.id,
-      userId: currentUserId,
-    });
-
-    if (!result.ok) {
-      Alert.alert(t('tasks.groups.joinErrorTitle'), t('tasks.groups.joinGeneric'));
-      return;
-    }
-
-    setSelectedGroupId(match.id);
-    setJoinCode('');
-    setGroupSubscreen(null);
-    Alert.alert(t('tasks.groups.joinSuccessTitle'), t('tasks.groups.joinSuccessMessage'));
-  };
-
-  const handleCreateGroup = () => {
-    const trimmedName = groupName.trim();
-    if (!trimmedName) {
-      Alert.alert(t('tasks.groups.validationTitle'), t('tasks.groups.nameRequired'));
-      return;
-    }
-
-    const groupId = generateId('grp');
-    const inviteCode = (groupInviteCode.trim() || generateInviteCode()).toUpperCase();
-    const result = dispatch({
-      type: 'task-groups/create',
-      groupId,
-      ownerUserId: currentUserId,
-      name: trimmedName,
-      privacy: groupPrivacy,
-      inviteCode,
-    });
-
-    if (!result.ok) {
-      Alert.alert(t('tasks.groups.createErrorTitle'), t('tasks.groups.createErrorMessage'));
-      return;
-    }
-
-    dispatch({ type: 'task-groups/add-member', groupId, userId: currentUserId });
-    setGroupName('');
-    setGroupInviteCode('');
-    setSelectedGroupId(groupId);
-    setGroupSubscreen(null);
-    Alert.alert(t('tasks.groups.createSuccessTitle'), t('tasks.groups.createSuccessMessage'));
-  };
-
-  const handleEditGroup = () => {
+  const handleEditGroup = async () => {
     if (!selectedGroupId) return;
     const trimmedName = editGroupName.trim();
     if (!trimmedName) {
       Alert.alert(t('tasks.groups.validationTitle'), t('tasks.groups.nameRequired'));
+      return;
+    }
+
+    const serviceResult = await taskGroupService.editGroup(selectedGroupId, {
+      name: trimmedName,
+      privacy: editGroupPrivacy,
+    });
+    if (!serviceResult.ok) {
+      Alert.alert(t('tasks.groups.editErrorTitle'), t('tasks.groups.editErrorMessage'));
       return;
     }
 
@@ -307,7 +258,13 @@ export const TasksScreen = () => {
       {
         text: t('tasks.common.delete'),
         style: 'destructive',
-        onPress: () => {
+        onPress: async () => {
+          const serviceResult = await taskGroupService.deleteGroup(selectedGroupId);
+          if (!serviceResult.ok) {
+            Alert.alert(t('tasks.groups.deleteErrorTitle'), t('tasks.groups.deleteErrorMessage'));
+            return;
+          }
+
           const result = dispatch({ type: 'task-groups/delete', groupId: selectedGroupId });
           if (!result.ok) {
             Alert.alert(t('tasks.groups.deleteErrorTitle'), t('tasks.groups.deleteErrorMessage'));
@@ -322,11 +279,17 @@ export const TasksScreen = () => {
     ]);
   };
 
-  const handleAddMember = () => {
+  const handleAddMember = async () => {
     if (!selectedGroupId) return;
     const trimmedUserId = memberUserId.trim();
     if (!trimmedUserId) {
       Alert.alert(t('tasks.groups.validationTitle'), t('tasks.groups.memberRequired'));
+      return;
+    }
+
+    const serviceResult = await taskGroupService.addMember(selectedGroupId, trimmedUserId);
+    if (!serviceResult.ok) {
+      Alert.alert(t('tasks.groups.memberErrorTitle'), t('tasks.groups.memberErrorMessage'));
       return;
     }
 
@@ -343,15 +306,27 @@ export const TasksScreen = () => {
     setMemberUserId('');
   };
 
-  const handleRemoveMember = (userId: string) => {
+  const handleRemoveMember = async (userId: string) => {
     if (!selectedGroupId) return;
+    const serviceResult = await taskGroupService.removeMember(selectedGroupId, userId);
+    if (!serviceResult.ok) {
+      Alert.alert(t('tasks.groups.memberErrorTitle'), t('tasks.groups.memberErrorMessage'));
+      return;
+    }
+
     dispatch({ type: 'task-groups/remove-member', groupId: selectedGroupId, userId });
   };
 
-  const handleLeaveGroup = () => {
+  const handleLeaveGroup = async () => {
     if (!selectedGroupId || !selectedGroup) return;
     if (selectedGroup.ownerUserId === currentUserId) {
       Alert.alert(t('tasks.groups.leaveErrorTitle'), t('tasks.groups.ownerCannotLeave'));
+      return;
+    }
+
+    const serviceResult = await taskGroupService.leaveGroup(selectedGroupId, currentUserId);
+    if (!serviceResult.ok) {
+      Alert.alert(t('tasks.groups.leaveErrorTitle'), t('tasks.groups.leaveErrorMessage'));
       return;
     }
 
@@ -361,7 +336,7 @@ export const TasksScreen = () => {
     Alert.alert(t('tasks.groups.leaveSuccessTitle'), t('tasks.groups.leaveSuccessMessage'));
   };
 
-  const handleCreateTask = () => {
+  const handleCreateTask = async () => {
     if (!selectedGroupId) {
       Alert.alert(t('tasks.tasks.missingGroupTitle'), t('tasks.tasks.missingGroupMessage'));
       return;
@@ -376,6 +351,25 @@ export const TasksScreen = () => {
 
     const taskId = generateId('tsk');
     const progressId = generateId('prg');
+    const serviceResult = await taskService.createTask({
+      taskId,
+      groupId: selectedGroupId,
+      progressId,
+      name: trimmedName,
+      goal: parsedGoal,
+      status: 'active',
+      kind: 'endless',
+      params: {
+        color: taskColor,
+        photoRequired: taskPhotoRequired,
+        notifications: taskNotifications,
+      },
+    });
+    if (!serviceResult.ok) {
+      Alert.alert(t('tasks.tasks.createErrorTitle'), t('tasks.tasks.createErrorMessage'));
+      return;
+    }
+
     const result = dispatch({
       type: 'tasks/create',
       taskId,
@@ -404,12 +398,26 @@ export const TasksScreen = () => {
     setTaskSubscreen(null);
   };
 
-  const handleEditTask = () => {
+  const handleEditTask = async () => {
     if (!selectedTaskId) return;
     const trimmedName = editTaskName.trim();
     const parsedGoal = Number(editTaskGoal);
     if (!trimmedName || Number.isNaN(parsedGoal) || parsedGoal <= 0) {
       Alert.alert(t('tasks.tasks.validationTitle'), t('tasks.tasks.validationMessage'));
+      return;
+    }
+
+    const serviceResult = await taskService.editTask(selectedTaskId, {
+      name: trimmedName,
+      goal: parsedGoal,
+      params: {
+        color: editTaskColor,
+        photoRequired: editTaskPhotoRequired,
+        notifications: editTaskNotifications,
+      },
+    });
+    if (!serviceResult.ok) {
+      Alert.alert(t('tasks.tasks.editErrorTitle'), t('tasks.tasks.editErrorMessage'));
       return;
     }
 
@@ -441,7 +449,13 @@ export const TasksScreen = () => {
       {
         text: t('tasks.common.delete'),
         style: 'destructive',
-        onPress: () => {
+        onPress: async () => {
+          const serviceResult = await taskService.deleteTask(selectedTaskId);
+          if (!serviceResult.ok) {
+            Alert.alert(t('tasks.tasks.deleteErrorTitle'), t('tasks.tasks.deleteErrorMessage'));
+            return;
+          }
+
           const result = dispatch({ type: 'tasks/delete', taskId: selectedTaskId });
           if (!result.ok) {
             Alert.alert(t('tasks.tasks.deleteErrorTitle'), t('tasks.tasks.deleteErrorMessage'));
@@ -453,7 +467,7 @@ export const TasksScreen = () => {
     ]);
   };
 
-  const handleAddProgress = () => {
+  const handleAddProgress = async () => {
     if (!selectedTaskId || !selectedTask) return;
     if (selectedTaskCompleted) {
       Alert.alert(t('tasks.progress.completedTitle'), t('tasks.progress.completedMessage'));
@@ -466,9 +480,22 @@ export const TasksScreen = () => {
       return;
     }
 
+    const entryId = generateId('entry');
+    const serviceResult = await taskService.addProgress({
+      entryId,
+      taskId: selectedTaskId,
+      authorUserId: currentUserId,
+      value: parsed,
+      note: progressNote,
+    });
+    if (!serviceResult.ok) {
+      Alert.alert(t('tasks.progress.errorTitle'), t('tasks.progress.errorMessage'));
+      return;
+    }
+
     const result = dispatch({
       type: 'tasks/add-progress',
-      entryId: generateId('entry'),
+      entryId,
       taskId: selectedTaskId,
       authorUserId: currentUserId,
       value: parsed,
@@ -623,104 +650,16 @@ export const TasksScreen = () => {
                 </AppText>
               </View>
               <View style={styles.sectionCard}>
-                <View style={styles.quickActionsWrap}>
+                  <View style={styles.quickActionsWrap}>
                   <View style={styles.quickActionButtonWrap}>
-                    <AppButton
-                      title={t('tasks.groups.joinAction')}
-                      onPress={() => setGroupSubscreen('join-group')}
-                    />
+                    <AppButton title={t('tasks.groups.joinAction')} onPress={() => navigation.navigate('JoinGroup')} />
                   </View>
                   <View style={styles.quickActionButtonWrap}>
-                    <AppButton
-                      title={t('tasks.groups.createAction')}
-                      onPress={() => setGroupSubscreen('create-group')}
-                    />
+                    <AppButton title={t('tasks.groups.createAction')} onPress={() => navigation.navigate('CreateGroup')} />
                   </View>
                 </View>
               </View>
-
-              {groupSubscreen === 'join-group' ? (
-                <View style={styles.sectionCard}>
-                  <View style={styles.sectionHeaderRow}>
-                    <AppText variant="caption" color="muted" style={styles.sectionTitle}>
-                      {t('tasks.groups.joinAction')}
-                    </AppText>
-                  </View>
-                  <AppText variant="caption" color="textSecondary" style={styles.sectionSubtitle}>
-                    {t('tasks.groups.joinSubtitle')}
-                  </AppText>
-                  <AppInput
-                    value={joinCode}
-                    onChangeText={setJoinCode}
-                    placeholder={t('tasks.groups.joinPlaceholder')}
-                    autoCapitalize="characters"
-                    autoCorrect={false}
-                    accessibilityLabel={t('tasks.groups.joinPlaceholder')}
-                    style={styles.joinInput}
-                  />
-                  <View style={styles.inlineActionButtons}>
-                    <AppButton title={t('tasks.groups.joinCta')} onPress={handleJoinGroup} disabled={!joinCode.trim()} />
-                    <AppButton title={t('tasks.common.cancel')} onPress={() => setGroupSubscreen(null)} />
-                  </View>
-                </View>
-              ) : null}
-
-              {groupSubscreen === 'create-group' ? (
-                <View style={styles.sectionCard}>
-                  <View style={styles.sectionHeaderRow}>
-                    <AppText variant="caption" color="muted" style={styles.sectionTitle}>
-                      {t('tasks.groups.createAction')}
-                    </AppText>
-                  </View>
-                  <AppText variant="caption" color="textSecondary" style={styles.sectionSubtitle}>
-                    {t('tasks.groups.createSubtitle')}
-                  </AppText>
-                  <AppInput
-                    value={groupName}
-                    onChangeText={setGroupName}
-                    placeholder={t('tasks.groups.groupNamePlaceholder')}
-                    accessibilityLabel={t('tasks.groups.groupNamePlaceholder')}
-                    style={styles.joinInput}
-                  />
-                  <View style={styles.inlineControlsRow}>
-                    {GROUP_PRIVACY_VALUES.map((privacy) => (
-                      <Pressable
-                        key={privacy}
-                        style={({ pressed }) => [
-                          styles.chip,
-                          groupPrivacy === privacy && styles.chipActive,
-                          pressed && styles.chipPressed,
-                        ]}
-                        onPress={() => setGroupPrivacy(privacy)}
-                        accessibilityRole="button"
-                      >
-                        <AppText
-                          variant="caption"
-                          color={groupPrivacy === privacy ? 'textOnPrimary' : 'textPrimary'}
-                        >
-                          {t(`tasks.groups.privacy.${privacy}`)}
-                        </AppText>
-                      </Pressable>
-                    ))}
-                  </View>
-                  <AppInput
-                    value={groupInviteCode}
-                    onChangeText={setGroupInviteCode}
-                    placeholder={t('tasks.groups.inviteCodeOptional')}
-                    autoCapitalize="characters"
-                    accessibilityLabel={t('tasks.groups.inviteCodeOptional')}
-                    style={styles.joinInput}
-                  />
-                  <View style={styles.inlineActionButtons}>
-                    <AppButton
-                      title={t('tasks.groups.createAction')}
-                      onPress={handleCreateGroup}
-                      disabled={!groupName.trim()}
-                    />
-                    <AppButton title={t('tasks.common.cancel')} onPress={() => setGroupSubscreen(null)} />
-                  </View>
-                </View>
-              ) : null}
+              
 
               <View style={styles.sectionHeaderRow}>
                 <AppText variant="caption" color="muted" style={styles.sectionTitle}>
@@ -745,9 +684,8 @@ export const TasksScreen = () => {
                     accessibilityRole="button"
                     accessibilityLabel={group.name}
                     onPress={() => {
-                      setSelectedGroupId(id);
-                      setOpenedGroupId(id);
-                    }}
+                        navigation.navigate('EditGroup', { groupId: id });
+                      }}
                   >
                     <View style={styles.groupTopRow}>
                       <AppText variant="label" color="textPrimary">
