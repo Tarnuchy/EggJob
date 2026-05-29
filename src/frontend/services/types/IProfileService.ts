@@ -4,8 +4,6 @@ export interface UserStats {
   activeTasks: number;
   completedTasks: number;
   friendsCount: number;
-  /** Longest active streak across the user's repeatable tasks (0 when none). */
-  bestStreak: number;
 }
 
 export interface IProfileService {

@@ -118,7 +118,7 @@ const en = {
     },
     languagePicker: {
       title: 'Choose language',
-      system: 'Use system language',
+      system: 'System language',
       english: 'English',
       polish: 'Polski',
       close: 'Close',
@@ -145,7 +145,6 @@ const en = {
       activeTasks: 'Active tasks',
       completedTasks: 'Completed',
       friends: 'Friends',
-      bestStreak: 'Best streak: {{count}}',
     },
     actions: {
       edit: 'Edit Profile',

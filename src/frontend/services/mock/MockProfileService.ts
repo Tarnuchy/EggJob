@@ -13,12 +13,12 @@ class MockProfileService implements IProfileService {
   };
 
   private stats: Record<string, UserStats> = {
-    'usr-seed-1': { activeTasks: 4, completedTasks: 12, friendsCount: 2, bestStreak: 7 },
-    'usr-seed-2': { activeTasks: 2, completedTasks: 5, friendsCount: 3, bestStreak: 3 },
-    'usr-seed-3': { activeTasks: 6, completedTasks: 1, friendsCount: 1, bestStreak: 0 },
-    'usr-seed-4': { activeTasks: 0, completedTasks: 8, friendsCount: 1, bestStreak: 0 },
-    'usr-seed-5': { activeTasks: 3, completedTasks: 9, friendsCount: 2, bestStreak: 14 },
-    'usr-seed-6': { activeTasks: 1, completedTasks: 0, friendsCount: 0, bestStreak: 0 },
+    'usr-seed-1': { activeTasks: 4, completedTasks: 12, friendsCount: 2 },
+    'usr-seed-2': { activeTasks: 2, completedTasks: 5, friendsCount: 3 },
+    'usr-seed-3': { activeTasks: 6, completedTasks: 1, friendsCount: 1 },
+    'usr-seed-4': { activeTasks: 0, completedTasks: 8, friendsCount: 1 },
+    'usr-seed-5': { activeTasks: 3, completedTasks: 9, friendsCount: 2 },
+    'usr-seed-6': { activeTasks: 1, completedTasks: 0, friendsCount: 0 },
   };
 
   getAllProfiles(): Array<{ userId: string; username: string; photoUrl?: string }> {
@@ -70,7 +70,6 @@ class MockProfileService implements IProfileService {
       activeTasks: 0,
       completedTasks: 0,
       friendsCount: 0,
-      bestStreak: 0,
     };
     return { ok: true, value: stats };
   }
