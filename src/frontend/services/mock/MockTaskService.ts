@@ -10,13 +10,13 @@ class MockTaskService implements ITaskService {
       name: 'Run 5km',
       goal: 5,
       progressId: 'prg-seed-1',
-      params: { photoRequired: false, color: 'blue', notifications: true },
+      params: { photoRequired: false, color: '#2563EB', notifications: true },
     },
     'tsk-seed-2': {
       name: 'Push-ups 100',
       goal: 100,
       progressId: 'prg-seed-2',
-      params: { photoRequired: false, color: 'green', notifications: false },
+      params: { photoRequired: false, color: '#16A34A', notifications: false },
     },
   };
 

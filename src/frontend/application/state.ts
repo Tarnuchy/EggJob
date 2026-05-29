@@ -1,4 +1,4 @@
-export type TaskColor = 'red' | 'orange' | 'yellow' | 'green' | 'blue' | 'purple';
+export type TaskColor = string;
 
 export type TaskGroupPrivacy = 'public' | 'private' | 'friends';
 export type TaskGroupType = 'cooperative' | 'competitive';
@@ -91,7 +91,14 @@ export function createInitialFrontendState(): FrontendState {
     session: { currentAccountId: null, currentUserId: null },
     entities: {
       accounts: {},
-      users: {},
+      users: {
+        'usr-seed-1': { username: 'alice' },
+        'usr-seed-2': { username: 'bob' },
+        'usr-seed-3': { username: 'charlie' },
+        'usr-seed-4': { username: 'dave' },
+        'usr-seed-5': { username: 'erin' },
+        'usr-seed-6': { username: 'frank' },
+      },
       taskGroups: {},
       tasks: {},
       taskProgresses: {},

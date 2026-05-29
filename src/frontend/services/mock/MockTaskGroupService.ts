@@ -198,6 +198,10 @@ class MockTaskGroupService implements ITaskGroupService {
       return { ok: false, error: { code: 'not-found' } };
     }
 
+    if (group.ownerUserId === userId) {
+      return { ok: true, value: undefined };
+    }
+
     if (!group.memberIds.includes(userId)) {
       group.memberIds.push(userId);
       group.memberRoles[userId] = 'member';
@@ -209,6 +213,10 @@ class MockTaskGroupService implements ITaskGroupService {
   async removeMember(groupId: string, userId: string): Promise<Result<void>> {
     const group = this.groups[groupId];
     if (group) {
+      if (group.ownerUserId === userId) {
+        return { ok: false, error: { code: 'validation', field: 'role' } };
+      }
+
       group.memberIds = group.memberIds.filter((id) => id !== userId);
       delete group.memberRoles[userId];
     }
@@ -219,6 +227,10 @@ class MockTaskGroupService implements ITaskGroupService {
     const group = this.groups[groupId];
     if (!group) {
       return { ok: false, error: { code: 'not-found' } };
+    }
+
+    if (role === 'owner' || group.ownerUserId === userId) {
+      return { ok: false, error: { code: 'validation', field: 'role' } };
     }
 
     if (!group.memberIds.includes(userId)) {

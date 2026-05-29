@@ -88,6 +88,10 @@ export function handleTaskGroups(state: FrontendState, action: TaskGroupAction):
       return { ok: false, error: { code: 'not-found' } };
     }
 
+    if (group.ownerUserId === userId || group.memberRoles[userId] === 'owner') {
+      return { ok: true, value: state };
+    }
+
     if (group.memberIds.includes(userId)) {
       return { ok: true, value: state };
     }
@@ -111,6 +115,14 @@ export function handleTaskGroups(state: FrontendState, action: TaskGroupAction):
     const { groupId, userId } = action;
     const group = state.entities.taskGroups[groupId];
     if (!group) {
+      return { ok: false, error: { code: 'not-found' } };
+    }
+
+    if (group.ownerUserId === userId) {
+      return { ok: false, error: { code: 'validation', field: 'role' } };
+    }
+
+    if (!group.memberIds.includes(userId)) {
       return { ok: false, error: { code: 'not-found' } };
     }
 
@@ -139,6 +151,10 @@ export function handleTaskGroups(state: FrontendState, action: TaskGroupAction):
     const group = state.entities.taskGroups[groupId];
     if (!group) {
       return { ok: false, error: { code: 'not-found' } };
+    }
+
+    if (group.ownerUserId === userId || role === 'owner' || !group.memberIds.includes(userId)) {
+      return { ok: false, error: { code: 'validation', field: 'role' } };
     }
 
     return {

@@ -318,6 +318,10 @@ export class HttpTaskGroupService implements ITaskGroupService {
   }
 
   async changeRole(groupId: string, userId: string, role: string): Promise<Result<void>> {
+    if (role === 'owner') {
+      return { ok: false, error: { code: 'validation' } };
+    }
+
     let response: Response;
     try {
       const actingUser = CurrentUser.get();

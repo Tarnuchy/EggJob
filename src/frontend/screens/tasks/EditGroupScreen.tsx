@@ -11,7 +11,7 @@ import { taskGroupService } from '../../services';
 import { TopBar } from '../../components/layout/TopBar';
 import { colors } from '../../theme/colors';
 import { SCREEN_PADDING_H, spacing } from '../../theme/spacing';
-import type { TaskGroupPrivacy, TaskGroupType } from '../../application/state';
+import type { MemberRole, TaskGroupPrivacy, TaskGroupType } from '../../application/state';
 
 export const EditGroupScreen = ({ navigation, route }: any) => {
   const { t } = useTranslation();
@@ -23,6 +23,12 @@ export const EditGroupScreen = ({ navigation, route }: any) => {
   const [privacy, setPrivacy] = useState<TaskGroupPrivacy>(group?.privacy ?? 'private');
   const [groupType, setGroupType] = useState<TaskGroupType>(group?.type ?? 'cooperative');
   const [isBingo, setIsBingo] = useState<boolean>(group?.isBingo ?? false);
+  const [expandedMemberId, setExpandedMemberId] = useState<string | null>(null);
+  const editableRoles: Exclude<MemberRole, 'owner'>[] = ['member', 'admin'];
+  const currentUserRole: MemberRole = group?.ownerUserId === state.session.currentUserId
+    ? 'owner'
+    : group?.memberRoles[state.session.currentUserId ?? ''] ?? 'member';
+  const canManageMembers = currentUserRole === 'admin' || currentUserRole === 'owner';
 
   const privacyOptions = useMemo(
     () => [
@@ -78,7 +84,7 @@ export const EditGroupScreen = ({ navigation, route }: any) => {
     dispatch({ type: 'task-groups/remove-member', groupId, userId });
   };
 
-  const handleChangeRole = async (userId: string, newRole: string) => {
+  const handleChangeRole = async (userId: string, newRole: Exclude<MemberRole, 'owner'>) => {
     const res = await taskGroupService.changeRole(groupId, userId, newRole);
     if (!res.ok) {
       Alert.alert(t('tasks.groups.memberErrorTitle'), 'Could not change member role');
@@ -87,6 +93,8 @@ export const EditGroupScreen = ({ navigation, route }: any) => {
 
     dispatch({ type: 'task-groups/change-role', groupId, userId, role: newRole });
   };
+
+  const getMemberName = (userId: string) => state.entities.users[userId]?.username ?? userId;
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -151,7 +159,7 @@ export const EditGroupScreen = ({ navigation, route }: any) => {
             <View style={styles.memberList}>
               <View style={styles.memberRow}>
                 <AppText variant="caption" color="textSecondary" style={styles.memberUserId}>
-                  {group.ownerUserId}
+                  {getMemberName(group.ownerUserId)}
                 </AppText>
                 <View style={styles.memberBadge}>
                   <AppText variant="caption" color="textPrimary" style={styles.memberBadgeText}>
@@ -160,37 +168,67 @@ export const EditGroupScreen = ({ navigation, route }: any) => {
                 </View>
               </View>
               {group.memberIds.map((memberId) => {
-                const memberRole = group.memberRoles?.[memberId] || 'member';
+                const memberRole: MemberRole = group.memberRoles?.[memberId] || 'member';
+                const isExpanded = expandedMemberId === memberId;
                 return (
-                  <View key={memberId} style={styles.memberRow}>
-                    <AppText variant="caption" color="textSecondary" style={styles.memberUserId}>
-                      {memberId}
-                    </AppText>
-                    <View style={styles.memberControls}>
-                      <Pressable
-                        onPress={() => {
-                          const roles = ['member', 'admin', 'owner'];
-                          const currentIndex = roles.indexOf(memberRole);
-                          const nextIndex = (currentIndex + 1) % roles.length;
-                          handleChangeRole(memberId, roles[nextIndex]);
-                        }}
-                        style={({ pressed }) => [styles.roleButton, pressed && styles.roleButtonPressed]}
-                        accessibilityRole="button"
-                      >
-                        <AppText variant="caption" color="textSecondary">
+                  <View key={memberId} style={styles.memberBlock}>
+                    <Pressable
+                      onPress={() => {
+                        if (!canManageMembers) {
+                          return;
+                        }
+                        setExpandedMemberId((value) => (value === memberId ? null : memberId));
+                      }}
+                      style={({ pressed }) => [styles.memberRow, pressed && canManageMembers && styles.memberRowPressed]}
+                      accessibilityRole={canManageMembers ? 'button' : 'text'}
+                      accessibilityState={{ expanded: isExpanded }}
+                    >
+                      <AppText variant="caption" color="textSecondary" style={styles.memberUserId}>
+                        {getMemberName(memberId)}
+                      </AppText>
+                      <View style={styles.memberBadge}>
+                        <AppText variant="caption" color="textPrimary" style={styles.memberBadgeText}>
                           {t(`tasks.groups.role${memberRole.charAt(0).toUpperCase()}${memberRole.slice(1)}`)}
                         </AppText>
-                      </Pressable>
-                      <Pressable
-                        onPress={() => handleRemoveMember(memberId)}
-                        style={({ pressed }) => [styles.removeMemberBtn, pressed && styles.removeMemberBtnPressed]}
-                        accessibilityRole="button"
-                      >
-                        <AppText variant="caption" color="danger">
-                          {t('tasks.groups.removeMember')}
-                        </AppText>
-                      </Pressable>
-                    </View>
+                      </View>
+                    </Pressable>
+                    {canManageMembers && isExpanded ? (
+                      <View style={styles.memberActionsPanel}>
+                        <View style={styles.roleOptionsRow}>
+                          {editableRoles.map((role) => (
+                            <Pressable
+                              key={role}
+                              onPress={() => {
+                                handleChangeRole(memberId, role);
+                                setExpandedMemberId(null);
+                              }}
+                              style={({ pressed }) => [
+                                styles.roleOption,
+                                memberRole === role && styles.roleOptionActive,
+                                pressed && styles.roleOptionPressed,
+                              ]}
+                              accessibilityRole="button"
+                            >
+                              <AppText
+                                variant="caption"
+                                color={memberRole === role ? 'textOnPrimary' : 'textPrimary'}
+                              >
+                                {t(`tasks.groups.role${role.charAt(0).toUpperCase()}${role.slice(1)}`)}
+                              </AppText>
+                            </Pressable>
+                          ))}
+                        </View>
+                        <Pressable
+                          onPress={() => handleRemoveMember(memberId)}
+                          style={({ pressed }) => [styles.removeMemberBtn, pressed && styles.removeMemberBtnPressed]}
+                          accessibilityRole="button"
+                        >
+                          <AppText variant="caption" color="danger">
+                            {t('tasks.groups.removeMember')}
+                          </AppText>
+                        </Pressable>
+                      </View>
+                    ) : null}
                   </View>
                 );
               })}
@@ -247,6 +285,9 @@ const styles = StyleSheet.create({
   memberList: {
     gap: spacing.sm,
   },
+  memberBlock: {
+    gap: spacing.xs,
+  },
   memberRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -255,6 +296,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     backgroundColor: 'rgba(30,19,14,0.08)',
     borderRadius: 10,
+  },
+  memberRowPressed: {
+    opacity: 0.88,
   },
   memberUserId: {
     flex: 1,
@@ -274,6 +318,32 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     alignItems: 'center',
   },
+  memberActionsPanel: {
+    paddingLeft: spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    flexWrap: 'wrap',
+  },
+  roleOptionsRow: {
+    flexDirection: 'row',
+    gap: spacing.xs,
+  },
+  roleOption: {
+    backgroundColor: colors.surfaceAlt,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: colors.dividerLine,
+  },
+  roleOptionActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  roleOptionPressed: {
+    opacity: 0.8,
+  },
   roleButton: {
     backgroundColor: colors.surfaceAlt,
     paddingHorizontal: spacing.sm,
@@ -286,6 +356,10 @@ const styles = StyleSheet.create({
   removeMemberBtn: {
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
+    backgroundColor: colors.surfaceAlt,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: colors.dividerLine,
   },
   removeMemberBtnPressed: {
     opacity: 0.7,

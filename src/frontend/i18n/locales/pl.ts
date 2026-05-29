@@ -234,12 +234,12 @@ const pl: Translation = {
       photoRequired: 'Wymagane zdjęcie',
       notifications: 'Powiadomienia',
       colors: {
-        red: 'Czerwony',
-        orange: 'Pomarańczowy',
-        yellow: 'Żółty',
-        green: 'Zielony',
-        blue: 'Niebieski',
-        purple: 'Fioletowy',
+        red: 'Pilny',
+        orange: 'Wysoki',
+        yellow: 'Średni',
+        green: 'Niski',
+        blue: 'Informacyjny',
+        purple: 'Niestandardowy',
       },
     },
     progress: {

@@ -4,8 +4,10 @@ export type RootStackParamList = {
   UserProfile: { userId: string };
   EditProfile: undefined;
   CreateGroup: undefined;
+  CreateTask: { groupId: string };
   JoinGroup: undefined;
   EditGroup: { groupId: string };
+  GroupTasks: { groupId: string };
 };
 
 export type TabParamList = {

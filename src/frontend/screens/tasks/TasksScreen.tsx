@@ -12,24 +12,19 @@ import { AppText } from '../../components/common/AppText';
 import { AppButton } from '../../components/common/AppButton';
 import { AppInput } from '../../components/common/AppInput';
 import { EmptyState } from '../../components/common/EmptyState';
-import { taskGroupService, taskService } from '../../services';
+import { taskGroupService } from '../../services';
 import { colors } from '../../theme/colors';
 import { shadows } from '../../theme/shadows';
 import { spacing, SCREEN_PADDING_H } from '../../theme/spacing';
-import type { TaskColor, TaskGroupPrivacy } from '../../application/state';
+import type { TaskGroupPrivacy } from '../../application/state';
 import { useAppState } from '../../application/AppStateContext';
-import { selectAllTaskGroups, selectTasksByGroup, selectTaskGroupsByMember } from '../../application/selectors';
+import { selectAllTaskGroups, selectTaskGroupsByMember } from '../../application/selectors';
 import { useCurrentUserId } from '../../hooks/useCurrentUserId';
 import { useAppNavigation } from '../../hooks/useAppNavigation';
 
 type TasksTab = 'tasks' | 'groups';
-type TaskSubscreen = 'create-task' | null;
 
-const TASK_COLORS: TaskColor[] = ['red', 'orange', 'yellow', 'green', 'blue', 'purple'];
 const GROUP_PRIVACY_VALUES: TaskGroupPrivacy[] = ['private', 'friends', 'public'];
-
-const generateId = (prefix: string) =>
-  `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 
 
 export const TasksScreen = () => {
@@ -38,31 +33,16 @@ export const TasksScreen = () => {
   const { state, dispatch } = useAppState();
   const currentUserId = useCurrentUserId();
   const navigation = useAppNavigation();
-  const [taskSubscreen, setTaskSubscreen] = useState<TaskSubscreen>(null);
   const [openedGroupId, setOpenedGroupId] = useState<string | null>(null);
+  const [showJoinCodeInput, setShowJoinCodeInput] = useState(false);
+  const [joinCode, setJoinCode] = useState('');
 
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
-  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 
   
   const [editGroupName, setEditGroupName] = useState('');
   const [editGroupPrivacy, setEditGroupPrivacy] = useState<TaskGroupPrivacy>('friends');
   const [memberUserId, setMemberUserId] = useState('');
-
-  const [taskName, setTaskName] = useState('');
-  const [taskGoal, setTaskGoal] = useState('1');
-  const [taskColor, setTaskColor] = useState<TaskColor>('blue');
-  const [taskPhotoRequired, setTaskPhotoRequired] = useState(false);
-  const [taskNotifications, setTaskNotifications] = useState(true);
-
-  const [editTaskName, setEditTaskName] = useState('');
-  const [editTaskGoal, setEditTaskGoal] = useState('1');
-  const [editTaskColor, setEditTaskColor] = useState<TaskColor>('blue');
-  const [editTaskPhotoRequired, setEditTaskPhotoRequired] = useState(false);
-  const [editTaskNotifications, setEditTaskNotifications] = useState(true);
-
-  const [progressValue, setProgressValue] = useState('1');
-  const [progressNote, setProgressNote] = useState('');
 
   const allGroups = useMemo(() => selectAllTaskGroups(state), [state]);
   const memberGroups = useMemo(
@@ -71,22 +51,6 @@ export const TasksScreen = () => {
   );
   const selectedGroup = selectedGroupId ? state.entities.taskGroups[selectedGroupId] : null;
   const openedGroup = openedGroupId ? state.entities.taskGroups[openedGroupId] : null;
-  const tasksInSelectedGroup = useMemo(
-    () => (selectedGroupId ? selectTasksByGroup(state, selectedGroupId) : []),
-    [selectedGroupId, state],
-  );
-  const selectedTask = selectedTaskId ? state.entities.tasks[selectedTaskId] : null;
-  const selectedTaskProgressValue = selectedTask
-    ? (state.entities.taskProgresses[selectedTask.progressId]?.value ?? 0)
-    : 0;
-  const selectedTaskProgressEntries = useMemo(
-    () =>
-      Object.entries(state.entities.progressEntries)
-        .filter(([, entry]) => entry.taskId === selectedTaskId)
-        .map(([entryId, entry]) => ({ id: entryId, ...entry }))
-        .reverse(),
-    [selectedTaskId, state.entities.progressEntries],
-  );
 
   useEffect(() => {
     if (allGroups.length > 0) {
@@ -142,7 +106,7 @@ export const TasksScreen = () => {
       name: 'Run 5 km',
       goal: 5,
       params: {
-        color: 'blue',
+        color: '#2563EB',
         notifications: true,
         photoRequired: false,
       },
@@ -172,20 +136,8 @@ export const TasksScreen = () => {
 
     if (selectedGroupId && !memberGroups.some((entry) => entry.id === selectedGroupId)) {
       setSelectedGroupId(memberGroups[0]?.id ?? null);
-      setSelectedTaskId(null);
     }
   }, [memberGroups, selectedGroupId]);
-
-  useEffect(() => {
-    if (!selectedTaskId && tasksInSelectedGroup.length > 0) {
-      setSelectedTaskId(tasksInSelectedGroup[0].id);
-      return;
-    }
-
-    if (selectedTaskId && !tasksInSelectedGroup.some((entry) => entry.id === selectedTaskId)) {
-      setSelectedTaskId(tasksInSelectedGroup[0]?.id ?? null);
-    }
-  }, [selectedTaskId, tasksInSelectedGroup]);
 
   useEffect(() => {
     if (!selectedGroup) {
@@ -195,28 +147,11 @@ export const TasksScreen = () => {
     setEditGroupPrivacy(selectedGroup.privacy);
   }, [selectedGroup]);
 
-  useEffect(() => {
-    if (!selectedTask) {
-      return;
-    }
-    setEditTaskName(selectedTask.name);
-    setEditTaskGoal(String(selectedTask.goal));
-    setEditTaskColor(selectedTask.params.color);
-    setEditTaskPhotoRequired(selectedTask.params.photoRequired);
-    setEditTaskNotifications(selectedTask.params.notifications);
-  }, [selectedTask]);
-
   const currentRoleLabel = openedGroup
     ? openedGroup.ownerUserId === currentUserId
       ? t('tasks.groups.roleOwner')
       : t('tasks.groups.roleMember')
     : null;
-
-  const selectedTaskCompleted = Boolean(selectedTask && selectedTaskProgressValue >= selectedTask.goal);
-
-  const progressPercent = selectedTask
-    ? Math.min(100, Math.round((selectedTaskProgressValue / Math.max(1, selectedTask.goal)) * 100))
-    : 0;
 
   
 
@@ -251,6 +186,49 @@ export const TasksScreen = () => {
     Alert.alert(t('tasks.groups.editSuccessTitle'), t('tasks.groups.editSuccessMessage'));
   };
 
+  const handleJoinGroup = async () => {
+    const trimmed = joinCode.trim();
+    if (!trimmed) {
+      Alert.alert(t('tasks.groups.joinEmptyTitle'), t('tasks.groups.joinEmptyMessage'));
+      return;
+    }
+
+    const match = Object.entries(state.entities.taskGroups)
+      .map(([id, group]) => ({ id, group }))
+      .find(({ group }) => (group.inviteCode || '').toUpperCase() === trimmed.toUpperCase());
+
+    if (!match) {
+      Alert.alert(t('tasks.groups.joinErrorTitle'), t('tasks.groups.joinNotFound'));
+      return;
+    }
+
+    const alreadyMember =
+      match.group.ownerUserId === currentUserId || match.group.memberIds.includes(currentUserId);
+    if (alreadyMember) {
+      Alert.alert(t('tasks.groups.joinErrorTitle'), t('tasks.groups.joinConflict'));
+      return;
+    }
+
+    const serviceResult = await taskGroupService.joinByInviteCode({
+      inviteCode: trimmed,
+      userId: currentUserId,
+    });
+    if (!serviceResult.ok) {
+      Alert.alert(t('tasks.groups.joinErrorTitle'), t('tasks.groups.joinGeneric'));
+      return;
+    }
+
+    const result = dispatch({ type: 'task-groups/add-member', groupId: match.id, userId: currentUserId });
+    if (!result.ok) {
+      Alert.alert(t('tasks.groups.joinErrorTitle'), t('tasks.groups.joinGeneric'));
+      return;
+    }
+
+    setJoinCode('');
+    setShowJoinCodeInput(false);
+    Alert.alert(t('tasks.groups.joinSuccessTitle'), t('tasks.groups.joinSuccessMessage'));
+  };
+
   const handleDeleteGroup = () => {
     if (!selectedGroupId || !selectedGroup) return;
     Alert.alert(t('tasks.groups.deleteTitle'), t('tasks.groups.deleteMessage'), [
@@ -271,7 +249,6 @@ export const TasksScreen = () => {
             return;
           }
 
-          setSelectedTaskId(null);
           setOpenedGroupId(null);
           Alert.alert(t('tasks.groups.deleteSuccessTitle'), t('tasks.groups.deleteSuccessMessage'));
         },
@@ -331,184 +308,8 @@ export const TasksScreen = () => {
     }
 
     dispatch({ type: 'task-groups/leave', groupId: selectedGroupId, userId: currentUserId });
-    setSelectedTaskId(null);
     setOpenedGroupId(null);
     Alert.alert(t('tasks.groups.leaveSuccessTitle'), t('tasks.groups.leaveSuccessMessage'));
-  };
-
-  const handleCreateTask = async () => {
-    if (!selectedGroupId) {
-      Alert.alert(t('tasks.tasks.missingGroupTitle'), t('tasks.tasks.missingGroupMessage'));
-      return;
-    }
-
-    const trimmedName = taskName.trim();
-    const parsedGoal = Number(taskGoal);
-    if (!trimmedName || Number.isNaN(parsedGoal) || parsedGoal <= 0) {
-      Alert.alert(t('tasks.tasks.validationTitle'), t('tasks.tasks.validationMessage'));
-      return;
-    }
-
-    const taskId = generateId('tsk');
-    const progressId = generateId('prg');
-    const serviceResult = await taskService.createTask({
-      taskId,
-      groupId: selectedGroupId,
-      progressId,
-      name: trimmedName,
-      goal: parsedGoal,
-      status: 'active',
-      kind: 'endless',
-      params: {
-        color: taskColor,
-        photoRequired: taskPhotoRequired,
-        notifications: taskNotifications,
-      },
-    });
-    if (!serviceResult.ok) {
-      Alert.alert(t('tasks.tasks.createErrorTitle'), t('tasks.tasks.createErrorMessage'));
-      return;
-    }
-
-    const result = dispatch({
-      type: 'tasks/create',
-      taskId,
-      groupId: selectedGroupId,
-      progressId,
-      name: trimmedName,
-      goal: parsedGoal,
-      params: {
-        color: taskColor,
-        photoRequired: taskPhotoRequired,
-        notifications: taskNotifications,
-      },
-    });
-
-    if (!result.ok) {
-      Alert.alert(t('tasks.tasks.createErrorTitle'), t('tasks.tasks.createErrorMessage'));
-      return;
-    }
-
-    setTaskName('');
-    setTaskGoal('1');
-    setTaskColor('blue');
-    setTaskPhotoRequired(false);
-    setTaskNotifications(true);
-    setSelectedTaskId(taskId);
-    setTaskSubscreen(null);
-  };
-
-  const handleEditTask = async () => {
-    if (!selectedTaskId) return;
-    const trimmedName = editTaskName.trim();
-    const parsedGoal = Number(editTaskGoal);
-    if (!trimmedName || Number.isNaN(parsedGoal) || parsedGoal <= 0) {
-      Alert.alert(t('tasks.tasks.validationTitle'), t('tasks.tasks.validationMessage'));
-      return;
-    }
-
-    const serviceResult = await taskService.editTask(selectedTaskId, {
-      name: trimmedName,
-      goal: parsedGoal,
-      params: {
-        color: editTaskColor,
-        photoRequired: editTaskPhotoRequired,
-        notifications: editTaskNotifications,
-      },
-    });
-    if (!serviceResult.ok) {
-      Alert.alert(t('tasks.tasks.editErrorTitle'), t('tasks.tasks.editErrorMessage'));
-      return;
-    }
-
-    const result = dispatch({
-      type: 'tasks/edit',
-      taskId: selectedTaskId,
-      name: trimmedName,
-      goal: parsedGoal,
-      params: {
-        color: editTaskColor,
-        photoRequired: editTaskPhotoRequired,
-        notifications: editTaskNotifications,
-      },
-    });
-
-    if (!result.ok) {
-      Alert.alert(t('tasks.tasks.editErrorTitle'), t('tasks.tasks.editErrorMessage'));
-      return;
-    }
-
-    Alert.alert(t('tasks.tasks.editSuccessTitle'), t('tasks.tasks.editSuccessMessage'));
-  };
-
-  const handleDeleteTask = () => {
-    if (!selectedTaskId) return;
-
-    Alert.alert(t('tasks.tasks.deleteTitle'), t('tasks.tasks.deleteMessage'), [
-      { text: t('tasks.common.cancel'), style: 'cancel' },
-      {
-        text: t('tasks.common.delete'),
-        style: 'destructive',
-        onPress: async () => {
-          const serviceResult = await taskService.deleteTask(selectedTaskId);
-          if (!serviceResult.ok) {
-            Alert.alert(t('tasks.tasks.deleteErrorTitle'), t('tasks.tasks.deleteErrorMessage'));
-            return;
-          }
-
-          const result = dispatch({ type: 'tasks/delete', taskId: selectedTaskId });
-          if (!result.ok) {
-            Alert.alert(t('tasks.tasks.deleteErrorTitle'), t('tasks.tasks.deleteErrorMessage'));
-            return;
-          }
-          setSelectedTaskId(null);
-        },
-      },
-    ]);
-  };
-
-  const handleAddProgress = async () => {
-    if (!selectedTaskId || !selectedTask) return;
-    if (selectedTaskCompleted) {
-      Alert.alert(t('tasks.progress.completedTitle'), t('tasks.progress.completedMessage'));
-      return;
-    }
-
-    const parsed = Number(progressValue);
-    if (Number.isNaN(parsed) || parsed <= 0) {
-      Alert.alert(t('tasks.progress.validationTitle'), t('tasks.progress.validationMessage'));
-      return;
-    }
-
-    const entryId = generateId('entry');
-    const serviceResult = await taskService.addProgress({
-      entryId,
-      taskId: selectedTaskId,
-      authorUserId: currentUserId,
-      value: parsed,
-      note: progressNote,
-    });
-    if (!serviceResult.ok) {
-      Alert.alert(t('tasks.progress.errorTitle'), t('tasks.progress.errorMessage'));
-      return;
-    }
-
-    const result = dispatch({
-      type: 'tasks/add-progress',
-      entryId,
-      taskId: selectedTaskId,
-      authorUserId: currentUserId,
-      value: parsed,
-      note: progressNote,
-    });
-
-    if (!result.ok) {
-      Alert.alert(t('tasks.progress.errorTitle'), t('tasks.progress.errorMessage'));
-      return;
-    }
-
-    setProgressValue('1');
-    setProgressNote('');
   };
 
   const tabOptions = useMemo<ReadonlyArray<SegmentedControlOption<TasksTab>>>(
@@ -609,7 +410,7 @@ export const TasksScreen = () => {
                   <View style={styles.memberList}>
                     <View style={styles.memberRow}>
                       <AppText variant="caption" color="textSecondary">
-                        {openedGroup.ownerUserId}
+                        {state.entities.users[openedGroup.ownerUserId]?.username ?? openedGroup.ownerUserId}
                       </AppText>
                       <View style={styles.groupPill}>
                         <AppText variant="caption">{t('tasks.groups.ownerBadge')}</AppText>
@@ -618,7 +419,7 @@ export const TasksScreen = () => {
                     {openedGroup.memberIds.map((memberId) => (
                       <View key={memberId} style={styles.memberRow}>
                         <AppText variant="caption" color="textSecondary">
-                          {memberId}
+                          {state.entities.users[memberId]?.username ?? memberId}
                         </AppText>
                         <Pressable
                           onPress={() => handleRemoveMember(memberId)}
@@ -652,7 +453,26 @@ export const TasksScreen = () => {
               <View style={styles.sectionCard}>
                   <View style={styles.quickActionsWrap}>
                   <View style={styles.quickActionButtonWrap}>
-                    <AppButton title={t('tasks.groups.joinAction')} onPress={() => navigation.navigate('JoinGroup')} />
+                    <AppButton
+                      title={t('tasks.groups.joinAction')}
+                      onPress={() => setShowJoinCodeInput((value) => !value)}
+                    />
+                    {showJoinCodeInput ? (
+                      <View style={styles.joinForm}>
+                        <AppInput
+                          value={joinCode}
+                          onChangeText={setJoinCode}
+                          placeholder={t('tasks.groups.joinPlaceholder')}
+                          autoCapitalize="characters"
+                          style={styles.joinInput}
+                        />
+                        <AppButton
+                          title={t('tasks.groups.joinCta')}
+                          onPress={handleJoinGroup}
+                          disabled={!joinCode.trim()}
+                        />
+                      </View>
+                    ) : null}
                   </View>
                   <View style={styles.quickActionButtonWrap}>
                     <AppButton title={t('tasks.groups.createAction')} onPress={() => navigation.navigate('CreateGroup')} />
@@ -683,9 +503,7 @@ export const TasksScreen = () => {
                     ]}
                     accessibilityRole="button"
                     accessibilityLabel={group.name}
-                    onPress={() => {
-                        navigation.navigate('EditGroup', { groupId: id });
-                      }}
+                    onPress={() => navigation.navigate('GroupTasks', { groupId: id })}
                   >
                     <View style={styles.groupTopRow}>
                       <AppText variant="label" color="textPrimary">
@@ -737,7 +555,9 @@ export const TasksScreen = () => {
                       selectedGroupId === id && styles.groupCardActive,
                       pressed && styles.groupCardPressed,
                     ]}
-                    onPress={() => setSelectedGroupId(id)}
+                    accessibilityRole="button"
+                    accessibilityLabel={group.name}
+                    onPress={() => navigation.navigate('EditGroup', { groupId: id })}
                   >
                     <AppText variant="label">{group.name}</AppText>
                   </Pressable>
@@ -758,265 +578,16 @@ export const TasksScreen = () => {
                         {t('tasks.groups.actionsSection')}
                       </AppText>
                     </View>
-                    <AppButton title={t('tasks.tasks.createTask')} onPress={() => setTaskSubscreen('create-task')} />
+                    <AppButton
+                      title={t('tasks.tasks.createTask')}
+                      onPress={() => {
+                        if (!selectedGroupId) {
+                          return;
+                        }
+                        navigation.navigate('CreateTask', { groupId: selectedGroupId });
+                      }}
+                    />
                   </View>
-
-                  {taskSubscreen === 'create-task' ? (
-                    <View style={styles.sectionCard}>
-                      <View style={styles.sectionHeaderRow}>
-                        <AppText variant="caption" color="muted" style={styles.sectionTitle}>
-                          {t('tasks.tasks.createSection')}
-                        </AppText>
-                      </View>
-                      <AppInput
-                        value={taskName}
-                        onChangeText={setTaskName}
-                        placeholder={t('tasks.tasks.namePlaceholder')}
-                        style={styles.tightInput}
-                      />
-                      <AppInput
-                        value={taskGoal}
-                        onChangeText={setTaskGoal}
-                        keyboardType="numeric"
-                        placeholder={t('tasks.tasks.goalPlaceholder')}
-                        style={styles.tightInput}
-                      />
-                      <View style={styles.inlineControlsRow}>
-                        {TASK_COLORS.map((color) => (
-                          <Pressable
-                            key={color}
-                            style={({ pressed }) => [
-                              styles.chip,
-                              taskColor === color && styles.chipActive,
-                              pressed && styles.chipPressed,
-                            ]}
-                            onPress={() => setTaskColor(color)}
-                          >
-                            <AppText
-                              variant="caption"
-                              color={taskColor === color ? 'textOnPrimary' : 'textPrimary'}
-                            >
-                              {t(`tasks.tasks.colors.${color}`)}
-                            </AppText>
-                          </Pressable>
-                        ))}
-                      </View>
-                      <View style={styles.inlineControlsRow}>
-                        <Pressable
-                          style={({ pressed }) => [
-                            styles.chip,
-                            taskPhotoRequired && styles.chipActive,
-                            pressed && styles.chipPressed,
-                          ]}
-                          onPress={() => setTaskPhotoRequired((value) => !value)}
-                        >
-                          <AppText
-                            variant="caption"
-                            color={taskPhotoRequired ? 'textOnPrimary' : 'textPrimary'}
-                          >
-                            {t('tasks.tasks.photoRequired')}
-                          </AppText>
-                        </Pressable>
-                        <Pressable
-                          style={({ pressed }) => [
-                            styles.chip,
-                            taskNotifications && styles.chipActive,
-                            pressed && styles.chipPressed,
-                          ]}
-                          onPress={() => setTaskNotifications((value) => !value)}
-                        >
-                          <AppText
-                            variant="caption"
-                            color={taskNotifications ? 'textOnPrimary' : 'textPrimary'}
-                          >
-                            {t('tasks.tasks.notifications')}
-                          </AppText>
-                        </Pressable>
-                      </View>
-                      <View style={styles.inlineActionButtons}>
-                        <AppButton
-                          title={t('tasks.tasks.createTask')}
-                          onPress={handleCreateTask}
-                          disabled={!taskName.trim()}
-                        />
-                        <AppButton title={t('tasks.common.cancel')} onPress={() => setTaskSubscreen(null)} />
-                      </View>
-                    </View>
-                  ) : null}
-
-                  <View style={styles.sectionHeaderRow}>
-                    <AppText variant="caption" color="muted" style={styles.sectionTitle}>
-                      {t('tasks.tasks.listSection')}
-                    </AppText>
-                  </View>
-                  <View style={styles.groupList}>
-                    {tasksInSelectedGroup.length === 0 ? (
-                      <EmptyState
-                        icon="clipboard-outline"
-                        title={t('tasks.tasks.emptyTitle')}
-                        message={t('tasks.tasks.emptyMessage')}
-                      />
-                    ) : tasksInSelectedGroup.map(({ id, task }) => {
-                      const currentValue = state.entities.taskProgresses[task.progressId]?.value ?? 0;
-                      const isDone = currentValue >= task.goal;
-                      return (
-                        <Pressable
-                          key={id}
-                          style={({ pressed }) => [
-                            styles.groupCard,
-                            selectedTaskId === id && styles.groupCardActive,
-                            pressed && styles.groupCardPressed,
-                          ]}
-                          onPress={() => setSelectedTaskId(id)}
-                        >
-                          <View style={styles.groupTopRow}>
-                            <AppText variant="label">{task.name}</AppText>
-                            <View style={styles.groupPill}>
-                              <AppText variant="caption">
-                                {isDone ? t('tasks.tasks.statusDone') : t('tasks.tasks.statusActive')}
-                              </AppText>
-                            </View>
-                          </View>
-                          <AppText variant="caption" color="textSecondary">
-                            {t('tasks.tasks.taskMeta', { current: currentValue, goal: task.goal })}
-                          </AppText>
-                        </Pressable>
-                      );
-                    })}
-                  </View>
-
-                  {selectedTask ? (
-                    <View style={styles.sectionCard}>
-                      <View style={styles.sectionHeaderRow}>
-                        <AppText variant="caption" color="muted" style={styles.sectionTitle}>
-                          {t('tasks.tasks.selectedTaskSection')}
-                        </AppText>
-                      </View>
-                      <AppInput
-                        value={editTaskName}
-                        onChangeText={setEditTaskName}
-                        placeholder={t('tasks.tasks.namePlaceholder')}
-                        style={styles.tightInput}
-                      />
-                      <AppInput
-                        value={editTaskGoal}
-                        onChangeText={setEditTaskGoal}
-                        keyboardType="numeric"
-                        placeholder={t('tasks.tasks.goalPlaceholder')}
-                        style={styles.tightInput}
-                      />
-                      <View style={styles.inlineControlsRow}>
-                        {TASK_COLORS.map((color) => (
-                          <Pressable
-                            key={color}
-                            style={({ pressed }) => [
-                              styles.chip,
-                              editTaskColor === color && styles.chipActive,
-                              pressed && styles.chipPressed,
-                            ]}
-                            onPress={() => setEditTaskColor(color)}
-                          >
-                            <AppText
-                              variant="caption"
-                              color={editTaskColor === color ? 'textOnPrimary' : 'textPrimary'}
-                            >
-                              {t(`tasks.tasks.colors.${color}`)}
-                            </AppText>
-                          </Pressable>
-                        ))}
-                      </View>
-                      <View style={styles.inlineControlsRow}>
-                        <Pressable
-                          style={({ pressed }) => [
-                            styles.chip,
-                            editTaskPhotoRequired && styles.chipActive,
-                            pressed && styles.chipPressed,
-                          ]}
-                          onPress={() => setEditTaskPhotoRequired((value) => !value)}
-                        >
-                          <AppText
-                            variant="caption"
-                            color={editTaskPhotoRequired ? 'textOnPrimary' : 'textPrimary'}
-                          >
-                            {t('tasks.tasks.photoRequired')}
-                          </AppText>
-                        </Pressable>
-                        <Pressable
-                          style={({ pressed }) => [
-                            styles.chip,
-                            editTaskNotifications && styles.chipActive,
-                            pressed && styles.chipPressed,
-                          ]}
-                          onPress={() => setEditTaskNotifications((value) => !value)}
-                        >
-                          <AppText
-                            variant="caption"
-                            color={editTaskNotifications ? 'textOnPrimary' : 'textPrimary'}
-                          >
-                            {t('tasks.tasks.notifications')}
-                          </AppText>
-                        </Pressable>
-                      </View>
-
-                      <View style={styles.inlineActionButtons}>
-                        <AppButton title={t('tasks.tasks.saveChanges')} onPress={handleEditTask} />
-                        <AppButton
-                          title={t('tasks.tasks.deleteTask')}
-                          onPress={handleDeleteTask}
-                          style={styles.destructiveButton}
-                        />
-                      </View>
-
-                      <View style={styles.sectionHeaderRow}>
-                        <AppText variant="caption" color="muted" style={styles.sectionTitle}>
-                          {t('tasks.progress.section')}
-                        </AppText>
-                      </View>
-                      <AppText variant="body" color="textSecondary" style={styles.sectionSubtitle}>
-                        {t('tasks.progress.summary', {
-                          current: selectedTaskProgressValue,
-                          goal: selectedTask.goal,
-                          percent: progressPercent,
-                        })}
-                      </AppText>
-                      <AppInput
-                        value={progressValue}
-                        onChangeText={setProgressValue}
-                        keyboardType="numeric"
-                        placeholder={t('tasks.progress.valuePlaceholder')}
-                        style={styles.tightInput}
-                      />
-                      <AppInput
-                        value={progressNote}
-                        onChangeText={setProgressNote}
-                        placeholder={t('tasks.progress.notePlaceholder')}
-                        style={styles.tightInput}
-                      />
-                      <AppButton
-                        title={t('tasks.progress.addProgress')}
-                        onPress={handleAddProgress}
-                        disabled={selectedTaskCompleted}
-                      />
-
-                      <View style={styles.timelineList}>
-                        {selectedTaskProgressEntries.length === 0 ? (
-                          <AppText variant="caption" color="textSecondary">
-                            {t('tasks.progress.emptyTimeline')}
-                          </AppText>
-                        ) : selectedTaskProgressEntries.map((entry) => (
-                          <View key={entry.id} style={styles.timelineItem}>
-                            <View style={styles.timelineDot} />
-                            <AppText variant="caption" color="textSecondary">
-                              {t('tasks.progress.timelineEntry', {
-                                value: entry.value,
-                                comments: entry.commentIds.length,
-                              })}
-                            </AppText>
-                          </View>
-                        ))}
-                      </View>
-                    </View>
-                  ) : null}
                 </>
               )}
             </ScrollView>
@@ -1119,6 +690,10 @@ const styles = StyleSheet.create({
   quickActionButtonWrap: {
     width: '100%',
     maxWidth: 320,
+  },
+  joinForm: {
+    marginTop: spacing.sm,
+    gap: spacing.sm,
   },
   destructiveButton: {
     opacity: 0.9,

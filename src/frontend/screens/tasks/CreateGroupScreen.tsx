@@ -42,6 +42,8 @@ export const CreateGroupScreen = ({ navigation }: any) => {
       return;
     }
 
+    const effectiveGroupType: TaskGroupType = isBingo ? 'cooperative' : groupType;
+
     const groupId = generateId('grp');
 
     const serviceResult = await taskGroupService.createGroup({
@@ -49,7 +51,7 @@ export const CreateGroupScreen = ({ navigation }: any) => {
       ownerUserId: currentUserId,
       name: trimmed,
       privacy,
-      type: groupType,
+      type: effectiveGroupType,
       isBingo,
     });
     if (!serviceResult.ok) {
@@ -64,11 +66,10 @@ export const CreateGroupScreen = ({ navigation }: any) => {
       ownerUserId: currentUserId,
       name: trimmed,
       privacy,
-      groupType,
+      groupType: effectiveGroupType,
       isBingo,
       inviteCode: serverCode,
     });
-    dispatch({ type: 'task-groups/add-member', groupId, userId: currentUserId });
     navigation.goBack();
   };
 
@@ -104,6 +105,7 @@ export const CreateGroupScreen = ({ navigation }: any) => {
               options={groupTypeOptions}
               value={groupType}
               onChange={setGroupType}
+              disabledValues={isBingo ? ['competitive'] : []}
               accessibilityLabel={t('tasks.groups.groupTypeSection')}
             />
           </View>
@@ -113,7 +115,15 @@ export const CreateGroupScreen = ({ navigation }: any) => {
               {t('tasks.groups.bingoSection')}
             </AppText>
             <Pressable
-              onPress={() => setIsBingo((value) => !value)}
+              onPress={() => {
+                setIsBingo((value) => {
+                  const nextValue = !value;
+                  if (nextValue) {
+                    setGroupType('cooperative');
+                  }
+                  return nextValue;
+                });
+              }}
               style={({ pressed }) => [styles.toggleCard, pressed && styles.toggleCardPressed]}
               accessibilityRole="switch"
               accessibilityState={{ checked: isBingo }}

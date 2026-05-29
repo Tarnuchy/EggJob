@@ -232,12 +232,12 @@ const en = {
       photoRequired: 'Photo required',
       notifications: 'Notifications',
       colors: {
-        red: 'Red',
-        orange: 'Orange',
-        yellow: 'Yellow',
-        green: 'Green',
-        blue: 'Blue',
-        purple: 'Purple',
+        red: 'Urgent',
+        orange: 'High',
+        yellow: 'Medium',
+        green: 'Low',
+        blue: 'Info',
+        purple: 'Custom',
       },
     },
     progress: {
