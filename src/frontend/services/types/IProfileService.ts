@@ -1,5 +1,11 @@
 import type { Result } from './index';
 
+export interface UserStats {
+  activeTasks: number;
+  completedTasks: number;
+  friendsCount: number;
+}
+
 export interface IProfileService {
   editProfile(
     userId: string,
@@ -9,4 +15,6 @@ export interface IProfileService {
   deleteAccount(accountId: string, userId: string): Promise<Result<void>>;
 
   getProfile(userId: string): Promise<Result<{ username: string; photoUrl?: string }>>;
+
+  getUserStats(userId: string): Promise<Result<UserStats>>;
 }

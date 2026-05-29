@@ -14,6 +14,11 @@ export type {
   ITaskGroupService,
   ITaskService,
   INotificationService,
+  NotificationItem,
+  UserStats,
+  UserSearchResult,
+  FeedItem,
+  FeedItemType,
   TaskParams,
   Result,
 } from './types/index';

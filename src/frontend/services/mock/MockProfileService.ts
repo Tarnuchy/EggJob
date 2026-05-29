@@ -1,5 +1,5 @@
 import { isValidUsername } from '../../utils/validation';
-import type { IProfileService } from '../types/IProfileService';
+import type { IProfileService, UserStats } from '../types/IProfileService';
 import type { Result } from '../types/index';
 
 class MockProfileService implements IProfileService {
@@ -10,6 +10,15 @@ class MockProfileService implements IProfileService {
     'usr-seed-4': { username: 'dave', photoUrl: undefined },
     'usr-seed-5': { username: 'erin', photoUrl: undefined },
     'usr-seed-6': { username: 'frank', photoUrl: undefined },
+  };
+
+  private stats: Record<string, UserStats> = {
+    'usr-seed-1': { activeTasks: 4, completedTasks: 12, friendsCount: 2 },
+    'usr-seed-2': { activeTasks: 2, completedTasks: 5, friendsCount: 3 },
+    'usr-seed-3': { activeTasks: 6, completedTasks: 1, friendsCount: 1 },
+    'usr-seed-4': { activeTasks: 0, completedTasks: 8, friendsCount: 1 },
+    'usr-seed-5': { activeTasks: 3, completedTasks: 9, friendsCount: 2 },
+    'usr-seed-6': { activeTasks: 1, completedTasks: 0, friendsCount: 0 },
   };
 
   getAllProfiles(): Array<{ userId: string; username: string; photoUrl?: string }> {
@@ -41,6 +50,7 @@ class MockProfileService implements IProfileService {
   async deleteAccount(accountId: string, userId: string): Promise<Result<void>> {
     void accountId;
     delete this.profiles[userId];
+    delete this.stats[userId];
     return { ok: true, value: undefined };
   }
 
@@ -51,6 +61,19 @@ class MockProfileService implements IProfileService {
     }
     return { ok: true, value: profile };
   }
+
+  async getUserStats(userId: string): Promise<Result<UserStats>> {
+    if (!this.profiles[userId]) {
+      return { ok: false, error: { code: 'not-found' } };
+    }
+    const stats = this.stats[userId] ?? {
+      activeTasks: 0,
+      completedTasks: 0,
+      friendsCount: 0,
+    };
+    return { ok: true, value: stats };
+  }
 }
 
 export const mockProfileService = new MockProfileService();
+export { MockProfileService };
