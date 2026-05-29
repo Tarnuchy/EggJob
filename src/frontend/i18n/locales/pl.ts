@@ -120,7 +120,7 @@ const pl: Translation = {
     },
     languagePicker: {
       title: 'Wybierz język',
-      system: 'Użyj języka systemu',
+      system: 'Języka systemowy',
       english: 'English',
       polish: 'Polski',
       close: 'Zamknij',
@@ -147,7 +147,6 @@ const pl: Translation = {
       activeTasks: 'Aktywne zadania',
       completedTasks: 'Ukończone',
       friends: 'Znajomi',
-      bestStreak: 'Najlepsza seria: {{count}}',
     },
     actions: {
       edit: 'Edytuj profil',

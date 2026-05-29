@@ -11,7 +11,6 @@ describe('MockProfileService.getUserStats', () => {
       activeTasks: 4,
       completedTasks: 12,
       friendsCount: 2,
-      bestStreak: 7,
     });
   });
 
