@@ -377,7 +377,7 @@ def edit_taskgroup(user_id: UUID, group_id: UUID, payload: TaskGroupEditRequest,
     privacy = _parse_enum(PrivacyLevel, payload.privacy, "privacy") if payload.privacy else None
 
     try:
-        group.edit(db_session=db, user_id=user_id, name=payload.name, privacy=privacy)
+        group.edit(db_session=db, user_id=user_id, name=payload.name, privacy=privacy, isBingo=payload.is_bingo)
         db.commit()
     except AppError:
         db.rollback()
@@ -463,7 +463,7 @@ def create_task(
     frequency = _parse_enum(TimeInterval, payload.frequency, "frequency") if payload.frequency else None
 
     try:
-        group.createTask(
+        task = group.createTask(
             db_session=db,
             user_id=user_id,
             type=task_type,
@@ -485,12 +485,6 @@ def create_task(
         db.rollback()
         raise
 
-    task = (
-        db.query(Task)
-        .filter_by(groupID=group.id, ownerID=user_id, name=payload.name)
-        .order_by(Task.id.desc())
-        .first()
-    )
     if task is None:
         raise StateError("Task was not created")
 

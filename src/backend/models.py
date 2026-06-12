@@ -515,18 +515,32 @@ class TaskGroup(Base):
             return member.role == GroupRole.OWNER
         return False
 
-    def edit(self, db_session: Session, user_id: UUID, name: str | None = None, privacy: PrivacyLevel | None = None,) -> None:
+    def edit(self, db_session: Session, user_id: UUID, name: str | None = None, privacy: PrivacyLevel | None = None, isBingo: bool | None = None) -> None:
         if not self.checkPerms(db_session, user_id, GroupRole.ADMIN):
             raise PermissionDeniedError("User does not have permission to edit this group")
         new_name = self.name
         new_privacy = self.privacy
-        
+
         if name is not None:
             if name.strip() == "":
                 raise ValidationError("Group name cannot be empty")
             new_name = name
         if privacy is not None:
             new_privacy = privacy
+        if isBingo is not None and isBingo != self.isBingo:
+            if isBingo:
+                if self.taskCount not in (9, 16, 25):
+                    raise ValidationError("Bingo group must have exactly 9, 16 or 25 tasks")
+            else:
+                has_unnamed = (
+                    db_session.query(Task)
+                    .filter(Task.groupID == self.id, Task.name == "")
+                    .first()
+                    is not None
+                )
+                if has_unnamed:
+                    raise ValidationError("Name all bingo cells before disabling bingo")
+            self.isBingo = isBingo
         self.name = new_name
         self.privacy = new_privacy
         db_session.flush()
@@ -540,7 +554,7 @@ class TaskGroup(Base):
     def addFriend(self, db_session: Session, user_id: UUID, friend_id: UUID, role: GroupRole) -> None:
         pass #różne implementacje w zależności od typu grupy
 
-    def createTask(self, db_session: Session, user_id: UUID, **task_data: Any) -> None:
+    def createTask(self, db_session: Session, user_id: UUID, **task_data: Any) -> "Task | None":
         pass #też różne
 
     def changeGroupType(self, db_session: Session, user_id: UUID, new_type: TaskGroupType) -> None:
@@ -599,7 +613,7 @@ class CompetetiveTaskGroup(TaskGroup):
         
         db_session.flush()
         
-    def createTask(self, db_session: Session, user_id: UUID, type: TaskType, **taskparams) -> None:
+    def createTask(self, db_session: Session, user_id: UUID, type: TaskType, **taskparams) -> "Task":
         if not self.checkPerms(db_session, user_id, GroupRole.ADMIN):
             raise PermissionDeniedError("User does not have permission to create tasks in this group")
         new_task = None
@@ -643,7 +657,7 @@ class CompetetiveTaskGroup(TaskGroup):
             raise ValidationError("Invalid task type")
 
         new_task.name = (taskparams.get("name", "") or "").strip()
-        if new_task.name == "":
+        if new_task.name == "" and not self.isBingo:
             raise ValidationError("Task name cannot be empty")
         new_task.description = taskparams.get("description") or ""
         new_task.goal = taskparams.get("goal")
@@ -652,16 +666,17 @@ class CompetetiveTaskGroup(TaskGroup):
         new_task.ownerID = user_id
         new_task.type = type.value
         db_session.add(new_task)
-        
+
         new_params = TaskParams()
         new_params.taskID = new_task.id
         new_params.color = taskparams.get("color", None)
         new_params.photoRequired = taskparams.get("photoRequired", False)
         new_params.notifications = taskparams.get("notifications", False)
         db_session.add(new_params)
-        
+
         db_session.flush()
-        
+        return new_task
+
     def changeGroupType(self, db_session: Session, user_id: UUID, new_type: TaskGroupType) -> None:
         if not self.checkPerms(db_session, user_id, GroupRole.OWNER):
             raise PermissionDeniedError("User does not have permission to change group type")
@@ -767,7 +782,7 @@ class CooperativeTaskGroup(TaskGroup):
         
         db_session.flush()
         
-    def createTask(self, db_session: Session, user_id: UUID, type: TaskType, **taskparams) -> None:
+    def createTask(self, db_session: Session, user_id: UUID, type: TaskType, **taskparams) -> "Task":
         if not self.checkPerms(db_session, user_id, GroupRole.ADMIN):
             raise PermissionDeniedError("User does not have permission to create tasks in this group")
         new_task = None
@@ -792,7 +807,7 @@ class CooperativeTaskGroup(TaskGroup):
             raise ValidationError("Invalid task type")
 
         new_task.name = (taskparams.get("name", "") or "").strip()
-        if new_task.name == "":
+        if new_task.name == "" and not self.isBingo:
             raise ValidationError("Task name cannot be empty")
         new_task.description = taskparams.get("description") or ""
         new_task.goal = taskparams.get("goal")
@@ -801,14 +816,14 @@ class CooperativeTaskGroup(TaskGroup):
         new_task.ownerID = user_id
         new_task.type = type.value
         db_session.add(new_task)
-        
+
         new_params = TaskParams()
         new_params.taskID = new_task.id
         new_params.color = taskparams.get("color", None)
         new_params.photoRequired = taskparams.get("photoRequired", False)
         new_params.notifications = taskparams.get("notifications", False)
         db_session.add(new_params)
-        
+
         new_progress.taskID = new_task.id
         owner_member = db_session.query(GroupMember).filter_by(groupID=self.id, userID=self.ownerID).first()
         if owner_member is None:
@@ -816,8 +831,9 @@ class CooperativeTaskGroup(TaskGroup):
         new_progress.groupMemberID = owner_member.id
         new_progress.type = type
         db_session.add(new_progress)
-        
+
         db_session.flush()
+        return new_task
 
 class GroupMember(Base):
     __tablename__ = "group_members"
