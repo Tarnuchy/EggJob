@@ -9,12 +9,13 @@ type TaskGroupAction = ActionOf<
   | 'task-groups/delete'
   | 'task-groups/add-member'
   | 'task-groups/remove-member'
+  | 'task-groups/change-role'
   | 'task-groups/leave'
 >;
 
 export function handleTaskGroups(state: FrontendState, action: TaskGroupAction): ReducerResult {
   if (action.type === 'task-groups/create') {
-    const { groupId, ownerUserId, name, privacy, inviteCode } = action;
+    const { groupId, ownerUserId, name, privacy, groupType, isBingo, bingoSize, inviteCode } = action;
 
     if (!name || name.trim().length === 0) {
       return { ok: false, error: { code: 'validation', field: 'name' } };
@@ -32,9 +33,13 @@ export function handleTaskGroups(state: FrontendState, action: TaskGroupAction):
               name: name.trim(),
               ownerUserId,
               privacy,
+              type: groupType,
+              isBingo,
+              ...(isBingo ? { bingoSize: bingoSize ?? 3 } : {}),
               inviteCode: inviteCode ?? '',
               taskIds: [],
               memberIds: [],
+              memberRoles: { [ownerUserId]: 'owner' },
             },
           },
         },
@@ -43,7 +48,7 @@ export function handleTaskGroups(state: FrontendState, action: TaskGroupAction):
   }
 
   if (action.type === 'task-groups/edit') {
-    const { groupId, name, privacy } = action;
+    const { groupId, name, privacy, groupType, isBingo, bingoSize } = action;
 
     if (name !== undefined && name.trim().length === 0) {
       return { ok: false, error: { code: 'validation', field: 'name' } };
@@ -66,6 +71,9 @@ export function handleTaskGroups(state: FrontendState, action: TaskGroupAction):
               ...existing,
               ...(name !== undefined ? { name: name.trim() } : {}),
               ...(privacy !== undefined ? { privacy } : {}),
+              ...(groupType !== undefined ? { type: groupType } : {}),
+              ...(isBingo !== undefined ? { isBingo } : {}),
+              ...(bingoSize !== undefined ? { bingoSize } : {}),
             },
           },
         },
@@ -84,6 +92,10 @@ export function handleTaskGroups(state: FrontendState, action: TaskGroupAction):
       return { ok: false, error: { code: 'not-found' } };
     }
 
+    if (group.ownerUserId === userId || group.memberRoles[userId] === 'owner') {
+      return { ok: true, value: state };
+    }
+
     if (group.memberIds.includes(userId)) {
       return { ok: true, value: state };
     }
@@ -96,7 +108,71 @@ export function handleTaskGroups(state: FrontendState, action: TaskGroupAction):
           ...state.entities,
           taskGroups: {
             ...state.entities.taskGroups,
-            [groupId]: { ...group, memberIds: [...group.memberIds, userId] },
+            [groupId]: { ...group, memberIds: [...group.memberIds, userId], memberRoles: { ...group.memberRoles, [userId]: 'member' } },
+          },
+        },
+      },
+    };
+  }
+
+  if (action.type === 'task-groups/remove-member') {
+    const { groupId, userId } = action;
+    const group = state.entities.taskGroups[groupId];
+    if (!group) {
+      return { ok: false, error: { code: 'not-found' } };
+    }
+
+    if (group.ownerUserId === userId) {
+      return { ok: false, error: { code: 'validation', field: 'role' } };
+    }
+
+    if (!group.memberIds.includes(userId)) {
+      return { ok: false, error: { code: 'not-found' } };
+    }
+
+    const { [userId]: _, ...remainingRoles } = group.memberRoles;
+    return {
+      ok: true,
+      value: {
+        ...state,
+        entities: {
+          ...state.entities,
+          taskGroups: {
+            ...state.entities.taskGroups,
+            [groupId]: {
+              ...group,
+              memberIds: group.memberIds.filter((id) => id !== userId),
+              memberRoles: remainingRoles,
+            },
+          },
+        },
+      },
+    };
+  }
+
+  if (action.type === 'task-groups/change-role') {
+    const { groupId, userId, role } = action;
+    const group = state.entities.taskGroups[groupId];
+    if (!group) {
+      return { ok: false, error: { code: 'not-found' } };
+    }
+
+    if (group.ownerUserId === userId || role === 'owner' || !group.memberIds.includes(userId)) {
+      return { ok: false, error: { code: 'validation', field: 'role' } };
+    }
+
+    return {
+      ok: true,
+      value: {
+        ...state,
+        entities: {
+          ...state.entities,
+          taskGroups: {
+            ...state.entities.taskGroups,
+            [groupId]: {
+              ...group,
+              memberRoles: { ...group.memberRoles, [userId]: role },
+            },
           },
         },
       },
@@ -109,6 +185,7 @@ export function handleTaskGroups(state: FrontendState, action: TaskGroupAction):
     return { ok: false, error: { code: 'not-found' } };
   }
 
+  const { [userId]: _, ...remainingRoles } = group.memberRoles;
   return {
     ok: true,
     value: {
@@ -120,6 +197,7 @@ export function handleTaskGroups(state: FrontendState, action: TaskGroupAction):
           [groupId]: {
             ...group,
             memberIds: group.memberIds.filter((id) => id !== userId),
+            memberRoles: remainingRoles,
           },
         },
       },

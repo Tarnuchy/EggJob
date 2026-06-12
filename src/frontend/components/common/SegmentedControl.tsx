@@ -16,6 +16,7 @@ interface Props<T extends string> {
   value: T;
   onChange: (value: T) => void;
   accessibilityLabel?: string;
+  disabledValues?: ReadonlyArray<T>;
 }
 
 export function SegmentedControl<T extends string>({
@@ -23,6 +24,7 @@ export function SegmentedControl<T extends string>({
   value,
   onChange,
   accessibilityLabel,
+  disabledValues = [],
 }: Props<T>) {
   const [containerWidth, setContainerWidth] = useState(0);
   const activeIndex = Math.max(
@@ -70,18 +72,28 @@ export function SegmentedControl<T extends string>({
       />
       {options.map((option) => {
         const isActive = option.value === value;
+        const isDisabled = disabledValues.includes(option.value);
         return (
           <TouchableOpacity
             key={option.value}
             style={styles.tab}
-            onPress={() => onChange(option.value)}
+            onPress={() => {
+              if (!isDisabled) {
+                onChange(option.value);
+              }
+            }}
+            disabled={isDisabled}
             activeOpacity={0.8}
             accessibilityRole="tab"
             accessibilityLabel={option.label}
-            accessibilityState={{ selected: isActive }}
+            accessibilityState={{ selected: isActive, disabled: isDisabled }}
           >
             <Text
-              style={[styles.label, isActive && styles.labelActive]}
+              style={[
+                styles.label,
+                isActive && styles.labelActive,
+                isDisabled && styles.labelDisabled,
+              ]}
               numberOfLines={1}
               ellipsizeMode="tail"
             >
@@ -125,5 +137,8 @@ const styles = StyleSheet.create({
   },
   labelActive: {
     color: colors.textOnPrimary,
+  },
+  labelDisabled: {
+    opacity: 0.45,
   },
 });

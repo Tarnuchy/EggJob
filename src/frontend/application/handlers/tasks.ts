@@ -14,7 +14,7 @@ type TaskAction = ActionOf<
 
 export function handleTasks(state: FrontendState, action: TaskAction): ReducerResult {
   if (action.type === 'tasks/create') {
-    const { taskId, groupId, progressId, name, goal, params } = action;
+    const { taskId, groupId, progressId, name, goal, params, kind } = action;
 
     const group = state.entities.taskGroups[groupId];
     if (!group) {
@@ -29,7 +29,7 @@ export function handleTasks(state: FrontendState, action: TaskAction): ReducerRe
           ...state.entities,
           tasks: {
             ...state.entities.tasks,
-            [taskId]: { name, goal, progressId, params },
+            [taskId]: { name, goal, progressId, params, ...(kind ? { kind } : {}) },
           },
           taskProgresses: {
             ...state.entities.taskProgresses,
@@ -45,7 +45,7 @@ export function handleTasks(state: FrontendState, action: TaskAction): ReducerRe
   }
 
   if (action.type === 'tasks/edit') {
-    const { taskId, name, goal, params } = action;
+    const { taskId, name, goal, params, kind } = action;
 
     const existing = state.entities.tasks[taskId];
     if (!existing) {
@@ -64,6 +64,7 @@ export function handleTasks(state: FrontendState, action: TaskAction): ReducerRe
               ...existing,
               ...(name !== undefined ? { name } : {}),
               ...(goal !== undefined ? { goal } : {}),
+              ...(kind !== undefined ? { kind } : {}),
               params: params ? { ...existing.params, ...params } : existing.params,
             },
           },
