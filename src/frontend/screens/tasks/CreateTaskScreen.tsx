@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,6 +10,7 @@ import { AppButton } from '../../components/common/AppButton';
 import { SegmentedControl, type SegmentedControlOption } from '../../components/common/SegmentedControl';
 import { useAppState } from '../../application/AppStateContext';
 import { useCurrentUserId } from '../../hooks/useCurrentUserId';
+import { useToast } from '../../context/ToastContext';
 import { selectTaskGroupsByMember } from '../../application/selectors';
 import { taskService } from '../../services';
 import { colors } from '../../theme/colors';
@@ -24,10 +25,14 @@ export const CreateTaskScreen = ({ navigation, route }: any) => {
   const { t } = useTranslation();
   const { dispatch, state } = useAppState();
   const currentUserId = useCurrentUserId();
-  const initialGroupId = (route.params as { groupId?: string } | undefined)?.groupId ?? null;
+  const { showToast } = useToast();
+  const routeGroupId = (route.params as { groupId?: string } | undefined)?.groupId ?? null;
+  // bingo groups have a fixed size² task count — adding tasks is not allowed
+  const initialGroupId =
+    routeGroupId && !state.entities.taskGroups[routeGroupId]?.isBingo ? routeGroupId : null;
 
   const memberGroups = useMemo(
-    () => selectTaskGroupsByMember(state, currentUserId),
+    () => selectTaskGroupsByMember(state, currentUserId).filter(({ group }) => !group.isBingo),
     [state, currentUserId],
   );
 
@@ -55,14 +60,14 @@ export const CreateTaskScreen = ({ navigation, route }: any) => {
 
   const handleCreateTask = async () => {
     if (!selectedGroupId || !selectedGroup) {
-      Alert.alert(t('tasks.tasks.missingGroupTitle'), t('tasks.tasks.missingGroupMessage'));
+      showToast({ message: t('tasks.tasks.missingGroupMessage'), variant: 'error' });
       return;
     }
 
     const trimmedName = taskName.trim();
     const parsedGoal = taskKind === 'one_time' ? 1 : Number(taskGoal);
     if (!trimmedName || Number.isNaN(parsedGoal) || parsedGoal <= 0) {
-      Alert.alert(t('tasks.tasks.validationTitle'), t('tasks.tasks.validationMessage'));
+      showToast({ message: t('tasks.tasks.validationMessage'), variant: 'error' });
       return;
     }
 
@@ -85,13 +90,14 @@ export const CreateTaskScreen = ({ navigation, route }: any) => {
       params,
     });
     if (!serviceResult.ok) {
-      Alert.alert(t('tasks.tasks.createErrorTitle'), t('tasks.tasks.createErrorMessage'));
+      showToast({ message: t('tasks.tasks.createErrorMessage'), variant: 'error' });
       return;
     }
 
+    const createdTaskId = serviceResult.value?.id ?? taskId;
     const result = dispatch({
       type: 'tasks/create',
-      taskId,
+      taskId: createdTaskId,
       groupId: selectedGroupId,
       progressId,
       name: trimmedName,
@@ -100,11 +106,11 @@ export const CreateTaskScreen = ({ navigation, route }: any) => {
       params,
     });
     if (!result.ok) {
-      Alert.alert(t('tasks.tasks.createErrorTitle'), t('tasks.tasks.createErrorMessage'));
+      showToast({ message: t('tasks.tasks.createErrorMessage'), variant: 'error' });
       return;
     }
 
-    Alert.alert(t('tasks.tasks.createSuccessTitle'), t('tasks.tasks.createSuccessMessage'));
+    showToast({ message: t('tasks.tasks.createSuccessMessage'), variant: 'success' });
     navigation.goBack();
   };
 

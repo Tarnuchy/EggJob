@@ -13,18 +13,21 @@ import { AppButton } from '../../components/common/AppButton';
 import { AppInput } from '../../components/common/AppInput';
 import { EmptyState } from '../../components/common/EmptyState';
 import { taskGroupService } from '../../services';
+import { USE_HTTP_SERVICES } from '../../services/http/config';
+import { fetchHydratedTaskData } from '../../services/http/hydrateTaskData';
 import { colors } from '../../theme/colors';
-import { shadows } from '../../theme/shadows';
 import { spacing, SCREEN_PADDING_H } from '../../theme/spacing';
 import type { TaskGroupPrivacy } from '../../application/state';
 import { useAppState } from '../../application/AppStateContext';
 import { selectAllTaskGroups, selectTaskGroupsByMember } from '../../application/selectors';
 import { useCurrentUserId } from '../../hooks/useCurrentUserId';
 import { useAppNavigation } from '../../hooks/useAppNavigation';
+import { useToast } from '../../context/ToastContext';
+import { DEFAULT_TASK_COLOR } from './taskColors';
 
 type TasksTab = 'tasks' | 'groups';
 
-const GROUP_PRIVACY_VALUES: TaskGroupPrivacy[] = ['private', 'friends', 'public'];
+const GROUP_PRIVACY_VALUES: TaskGroupPrivacy[] = ['private', 'public'];
 
 export const TasksScreen = () => {
   const { t } = useTranslation();
@@ -32,6 +35,7 @@ export const TasksScreen = () => {
   const { state, dispatch } = useAppState();
   const currentUserId = useCurrentUserId();
   const navigation = useAppNavigation();
+  const { showToast } = useToast();
 
   const [openedGroupId, setOpenedGroupId] = useState<string | null>(null);
   const [showJoinCodeInput, setShowJoinCodeInput] = useState(false);
@@ -48,6 +52,8 @@ export const TasksScreen = () => {
   const openedGroup = openedGroupId ? state.entities.taskGroups[openedGroupId] : null;
 
   useEffect(() => {
+    // w trybie HTTP stan pochodzi z backendu (useBackendHydration) — bez lokalnych seedów
+    if (USE_HTTP_SERVICES) return;
     if (allGroups.length > 0) return;
 
     const starterGroupId = 'grp-starter-1';
@@ -61,7 +67,7 @@ export const TasksScreen = () => {
       groupId: starterGroupId,
       ownerUserId: currentUserId,
       name: 'Road to Marathon',
-      privacy: 'friends',
+      privacy: 'private',
       groupType: 'competitive',
       isBingo: false,
       inviteCode: 'RUN2026',
@@ -82,11 +88,23 @@ export const TasksScreen = () => {
       ownerUserId: 'usr-seed-2',
       name: 'Open Bingo Crew',
       privacy: 'public',
-      groupType: 'competitive',
+      groupType: 'cooperative',
       isBingo: true,
-      bingoSize: 3,
       inviteCode: 'BINGO1',
     });
+    // bingo group always holds exactly size² tasks — seed the 3×3 placeholders up front
+    for (let i = 0; i < 9; i++) {
+      dispatch({
+        type: 'tasks/create',
+        taskId: `tsk-starter-bingo-${i}`,
+        groupId: joinableGroupId,
+        progressId: `prg-starter-bingo-${i}`,
+        name: '',
+        goal: 1,
+        kind: 'one_time',
+        params: { color: DEFAULT_TASK_COLOR, photoRequired: false, notifications: false },
+      });
+    }
 
     dispatch({ type: 'task-groups/add-member', groupId: starterGroupId, userId: currentUserId });
     dispatch({ type: 'task-groups/add-member', groupId: exploreGroupId, userId: currentUserId });
@@ -144,43 +162,65 @@ export const TasksScreen = () => {
     if (!selectedGroupId) return;
     const trimmedName = editGroupName.trim();
     if (!trimmedName) {
-      Alert.alert(t('tasks.groups.validationTitle'), t('tasks.groups.nameRequired'));
+      showToast({ message: t('tasks.groups.nameRequired'), variant: 'error' });
       return;
     }
 
     const serviceResult = await taskGroupService.editGroup(selectedGroupId, { name: trimmedName, privacy: editGroupPrivacy });
     if (!serviceResult.ok) {
-      Alert.alert(t('tasks.groups.editErrorTitle'), t('tasks.groups.editErrorMessage'));
+      showToast({ message: t('tasks.groups.editErrorMessage'), variant: 'error' });
       return;
     }
 
     const result = dispatch({ type: 'task-groups/edit', groupId: selectedGroupId, name: trimmedName, privacy: editGroupPrivacy });
     if (!result.ok) {
-      Alert.alert(t('tasks.groups.editErrorTitle'), t('tasks.groups.editErrorMessage'));
+      showToast({ message: t('tasks.groups.editErrorMessage'), variant: 'error' });
       return;
     }
 
-    Alert.alert(t('tasks.groups.editSuccessTitle'), t('tasks.groups.editSuccessMessage'));
+    showToast({ message: t('tasks.groups.editSuccessMessage'), variant: 'success' });
   };
 
   const handleJoinGroup = async () => {
     const trimmed = joinCode.trim();
-    if (!trimmed) { Alert.alert(t('tasks.groups.joinEmptyTitle'), t('tasks.groups.joinEmptyMessage')); return; }
+    if (!trimmed) { showToast({ message: t('tasks.groups.joinEmptyMessage'), variant: 'error' }); return; }
+
+    if (USE_HTTP_SERVICES) {
+      // backend zna kody grup spoza lokalnego stanu — dołącz i ponownie zhydratuj
+      const serviceResult = await taskGroupService.joinByInviteCode({ inviteCode: trimmed, userId: currentUserId });
+      if (!serviceResult.ok) {
+        const message =
+          serviceResult.error.code === 'conflict'
+            ? t('tasks.groups.joinConflict')
+            : serviceResult.error.code === 'not-found'
+              ? t('tasks.groups.joinNotFound')
+              : t('tasks.groups.joinGeneric');
+        showToast({ message, variant: 'error' });
+        return;
+      }
+      const hydrated = await fetchHydratedTaskData(currentUserId);
+      if (hydrated.ok) {
+        dispatch({ type: 'hydrate/task-data', ...hydrated.value });
+      }
+      setJoinCode(''); setShowJoinCodeInput(false);
+      showToast({ message: t('tasks.groups.joinSuccessMessage'), variant: 'success' });
+      return;
+    }
 
     const match = Object.entries(state.entities.taskGroups).map(([id, group]) => ({ id, group })).find(({ group }) => (group.inviteCode || '').toUpperCase() === trimmed.toUpperCase());
-    if (!match) { Alert.alert(t('tasks.groups.joinErrorTitle'), t('tasks.groups.joinNotFound')); return; }
+    if (!match) { showToast({ message: t('tasks.groups.joinNotFound'), variant: 'error' }); return; }
 
     const alreadyMember = match.group.ownerUserId === currentUserId || match.group.memberIds.includes(currentUserId);
-    if (alreadyMember) { Alert.alert(t('tasks.groups.joinErrorTitle'), t('tasks.groups.joinConflict')); return; }
+    if (alreadyMember) { showToast({ message: t('tasks.groups.joinConflict'), variant: 'error' }); return; }
 
     const serviceResult = await taskGroupService.joinByInviteCode({ inviteCode: trimmed, userId: currentUserId });
-    if (!serviceResult.ok) { Alert.alert(t('tasks.groups.joinErrorTitle'), t('tasks.groups.joinGeneric')); return; }
+    if (!serviceResult.ok) { showToast({ message: t('tasks.groups.joinGeneric'), variant: 'error' }); return; }
 
     const result = dispatch({ type: 'task-groups/add-member', groupId: match.id, userId: currentUserId });
-    if (!result.ok) { Alert.alert(t('tasks.groups.joinErrorTitle'), t('tasks.groups.joinGeneric')); return; }
+    if (!result.ok) { showToast({ message: t('tasks.groups.joinGeneric'), variant: 'error' }); return; }
 
     setJoinCode(''); setShowJoinCodeInput(false);
-    Alert.alert(t('tasks.groups.joinSuccessTitle'), t('tasks.groups.joinSuccessMessage'));
+    showToast({ message: t('tasks.groups.joinSuccessMessage'), variant: 'success' });
   };
 
   const handleDeleteGroup = () => {
@@ -189,34 +229,39 @@ export const TasksScreen = () => {
       { text: t('tasks.common.cancel'), style: 'cancel' },
       { text: t('tasks.common.delete'), style: 'destructive', onPress: async () => {
         const serviceResult = await taskGroupService.deleteGroup(selectedGroupId);
-        if (!serviceResult.ok) { Alert.alert(t('tasks.groups.deleteErrorTitle'), t('tasks.groups.deleteErrorMessage')); return; }
+        if (!serviceResult.ok) { showToast({ message: t('tasks.groups.deleteErrorMessage'), variant: 'error' }); return; }
         const result = dispatch({ type: 'task-groups/delete', groupId: selectedGroupId });
-        if (!result.ok) { Alert.alert(t('tasks.groups.deleteErrorTitle'), t('tasks.groups.deleteErrorMessage')); return; }
-        setOpenedGroupId(null); Alert.alert(t('tasks.groups.deleteSuccessTitle'), t('tasks.groups.deleteSuccessMessage'));
+        if (!result.ok) { showToast({ message: t('tasks.groups.deleteErrorMessage'), variant: 'error' }); return; }
+        setOpenedGroupId(null); showToast({ message: t('tasks.groups.deleteSuccessMessage'), variant: 'success' });
       } }
     ]);
   };
 
   const handleAddMember = async () => {
-    if (!selectedGroupId) return; const trimmedUserId = memberUserId.trim(); if (!trimmedUserId) { Alert.alert(t('tasks.groups.validationTitle'), t('tasks.groups.memberRequired')); return; }
+    if (!selectedGroupId) return; const trimmedUserId = memberUserId.trim(); if (!trimmedUserId) { showToast({ message: t('tasks.groups.memberRequired'), variant: 'error' }); return; }
     const serviceResult = await taskGroupService.addMember(selectedGroupId, trimmedUserId);
-    if (!serviceResult.ok) { Alert.alert(t('tasks.groups.memberErrorTitle'), t('tasks.groups.memberErrorMessage')); return; }
+    if (!serviceResult.ok) { showToast({ message: t('tasks.groups.memberErrorMessage'), variant: 'error' }); return; }
     const result = dispatch({ type: 'task-groups/add-member', groupId: selectedGroupId, userId: trimmedUserId });
-    if (!result.ok) { Alert.alert(t('tasks.groups.memberErrorTitle'), t('tasks.groups.memberErrorMessage')); return; }
+    if (!result.ok) { showToast({ message: t('tasks.groups.memberErrorMessage'), variant: 'error' }); return; }
     setMemberUserId('');
   };
 
   const handleRemoveMember = async (userId: string) => {
     if (!selectedGroupId) return; const serviceResult = await taskGroupService.removeMember(selectedGroupId, userId);
-    if (!serviceResult.ok) { Alert.alert(t('tasks.groups.memberErrorTitle'), t('tasks.groups.memberErrorMessage')); return; }
+    if (!serviceResult.ok) { showToast({ message: t('tasks.groups.memberErrorMessage'), variant: 'error' }); return; }
     dispatch({ type: 'task-groups/remove-member', groupId: selectedGroupId, userId });
   };
 
   const handleLeaveGroup = async () => {
-    if (!selectedGroupId || !selectedGroup) return; if (selectedGroup.ownerUserId === currentUserId) { Alert.alert(t('tasks.groups.leaveErrorTitle'), t('tasks.groups.ownerCannotLeave')); return; }
+    if (!selectedGroupId || !selectedGroup) return; if (selectedGroup.ownerUserId === currentUserId) { showToast({ message: t('tasks.groups.ownerCannotLeave'), variant: 'error' }); return; }
     const serviceResult = await taskGroupService.leaveGroup(selectedGroupId, currentUserId);
-    if (!serviceResult.ok) { Alert.alert(t('tasks.groups.leaveErrorTitle'), t('tasks.groups.leaveErrorMessage')); return; }
-    dispatch({ type: 'task-groups/leave', groupId: selectedGroupId, userId: currentUserId }); setOpenedGroupId(null); Alert.alert(t('tasks.groups.leaveSuccessTitle'), t('tasks.groups.leaveSuccessMessage'));
+    if (!serviceResult.ok) { showToast({ message: t('tasks.groups.leaveErrorMessage'), variant: 'error' }); return; }
+    const result = dispatch({ type: 'task-groups/leave', groupId: selectedGroupId, userId: currentUserId });
+    if (!result.ok) {
+      showToast({ message: t('tasks.groups.leaveErrorMessage'), variant: 'error' });
+      return;
+    }
+    setOpenedGroupId(null); showToast({ message: t('tasks.groups.leaveSuccessMessage'), variant: 'success' });
   };
 
   const tabOptions = useMemo<ReadonlyArray<SegmentedControlOption<TasksTab>>>(() => [
@@ -333,7 +378,7 @@ const styles = StyleSheet.create({
   groupsContent: { paddingBottom: spacing.xl, gap: spacing.md },
   sectionHeaderRow: { marginBottom: spacing.sm },
   sectionTitle: { letterSpacing: 1.2, textTransform: 'uppercase' },
-  sectionCard: { padding: spacing.md, borderRadius: 18, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.cardBorderTranslucent, ...shadows.level1 },
+  sectionCard: { padding: spacing.md, borderRadius: 18, backgroundColor: colors.cardSurfaceTranslucent, borderWidth: 1, borderColor: colors.cardBorderTranslucent },
   sectionSubtitle: { marginBottom: spacing.sm },
   inlineControlsRow: { flexDirection: 'row', gap: spacing.xs, flexWrap: 'wrap', marginBottom: spacing.sm },
   chip: { paddingHorizontal: spacing.sm, paddingVertical: 6, borderRadius: 999, borderWidth: 1, borderColor: colors.inputBorderIdle, backgroundColor: colors.surfaceAlt },
@@ -342,14 +387,14 @@ const styles = StyleSheet.create({
   tightInput: { marginBottom: spacing.xs },
   inlineActionButtons: { gap: spacing.xs, marginBottom: spacing.md },
   quickActionsWrapRow: { flexDirection: 'row', gap: spacing.md, justifyContent: 'space-between', flexWrap: 'wrap' },
-  actionCard: { width: '48%', padding: spacing.md, borderRadius: 14, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.cardBorderTranslucent, alignItems: 'center', ...shadows.level1 },
+  actionCard: { width: '48%', padding: spacing.md, borderRadius: 14, backgroundColor: colors.cardSurfaceTranslucent, borderWidth: 1, borderColor: colors.cardBorderTranslucent, alignItems: 'center' },
   actionCardPressed: { transform: [{ scale: 0.99 }] },
   actionIconWrap: { width: 44, height: 44, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surfaceAlt, marginBottom: spacing.sm },
   joinForm: { marginTop: spacing.sm, gap: spacing.sm },
   joinInput: { marginTop: spacing.sm, marginBottom: 0 },
   destructiveButton: { opacity: 0.9 },
   groupList: { gap: spacing.md },
-  groupCard: { padding: spacing.md, borderRadius: 18, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.cardBorderTranslucent, ...shadows.level1 },
+  groupCard: { padding: spacing.md, borderRadius: 18, backgroundColor: colors.cardSurfaceTranslucent, borderWidth: 1, borderColor: colors.cardBorderTranslucent },
   groupCardPressed: { transform: [{ scale: 0.99 }] },
   groupCardActive: { borderColor: colors.primary, borderWidth: 2 },
   groupTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.sm },
@@ -362,7 +407,7 @@ const styles = StyleSheet.create({
   inlineDanger: { backgroundColor: colors.danger, borderRadius: 999, paddingHorizontal: spacing.sm, paddingVertical: 4 },
   inlineDangerPressed: { opacity: 0.75 },
   actionsColumn: { flexDirection: 'column', gap: spacing.sm },
-  actionBar: { width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: spacing.md, borderRadius: 12, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.cardBorderTranslucent, ...shadows.level1, marginBottom: spacing.sm },
+  actionBar: { width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: spacing.md, borderRadius: 12, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.cardBorderTranslucent, marginBottom: spacing.sm },
   actionBarPressed: { transform: [{ scale: 0.995 }] },
   actionBarLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flex: 1 },
   actionBarText: { flex: 1 },

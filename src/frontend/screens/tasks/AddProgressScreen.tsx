@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,6 +10,7 @@ import { AppButton } from '../../components/common/AppButton';
 import { EmptyState } from '../../components/common/EmptyState';
 import { useAppState } from '../../application/AppStateContext';
 import { useCurrentUserId } from '../../hooks/useCurrentUserId';
+import { useToast } from '../../context/ToastContext';
 import { selectTaskGroupsByMember, selectTasksByGroup } from '../../application/selectors';
 import { taskService } from '../../services';
 import { colors } from '../../theme/colors';
@@ -18,13 +19,19 @@ import { SCREEN_PADDING_H, spacing } from '../../theme/spacing';
 const generateId = (prefix: string) =>
   `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 
-export const AddProgressScreen = ({ navigation }: any) => {
+export const AddProgressScreen = ({ navigation, route }: any) => {
   const { t } = useTranslation();
   const { state, dispatch } = useAppState();
   const currentUserId = useCurrentUserId();
+  const { showToast } = useToast();
+  const initialParams = (route?.params ?? {}) as { groupId?: string; taskId?: string };
 
-  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
-  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(
+    initialParams.groupId ?? null,
+  );
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(
+    initialParams.taskId ?? null,
+  );
   const [progressValue, setProgressValue] = useState('1');
   const [progressNote, setProgressNote] = useState('');
 
@@ -33,7 +40,10 @@ export const AddProgressScreen = ({ navigation }: any) => {
     [state, currentUserId],
   );
   const groupTasks = useMemo(
-    () => (selectedGroupId ? selectTasksByGroup(state, selectedGroupId) : []),
+    () =>
+      selectedGroupId
+        ? selectTasksByGroup(state, selectedGroupId).filter(({ task }) => task.name !== '')
+        : [],
     [state, selectedGroupId],
   );
 
@@ -44,13 +54,13 @@ export const AddProgressScreen = ({ navigation }: any) => {
   const submitProgress = async (value: number) => {
     if (!selectedTaskId || !selectedTask) return;
     if (Number.isNaN(value) || value <= 0) {
-      Alert.alert(t('tasks.progress.validationTitle'), t('tasks.progress.validationMessage'));
+      showToast({ message: t('tasks.progress.validationMessage'), variant: 'error' });
       return;
     }
 
     const currentValue = state.entities.taskProgresses[selectedTask.progressId]?.value ?? 0;
     if (currentValue >= selectedTask.goal) {
-      Alert.alert(t('tasks.progress.completedTitle'), t('tasks.progress.completedMessage'));
+      showToast({ message: t('tasks.progress.completedMessage'), variant: 'info' });
       return;
     }
 
@@ -65,7 +75,7 @@ export const AddProgressScreen = ({ navigation }: any) => {
       note,
     });
     if (!serviceResult.ok) {
-      Alert.alert(t('tasks.progress.errorTitle'), t('tasks.progress.errorMessage'));
+      showToast({ message: t('tasks.progress.errorMessage'), variant: 'error' });
       return;
     }
 
@@ -78,11 +88,11 @@ export const AddProgressScreen = ({ navigation }: any) => {
       note: note || undefined,
     });
     if (!result.ok) {
-      Alert.alert(t('tasks.progress.errorTitle'), t('tasks.progress.errorMessage'));
+      showToast({ message: t('tasks.progress.errorMessage'), variant: 'error' });
       return;
     }
 
-    Alert.alert(t('tasks.progress.successTitle'), t('tasks.progress.successMessage'));
+    showToast({ message: t('tasks.progress.successMessage'), variant: 'success' });
     navigation.goBack();
   };
 
@@ -276,7 +286,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     padding: spacing.md,
     borderRadius: 16,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.cardSurfaceTranslucent,
     borderWidth: 1,
     borderColor: colors.cardBorderTranslucent,
   },

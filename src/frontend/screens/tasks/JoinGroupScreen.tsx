@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
-import { Alert, View, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { AppInput } from '../../components/common/AppInput';
 import { AppButton } from '../../components/common/AppButton';
 import { useAppState } from '../../application/AppStateContext';
 import { useCurrentUserId } from '../../hooks/useCurrentUserId';
+import { useToast } from '../../context/ToastContext';
 import { taskGroupService } from '../../services';
+import { USE_HTTP_SERVICES } from '../../services/http/config';
+import { fetchHydratedTaskData } from '../../services/http/hydrateTaskData';
 import { TopBar } from '../../components/layout/TopBar';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
@@ -16,33 +19,61 @@ export const JoinGroupScreen = ({ navigation }: any) => {
   const [code, setCode] = useState('');
   const { state, dispatch } = useAppState();
   const currentUserId = useCurrentUserId();
+  const { showToast } = useToast();
 
   const handleJoin = async () => {
     const trimmed = code.trim();
     if (!trimmed) {
-      Alert.alert(t('tasks.groups.joinEmptyTitle'), t('tasks.groups.joinEmptyMessage'));
+      showToast({ message: t('tasks.groups.joinEmptyMessage'), variant: 'error' });
+      return;
+    }
+
+    if (USE_HTTP_SERVICES) {
+      const serviceResult = await taskGroupService.joinByInviteCode({ inviteCode: trimmed, userId: currentUserId });
+      if (!serviceResult.ok) {
+        const message =
+          serviceResult.error.code === 'conflict'
+            ? t('tasks.groups.joinConflict')
+            : serviceResult.error.code === 'not-found'
+              ? t('tasks.groups.joinNotFound')
+              : t('tasks.groups.joinGeneric');
+        showToast({ message, variant: 'error' });
+        return;
+      }
+      const hydrated = await fetchHydratedTaskData(currentUserId);
+      if (hydrated.ok) {
+        dispatch({ type: 'hydrate/task-data', ...hydrated.value });
+      }
+      showToast({ message: t('tasks.groups.joinSuccessMessage'), variant: 'success' });
+      navigation.goBack();
       return;
     }
 
     const match = Object.entries(state.entities.taskGroups).map(([id, group]) => ({ id, group })).find(({ group }) => (group.inviteCode || '').toUpperCase() === trimmed.toUpperCase());
     if (!match) {
-      Alert.alert(t('tasks.groups.joinErrorTitle'), t('tasks.groups.joinNotFound'));
+      showToast({ message: t('tasks.groups.joinNotFound'), variant: 'error' });
       return;
     }
 
     const alreadyMember = match.group.ownerUserId === currentUserId || match.group.memberIds.includes(currentUserId);
     if (alreadyMember) {
-      Alert.alert(t('tasks.groups.joinErrorTitle'), t('tasks.groups.joinConflict'));
+      showToast({ message: t('tasks.groups.joinConflict'), variant: 'error' });
       return;
     }
 
     const serviceResult = await taskGroupService.joinByInviteCode({ inviteCode: trimmed, userId: currentUserId });
     if (!serviceResult.ok) {
-      Alert.alert(t('tasks.groups.joinErrorTitle'), t('tasks.groups.joinGeneric'));
+      showToast({ message: t('tasks.groups.joinGeneric'), variant: 'error' });
       return;
     }
 
-    dispatch({ type: 'task-groups/add-member', groupId: match.id, userId: currentUserId });
+    const result = dispatch({ type: 'task-groups/add-member', groupId: match.id, userId: currentUserId });
+    if (!result.ok) {
+      showToast({ message: t('tasks.groups.joinGeneric'), variant: 'error' });
+      return;
+    }
+
+    showToast({ message: t('tasks.groups.joinSuccessMessage'), variant: 'success' });
     navigation.goBack();
   };
 
