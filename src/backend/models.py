@@ -285,21 +285,17 @@ class User(Base):
     def is_unique_username(db_session: Session, username: str) -> bool:
         return (db_session.query(User).filter_by(username=username).first() is None and username != "")
     
-    def editProfile(self, db_session: Session, username: str | None = None, photoUrl: str | None = None) -> None:
-        new_username = self.username
-        new_photoUrl = self.photoUrl
-        if username is not None:
-            username = username.strip()
+    def editProfile(self, db_session: Session, **new_data: Any) -> None:
+        # new_data: username, photoUrl (None / pominięte = bez zmiany)
+        if new_data.get("username") is not None:
+            username = new_data["username"].strip()
             if not self.is_unique_username(db_session, username) and username != self.username:
                 raise ConflictError("Invalid username")
-            new_username = username
-        if photoUrl is not None:
-            if not self.is_valid_photo_url(photoUrl):
+            self.username = username
+        if new_data.get("photoUrl") is not None:
+            if not self.is_valid_photo_url(new_data["photoUrl"]):
                 raise ValidationError("Invalid photo URL")
-            new_photoUrl = photoUrl
-        
-        self.username = new_username
-        self.photoUrl = new_photoUrl
+            self.photoUrl = new_data["photoUrl"]
         db_session.flush()
 
     def inviteFriend(self, db_session: Session, friend_id: UUID) -> None:
@@ -563,20 +559,16 @@ class TaskGroup(Base):
             return member.role == GroupRole.OWNER
         return False
 
-    def edit(self, db_session: Session, user_id: UUID, name: str | None = None, privacy: PrivacyLevel | None = None,) -> None:
+    def edit(self, db_session: Session, user_id: UUID, **new_data: Any) -> None:
+        # new_data: name, privacy (None / pominięte = bez zmiany)
         if not self.checkPerms(db_session, user_id, GroupRole.ADMIN):
             raise PermissionDeniedError("User does not have permission to edit this group")
-        new_name = self.name
-        new_privacy = self.privacy
-        
-        if name is not None:
-            if name.strip() == "":
+        if new_data.get("name") is not None:
+            if new_data["name"].strip() == "":
                 raise ValidationError("Group name cannot be empty")
-            new_name = name
-        if privacy is not None:
-            new_privacy = privacy
-        self.name = new_name
-        self.privacy = new_privacy
+            self.name = new_data["name"]
+        if new_data.get("privacy") is not None:
+            self.privacy = new_data["privacy"]
         db_session.flush()
 
     def delete(self, db_session: Session, user_id: UUID) -> None:
@@ -954,26 +946,20 @@ class Task(Base):
         "with_polymorphic": "*",
         "polymorphic_abstract": True,
     }
-    #new_data: name, description, goal
     def edit(self, db_session: Session, user_id: UUID, **new_data: Any) -> None:
+        # new_data: name, description, goal (None / pominięte = bez zmiany)
         if not self.group.checkPerms(db_session, user_id, GroupRole.ADMIN):
             raise PermissionDeniedError("User does not have permission to edit this task")
-        new_name = self.name
-        new_description = self.description
-        new_goal = self.goal
-        if "name" in new_data:
+        if new_data.get("name") is not None:
             if new_data["name"].strip() == "":
                 raise ValidationError("Task name cannot be empty")
-            new_name = new_data["name"]
-        if "description" in new_data:
-            new_description = new_data["description"]
-        if "goal" in new_data:
+            self.name = new_data["name"]
+        if new_data.get("description") is not None:
+            self.description = new_data["description"]
+        if new_data.get("goal") is not None:
             self.goal = new_data["goal"]
             for progress in self.progresses:
                 progress._silentUpdateProgress(db_session, 0) #update statusu
-        
-        self.name = new_name
-        self.description = new_description
         db_session.flush()
         
 
@@ -1377,21 +1363,16 @@ class TaskParams(Base):
             return color
         raise ValidationError("Invalid color")
 
-    def edit(self, db_session: Session, photoRequired: bool | None = None, color: str | None = None, notifications: bool | None = None) -> None:
+    def edit(self, db_session: Session, **new_data: Any) -> None:
+        # new_data: photoRequired, color, notifications (None / pominięte = bez zmiany)
         if not self.task.group.checkPerms(db_session, self.task.ownerID, GroupRole.ADMIN):
             raise PermissionDeniedError("User does not have permission to edit this task's parameters")
-        new_PhotoRequired = self.photoRequired
-        new_color = self.color
-        new_notifications = self.notifications
-        if photoRequired is not None:
-            new_PhotoRequired = photoRequired
-        if color is not None:
-            new_color = color
-        if notifications is not None:
-            new_notifications = notifications
-        self.photoRequired = new_PhotoRequired
-        self.color = new_color
-        self.notifications = new_notifications
+        if new_data.get("photoRequired") is not None:
+            self.photoRequired = new_data["photoRequired"]
+        if new_data.get("color") is not None:
+            self.color = new_data["color"]
+        if new_data.get("notifications") is not None:
+            self.notifications = new_data["notifications"]
         db_session.flush()
 
     
