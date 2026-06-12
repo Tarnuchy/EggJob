@@ -4,8 +4,8 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
-from src.backend.database import get_db
-from src.backend.exceptions import AppError, ConflictError, NotFoundError, ValidationError
+from src.backend.database import get_db, transaction
+from src.backend.exceptions import ConflictError, NotFoundError, ValidationError
 from src.backend.models import (
     ChallengeTask,
     Comment,
@@ -263,7 +263,7 @@ def join_taskgroup(
     if member is not None and member.active:
         raise ConflictError("User is already a member of this group")
 
-    try:
+    with transaction(db):
         if member is None:
             member = GroupMember()
             member.groupID = group.id
@@ -298,14 +298,6 @@ def join_taskgroup(
                 progress.taskID = task.id
                 progress.type = task_type.value
                 db.add(progress)
-
-        db.commit()
-    except AppError:
-        db.rollback()
-        raise
-    except Exception:
-        db.rollback()
-        raise
 
     return MessageResponse(message="group_joined")
 

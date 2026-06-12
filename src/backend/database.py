@@ -1,5 +1,6 @@
 import os
-from collections.abc import Generator
+from collections.abc import Generator, Iterator
+from contextlib import contextmanager
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -41,3 +42,14 @@ def get_db() -> Generator[Session, None, None]:
         yield db
     finally:
         db.close()
+
+
+@contextmanager
+def transaction(db: Session) -> Iterator[None]:
+    """Commit on success, rollback on any error. Re-raises so handlers map it."""
+    try:
+        yield
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise

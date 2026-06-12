@@ -7,7 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from src.backend.basics import router as basics_router
-from src.backend.database import get_db
+from src.backend.database import get_db, transaction
 from src.backend.exceptions import *
 from src.backend.models import *
 from src.backend.request import *
@@ -105,7 +105,7 @@ def _auth_payload(account: Account, user: User) -> AuthResponse:
 @app.post("/auth/register", status_code=201, response_model=AuthResponse)
 def register(payload: RegisterRequest, db: Session = Depends(get_db)):
     account = Account()
-    try:
+    with transaction(db):
         account.register(
             db_session=db,
             email=payload.email,
@@ -113,16 +113,9 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
             password=payload.password,
         )
         account.createUser(db_session=db, username=payload.username, photoUrl=payload.photo_url)
-        db.commit()
-        user = db.query(User).filter_by(accountID=account.id).first()
+        user = account.user
         if user is None:
             raise StateError("User profile was not created")
-    except AppError:
-        db.rollback()
-        raise
-    except Exception:
-        db.rollback()
-        raise
 
     return _auth_payload(account=account, user=user)
 
@@ -130,18 +123,11 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
 @app.post("/auth/login", response_model=AuthResponse)
 def login(payload: LoginRequest, db: Session = Depends(get_db)):
     account = Account()
-    try:
+    with transaction(db):
         account.login(db_session=db, email=payload.email, password=payload.password)
-        db.commit()
         user = db.query(User).filter_by(accountID=account.id).first()
         if user is None:
             raise NotFoundError("User profile not found")
-    except AppError:
-        db.rollback()
-        raise
-    except Exception:
-        db.rollback()
-        raise
 
     return _auth_payload(account=account, user=user)
 
@@ -152,19 +138,12 @@ def change_password(payload: ChangePasswordRequest, db: Session = Depends(get_db
     if account is None:
         raise NotFoundError("Account does not exist")
 
-    try:
+    with transaction(db):
         account.changePassword(
             db_session=db,
             old_password=payload.old_password,
             new_password=payload.new_password,
         )
-        db.commit()
-    except AppError:
-        db.rollback()
-        raise
-    except Exception:
-        db.rollback()
-        raise
 
     return MessageResponse(message="password updated")
 
@@ -172,15 +151,8 @@ def change_password(payload: ChangePasswordRequest, db: Session = Depends(get_db
 @app.post("/accounts/{account_id}/delete", response_model=MessageResponse)
 def delete_account(account_id: UUID, payload: DeleteAccountRequest, db: Session = Depends(get_db)):
     account = _get_or_404(db, Account, id=account_id)
-    try:
+    with transaction(db):
         account.deleteAccount(password=payload.password, db_session=db)
-        db.commit()
-    except AppError:
-        db.rollback()
-        raise
-    except Exception:
-        db.rollback()
-        raise
 
     return MessageResponse(message="account_deleted")
 
@@ -188,15 +160,8 @@ def delete_account(account_id: UUID, payload: DeleteAccountRequest, db: Session 
 @app.patch("/users/{user_id}/profile", response_model=MessageResponse)
 def update_profile(user_id: UUID, payload: UserProfileUpdateRequest, db: Session = Depends(get_db)):
     user = _get_or_404(db, User, id=user_id)
-    try:
+    with transaction(db):
         user.editProfile(db_session=db, username=payload.username, photoUrl=payload.photo_url)
-        db.commit()
-    except AppError:
-        db.rollback()
-        raise
-    except Exception:
-        db.rollback()
-        raise
 
     return MessageResponse(message="profile_updated")
 
@@ -204,15 +169,8 @@ def update_profile(user_id: UUID, payload: UserProfileUpdateRequest, db: Session
 @app.post("/users/{user_id}/friends/invitations", response_model=MessageResponse)
 def invite_friend(user_id: UUID, payload: InviteFriendRequest, db: Session = Depends(get_db)):
     user = _get_or_404(db, User, id=user_id)
-    try:
+    with transaction(db):
         user.inviteFriend(db_session=db, friend_id=payload.friend_id)
-        db.commit()
-    except AppError:
-        db.rollback()
-        raise
-    except Exception:
-        db.rollback()
-        raise
 
     return MessageResponse(message="invitation_sent")
 
@@ -220,15 +178,8 @@ def invite_friend(user_id: UUID, payload: InviteFriendRequest, db: Session = Dep
 @app.post("/users/{user_id}/notifications", response_model=MessageResponse)
 def create_notification(user_id: UUID, payload: NotifyRequest, db: Session = Depends(get_db)):
     user = _get_or_404(db, User, id=user_id)
-    try:
+    with transaction(db):
         user.notify(db_session=db, message=payload.message)
-        db.commit()
-    except AppError:
-        db.rollback()
-        raise
-    except Exception:
-        db.rollback()
-        raise
 
     return MessageResponse(message="notification_created")
 
@@ -237,32 +188,16 @@ def create_notification(user_id: UUID, payload: NotifyRequest, db: Session = Dep
 def create_taskgroup(user_id: UUID, payload: CreateGroupRequest, db: Session = Depends(get_db)):
     user = _get_or_404(db, User, id=user_id)
     privacy = _parse_enum(PrivacyLevel, payload.privacy, "privacy") or PrivacyLevel.PUBLIC
-    group_type = _parse_enum(TaskGroupType, payload.type, "type") or TaskGroupType.TASK_GROUP
+    group_type = _parse_enum(TaskGroupType, payload.type, "type") or TaskGroupType.COMPETITIVE
 
-    try:
-        user.createGroup(
+    with transaction(db):
+        group = user.createGroup(
             db_session=db,
             name=payload.name,
             privacy=privacy,
             isBingo=payload.is_bingo,
             type=group_type,
         )
-        db.commit()
-    except AppError:
-        db.rollback()
-        raise
-    except Exception:
-        db.rollback()
-        raise
-
-    group = (
-        db.query(TaskGroup)
-        .filter_by(ownerID=user.id)
-        .order_by(TaskGroup.createdAt.desc())
-        .first()
-    )
-    if group is None:
-        raise StateError("Task group was not created")
 
     return TaskGroupResponse(
         id=str(group.id),
@@ -284,15 +219,8 @@ def delete_friendship(user_one_id: UUID, user_two_id: UUID, db: Session = Depend
     if friendship is None:
         raise NotFoundError("Friendship not found")
 
-    try:
+    with transaction(db):
         friendship.deleteFriend(db_session=db)
-        db.commit()
-    except AppError:
-        db.rollback()
-        raise
-    except Exception:
-        db.rollback()
-        raise
 
     return MessageResponse(message="friendship_deleted")
 
@@ -310,15 +238,8 @@ def _get_invitation(db: Session, from_user_id: UUID, to_user_id: UUID) -> Invita
 @app.post("/invitations/{from_user_id}/{to_user_id}/accept", response_model=MessageResponse)
 def accept_invitation(from_user_id: UUID, to_user_id: UUID, db: Session = Depends(get_db)):
     invitation = _get_invitation(db, from_user_id, to_user_id)
-    try:
+    with transaction(db):
         invitation.accept(db_session=db)
-        db.commit()
-    except AppError:
-        db.rollback()
-        raise
-    except Exception:
-        db.rollback()
-        raise
 
     return MessageResponse(message="invitation_accepted")
 
@@ -326,15 +247,8 @@ def accept_invitation(from_user_id: UUID, to_user_id: UUID, db: Session = Depend
 @app.post("/invitations/{from_user_id}/{to_user_id}/reject", response_model=MessageResponse)
 def reject_invitation(from_user_id: UUID, to_user_id: UUID, db: Session = Depends(get_db)):
     invitation = _get_invitation(db, from_user_id, to_user_id)
-    try:
+    with transaction(db):
         invitation.reject(db_session=db)
-        db.commit()
-    except AppError:
-        db.rollback()
-        raise
-    except Exception:
-        db.rollback()
-        raise
 
     return MessageResponse(message="invitation_rejected")
 
@@ -342,15 +256,8 @@ def reject_invitation(from_user_id: UUID, to_user_id: UUID, db: Session = Depend
 @app.post("/invitations/{from_user_id}/{to_user_id}/cancel", response_model=MessageResponse)
 def cancel_invitation(from_user_id: UUID, to_user_id: UUID, db: Session = Depends(get_db)):
     invitation = _get_invitation(db, from_user_id, to_user_id)
-    try:
+    with transaction(db):
         invitation.cancel(db_session=db)
-        db.commit()
-    except AppError:
-        db.rollback()
-        raise
-    except Exception:
-        db.rollback()
-        raise
 
     return MessageResponse(message="invitation_canceled")
 
@@ -358,15 +265,8 @@ def cancel_invitation(from_user_id: UUID, to_user_id: UUID, db: Session = Depend
 @app.post("/notifications/{notification_id}/read", response_model=MessageResponse)
 def read_notification(notification_id: UUID, db: Session = Depends(get_db)):
     notification = _get_or_404(db, Notification, id=notification_id)
-    try:
+    with transaction(db):
         notification.read(db_session=db)
-        db.commit()
-    except AppError:
-        db.rollback()
-        raise
-    except Exception:
-        db.rollback()
-        raise
 
     return MessageResponse(message="notification_read")
 
@@ -376,15 +276,8 @@ def edit_taskgroup(user_id: UUID, group_id: UUID, payload: TaskGroupEditRequest,
     group = _get_or_404(db, TaskGroup, id=group_id)
     privacy = _parse_enum(PrivacyLevel, payload.privacy, "privacy") if payload.privacy else None
 
-    try:
+    with transaction(db):
         group.edit(db_session=db, user_id=user_id, name=payload.name, privacy=privacy)
-        db.commit()
-    except AppError:
-        db.rollback()
-        raise
-    except Exception:
-        db.rollback()
-        raise
 
     return MessageResponse(message="taskgroup_updated")
 
@@ -392,15 +285,8 @@ def edit_taskgroup(user_id: UUID, group_id: UUID, payload: TaskGroupEditRequest,
 @app.delete("/users/{user_id}/taskgroups/{group_id}", response_model=MessageResponse)
 def delete_taskgroup(user_id: UUID, group_id: UUID, db: Session = Depends(get_db)):
     group = _get_or_404(db, TaskGroup, id=group_id)
-    try:
+    with transaction(db):
         group.delete(db_session=db, user_id=user_id)
-        db.commit()
-    except AppError:
-        db.rollback()
-        raise
-    except Exception:
-        db.rollback()
-        raise
 
     return MessageResponse(message="taskgroup_deleted")
 
@@ -415,15 +301,8 @@ def add_taskgroup_member(
     group = _get_or_404(db, TaskGroup, id=group_id)
     role = _parse_enum(GroupRole, payload.role, "role")
 
-    try:
+    with transaction(db):
         group.addFriend(db_session=db, user_id=user_id, friend_id=payload.friend_id, role=role)
-        db.commit()
-    except AppError:
-        db.rollback()
-        raise
-    except Exception:
-        db.rollback()
-        raise
 
     return MessageResponse(message="member_added")
 
@@ -438,15 +317,8 @@ def change_taskgroup_type(
     group = _get_or_404(db, TaskGroup, id=group_id)
     new_type = _parse_enum(TaskGroupType, payload.new_type, "type")
 
-    try:
+    with transaction(db):
         group.changeGroupType(db_session=db, user_id=user_id, new_type=new_type)
-        db.commit()
-    except AppError:
-        db.rollback()
-        raise
-    except Exception:
-        db.rollback()
-        raise
 
     return MessageResponse(message="taskgroup_type_updated")
 
@@ -462,8 +334,8 @@ def create_task(
     task_type = _parse_task_type(payload.task_type)
     frequency = _parse_enum(TimeInterval, payload.frequency, "frequency") if payload.frequency else None
 
-    try:
-        group.createTask(
+    with transaction(db):
+        task = group.createTask(
             db_session=db,
             user_id=user_id,
             type=task_type,
@@ -477,22 +349,6 @@ def create_task(
             color=payload.color,
             notifications=payload.notifications,
         )
-        db.commit()
-    except AppError:
-        db.rollback()
-        raise
-    except Exception:
-        db.rollback()
-        raise
-
-    task = (
-        db.query(Task)
-        .filter_by(groupID=group.id, ownerID=user_id, name=payload.name)
-        .order_by(Task.id.desc())
-        .first()
-    )
-    if task is None:
-        raise StateError("Task was not created")
 
     return TaskResponse(
         id=str(task.id),
@@ -509,7 +365,7 @@ def create_task(
 @app.patch("/users/{user_id}/tasks/{task_id}", response_model=MessageResponse)
 def edit_task(user_id: UUID, task_id: UUID, payload: TaskEditRequest, db: Session = Depends(get_db)):
     task = _get_or_404(db, Task, id=task_id)
-    try:
+    with transaction(db):
         task.edit(
             db_session=db,
             user_id=user_id,
@@ -517,13 +373,6 @@ def edit_task(user_id: UUID, task_id: UUID, payload: TaskEditRequest, db: Sessio
             description=payload.description,
             goal=payload.goal,
         )
-        db.commit()
-    except AppError:
-        db.rollback()
-        raise
-    except Exception:
-        db.rollback()
-        raise
 
     return MessageResponse(message="task_updated")
 
@@ -531,15 +380,8 @@ def edit_task(user_id: UUID, task_id: UUID, payload: TaskEditRequest, db: Sessio
 @app.delete("/users/{user_id}/tasks/{task_id}", response_model=MessageResponse)
 def delete_task(user_id: UUID, task_id: UUID, db: Session = Depends(get_db)):
     task = _get_or_404(db, Task, id=task_id)
-    try:
+    with transaction(db):
         task.delete(db_session=db, user_id=user_id)
-        db.commit()
-    except AppError:
-        db.rollback()
-        raise
-    except Exception:
-        db.rollback()
-        raise
 
     return MessageResponse(message="task_deleted")
 
@@ -549,15 +391,8 @@ def change_task_type(user_id: UUID, task_id: UUID, payload: TaskChangeTypeReques
     task = _get_or_404(db, Task, id=task_id)
     new_type = _parse_task_type(payload.new_type)
 
-    try:
+    with transaction(db):
         task.changeTaskType(db_session=db, user_id=user_id, new_type=new_type)
-        db.commit()
-    except AppError:
-        db.rollback()
-        raise
-    except Exception:
-        db.rollback()
-        raise
 
     return MessageResponse(message="task_type_updated")
 
@@ -572,15 +407,8 @@ def change_groupmember_role(
     member = _get_or_404(db, GroupMember, id=member_id)
     new_role = _parse_enum(GroupRole, payload.new_role, "role")
 
-    try:
+    with transaction(db):
         member.changePermissions(db_session=db, new_role=new_role, by_user_id=user_id)
-        db.commit()
-    except AppError:
-        db.rollback()
-        raise
-    except Exception:
-        db.rollback()
-        raise
 
     return MessageResponse(message="member_role_updated")
 
@@ -593,15 +421,8 @@ def remove_groupmember(
     db: Session = Depends(get_db),
 ):
     member = _get_or_404(db, GroupMember, id=member_id)
-    try:
+    with transaction(db):
         member.removeMember(db_session=db, take_progress=payload.take_progress, punisher=user_id)
-        db.commit()
-    except AppError:
-        db.rollback()
-        raise
-    except Exception:
-        db.rollback()
-        raise
 
     return MessageResponse(message="member_removed")
 
@@ -615,7 +436,7 @@ def update_task_progress(
 ):
     progress = _get_or_404(db, TaskProgress, id=progress_id)
 
-    try:
+    with transaction(db):
         progress.updateProgress(
             db_session=db,
             delta_value=payload.delta_value,
@@ -623,13 +444,6 @@ def update_task_progress(
             message=payload.message,
             photoUrl=payload.photo_url,
         )
-        db.commit()
-    except AppError:
-        db.rollback()
-        raise
-    except Exception:
-        db.rollback()
-        raise
 
     return MessageResponse(message="task_progress_updated")
 
@@ -637,20 +451,13 @@ def update_task_progress(
 @app.patch("/task-params/{task_id}", response_model=MessageResponse)
 def edit_task_params(task_id: UUID, payload: TaskParamsEditRequest, db: Session = Depends(get_db)):
     params = _get_or_404(db, TaskParams, taskID=task_id)
-    try:
+    with transaction(db):
         params.edit(
             db_session=db,
             photoRequired=payload.photo_required,
             color=payload.color,
             notifications=payload.notifications,
         )
-        db.commit()
-    except AppError:
-        db.rollback()
-        raise
-    except Exception:
-        db.rollback()
-        raise
 
     return MessageResponse(message="task_params_updated")
 
@@ -661,18 +468,11 @@ def validate_progress_entry(entry_id: UUID, db: Session = Depends(get_db)):
     return ProgressValidationResponse(is_valid=entry.validate(db_session=db))
 
 
-@app.delete("/progress-entries/{entry_id}", response_model=MessageResponse)
-def delete_progress_entry(entry_id: UUID, db: Session = Depends(get_db)):
+@app.delete("/users/{user_id}/progress-entries/{entry_id}", response_model=MessageResponse)
+def delete_progress_entry(user_id: UUID, entry_id: UUID, db: Session = Depends(get_db)):
     entry = _get_or_404(db, ProgressEntry, id=entry_id)
-    try:
-        entry.delete(db_session=db)
-        db.commit()
-    except AppError:
-        db.rollback()
-        raise
-    except Exception:
-        db.rollback()
-        raise
+    with transaction(db):
+        entry.delete(db_session=db, user_id=user_id)
 
     return MessageResponse(message="progress_entry_deleted")
 
@@ -685,30 +485,16 @@ def add_progress_comment(
     db: Session = Depends(get_db),
 ):
     entry = _get_or_404(db, ProgressEntry, id=entry_id)
-    try:
+    with transaction(db):
         entry.addComment(db_session=db, user_id=user_id, message=payload.message)
-        db.commit()
-    except AppError:
-        db.rollback()
-        raise
-    except Exception:
-        db.rollback()
-        raise
 
     return MessageResponse(message="comment_added")
 
 
-@app.delete("/comments/{comment_id}", response_model=MessageResponse)
-def delete_comment(comment_id: UUID, db: Session = Depends(get_db)):
+@app.delete("/users/{user_id}/comments/{comment_id}", response_model=MessageResponse)
+def delete_comment(user_id: UUID, comment_id: UUID, db: Session = Depends(get_db)):
     comment = _get_or_404(db, Comment, id=comment_id)
-    try:
-        comment.deleteComment(db_session=db)
-        db.commit()
-    except AppError:
-        db.rollback()
-        raise
-    except Exception:
-        db.rollback()
-        raise
+    with transaction(db):
+        comment.deleteComment(db_session=db, user_id=user_id)
 
     return MessageResponse(message="comment_deleted")
