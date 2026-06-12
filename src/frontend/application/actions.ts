@@ -1,4 +1,4 @@
-import type { TaskGroupPrivacy, TaskGroupType, TaskParams, MemberRole } from './state';
+import type { BingoSize, TaskGroupPrivacy, TaskGroupType, TaskKind, TaskParams, MemberRole } from './state';
 
 export type AppAction =
   | {
@@ -56,6 +56,7 @@ export type AppAction =
       privacy: TaskGroupPrivacy;
       groupType: TaskGroupType;
       isBingo: boolean;
+      bingoSize?: BingoSize;
       inviteCode?: string;
       createdAt?: Date;
     }
@@ -64,6 +65,9 @@ export type AppAction =
       groupId: string;
       name?: string;
       privacy?: TaskGroupPrivacy;
+      groupType?: TaskGroupType;
+      isBingo?: boolean;
+      bingoSize?: BingoSize;
     }
   | {
       type: 'task-groups/delete';
@@ -137,7 +141,7 @@ export type AppAction =
       params: TaskParams;
       description?: string;
       status?: string;
-      kind?: string;
+      kind?: TaskKind;
       createdAt?: Date;
     }
   | {
@@ -148,6 +152,7 @@ export type AppAction =
       params?: Partial<TaskParams>;
       description?: string;
       status?: string;
+      kind?: TaskKind;
       createdAt?: Date;
     }
   | {

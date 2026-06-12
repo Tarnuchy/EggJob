@@ -4,7 +4,9 @@ export type RootStackParamList = {
   UserProfile: { userId: string };
   EditProfile: undefined;
   CreateGroup: undefined;
-  CreateTask: { groupId: string };
+  CreateTask: { groupId?: string } | undefined;
+  EditTask: { groupId: string; taskId: string };
+  AddProgress: undefined;
   JoinGroup: undefined;
   EditGroup: { groupId: string };
   GroupTasks: { groupId: string };

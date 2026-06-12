@@ -11,7 +11,9 @@ import { taskGroupService } from '../../services';
 import { TopBar } from '../../components/layout/TopBar';
 import { colors } from '../../theme/colors';
 import { SCREEN_PADDING_H, spacing } from '../../theme/spacing';
-import type { MemberRole, TaskGroupPrivacy, TaskGroupType } from '../../application/state';
+import type { BingoSize, MemberRole, TaskGroupPrivacy, TaskGroupType } from '../../application/state';
+
+type BingoSizeValue = '3' | '4' | '5';
 
 export const EditGroupScreen = ({ navigation, route }: any) => {
   const { t } = useTranslation();
@@ -23,6 +25,7 @@ export const EditGroupScreen = ({ navigation, route }: any) => {
   const [privacy, setPrivacy] = useState<TaskGroupPrivacy>(group?.privacy ?? 'private');
   const [groupType, setGroupType] = useState<TaskGroupType>(group?.type ?? 'cooperative');
   const [isBingo, setIsBingo] = useState<boolean>(group?.isBingo ?? false);
+  const [bingoSize, setBingoSize] = useState<BingoSizeValue>(String(group?.bingoSize ?? 3) as BingoSizeValue);
   const [expandedMemberId, setExpandedMemberId] = useState<string | null>(null);
   const editableRoles: Exclude<MemberRole, 'owner'>[] = ['member', 'admin'];
   const currentUserRole: MemberRole = group?.ownerUserId === state.session.currentUserId
@@ -46,6 +49,15 @@ export const EditGroupScreen = ({ navigation, route }: any) => {
     [t],
   );
 
+  const bingoSizeOptions = useMemo(
+    () => [
+      { value: '3', label: '3×3' },
+      { value: '4', label: '4×4' },
+      { value: '5', label: '5×5' },
+    ] as const satisfies ReadonlyArray<SegmentedControlOption<BingoSizeValue>>,
+    [],
+  );
+
   if (!group) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -64,13 +76,30 @@ export const EditGroupScreen = ({ navigation, route }: any) => {
       return;
     }
 
-    const res = await taskGroupService.editGroup(groupId, { name: trimmed, privacy, type: groupType, isBingo });
+    const effectiveGroupType: TaskGroupType = isBingo ? 'cooperative' : groupType;
+    const effectiveBingoSize = isBingo ? (Number(bingoSize) as BingoSize) : undefined;
+
+    const res = await taskGroupService.editGroup(groupId, {
+      name: trimmed,
+      privacy,
+      type: effectiveGroupType,
+      isBingo,
+      bingoSize: effectiveBingoSize,
+    });
     if (!res.ok) {
       Alert.alert(t('tasks.groups.editErrorTitle'), t('tasks.groups.editErrorMessage'));
       return;
     }
 
-    dispatch({ type: 'task-groups/edit', groupId, name: trimmed, privacy, groupType, isBingo });
+    dispatch({
+      type: 'task-groups/edit',
+      groupId,
+      name: trimmed,
+      privacy,
+      groupType: effectiveGroupType,
+      isBingo,
+      bingoSize: effectiveBingoSize,
+    });
     navigation.goBack();
   };
 
@@ -128,6 +157,7 @@ export const EditGroupScreen = ({ navigation, route }: any) => {
               options={groupTypeOptions}
               value={groupType}
               onChange={setGroupType}
+              disabledValues={isBingo ? ['competitive'] : []}
               accessibilityLabel={t('tasks.groups.groupTypeSection')}
             />
           </View>
@@ -137,7 +167,15 @@ export const EditGroupScreen = ({ navigation, route }: any) => {
               {t('tasks.groups.bingoSection')}
             </AppText>
             <Pressable
-              onPress={() => setIsBingo((v) => !v)}
+              onPress={() => {
+                setIsBingo((value) => {
+                  const nextValue = !value;
+                  if (nextValue) {
+                    setGroupType('cooperative');
+                  }
+                  return nextValue;
+                });
+              }}
               style={({ pressed }) => [styles.toggleCard, pressed && styles.toggleCardPressed]}
               accessibilityRole="switch"
               accessibilityState={{ checked: isBingo }}
@@ -150,6 +188,19 @@ export const EditGroupScreen = ({ navigation, route }: any) => {
               </View>
               <View style={[styles.toggleKnob, isBingo && styles.toggleKnobActive]} />
             </Pressable>
+            {isBingo ? (
+              <>
+                <AppText variant="caption" color="muted" style={styles.sectionTitle}>
+                  {t('tasks.groups.bingoSizeSection')}
+                </AppText>
+                <SegmentedControl<BingoSizeValue>
+                  options={bingoSizeOptions}
+                  value={bingoSize}
+                  onChange={setBingoSize}
+                  accessibilityLabel={t('tasks.groups.bingoSizeSection')}
+                />
+              </>
+            ) : null}
           </View>
 
           <View style={styles.card}>

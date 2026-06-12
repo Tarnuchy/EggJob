@@ -12,7 +12,9 @@ import { taskGroupService } from '../../services';
 import { TopBar } from '../../components/layout/TopBar';
 import { colors } from '../../theme/colors';
 import { SCREEN_PADDING_H, spacing } from '../../theme/spacing';
-import type { TaskGroupPrivacy, TaskGroupType } from '../../application/state';
+import type { BingoSize, TaskGroupPrivacy, TaskGroupType } from '../../application/state';
+
+type BingoSizeValue = '3' | '4' | '5';
 
 const generateId = (prefix: string) => `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 
@@ -22,6 +24,7 @@ export const CreateGroupScreen = ({ navigation }: any) => {
   const [privacy, setPrivacy] = useState<TaskGroupPrivacy>('private');
   const [groupType, setGroupType] = useState<TaskGroupType>('cooperative');
   const [isBingo, setIsBingo] = useState(false);
+  const [bingoSize, setBingoSize] = useState<BingoSizeValue>('3');
   const { dispatch } = useAppState();
   const currentUserId = useCurrentUserId();
 
@@ -35,6 +38,12 @@ export const CreateGroupScreen = ({ navigation }: any) => {
     { value: 'competitive', label: t('tasks.groups.groupTypeCompetitive') },
   ] as const satisfies ReadonlyArray<SegmentedControlOption<TaskGroupType>>;
 
+  const bingoSizeOptions = [
+    { value: '3', label: '3×3' },
+    { value: '4', label: '4×4' },
+    { value: '5', label: '5×5' },
+  ] as const satisfies ReadonlyArray<SegmentedControlOption<BingoSizeValue>>;
+
   const handleCreate = async () => {
     const trimmed = name.trim();
     if (!trimmed) {
@@ -43,6 +52,7 @@ export const CreateGroupScreen = ({ navigation }: any) => {
     }
 
     const effectiveGroupType: TaskGroupType = isBingo ? 'cooperative' : groupType;
+    const effectiveBingoSize = isBingo ? (Number(bingoSize) as BingoSize) : undefined;
 
     const groupId = generateId('grp');
 
@@ -53,6 +63,7 @@ export const CreateGroupScreen = ({ navigation }: any) => {
       privacy,
       type: effectiveGroupType,
       isBingo,
+      bingoSize: effectiveBingoSize,
     });
     if (!serviceResult.ok) {
       Alert.alert(t('tasks.groups.createErrorTitle'), t('tasks.groups.createErrorMessage'));
@@ -68,6 +79,7 @@ export const CreateGroupScreen = ({ navigation }: any) => {
       privacy,
       groupType: effectiveGroupType,
       isBingo,
+      bingoSize: effectiveBingoSize,
       inviteCode: serverCode,
     });
     navigation.goBack();
@@ -136,6 +148,19 @@ export const CreateGroupScreen = ({ navigation }: any) => {
               </View>
               <View style={[styles.toggleKnob, isBingo && styles.toggleKnobActive]} />
             </Pressable>
+            {isBingo ? (
+              <>
+                <AppText variant="caption" color="muted" style={styles.sectionTitle}>
+                  {t('tasks.groups.bingoSizeSection')}
+                </AppText>
+                <SegmentedControl<BingoSizeValue>
+                  options={bingoSizeOptions}
+                  value={bingoSize}
+                  onChange={setBingoSize}
+                  accessibilityLabel={t('tasks.groups.bingoSizeSection')}
+                />
+              </>
+            ) : null}
           </View>
 
           <View style={styles.actions}>

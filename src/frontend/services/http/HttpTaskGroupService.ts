@@ -75,6 +75,7 @@ export class HttpTaskGroupService implements ITaskGroupService {
     name: string;
     privacy: string;
     isBingo: boolean;
+    bingoSize?: number;
     type: 'cooperative' | 'competitive';
   }): Promise<Result<{ id?: string; inviteCode?: string }>> {
     let response: Response;
@@ -84,6 +85,7 @@ export class HttpTaskGroupService implements ITaskGroupService {
         name: input.name,
         privacy: input.privacy,
         is_bingo: input.isBingo,
+        bingo_size: input.isBingo ? input.bingoSize ?? 3 : null,
         type: input.type,
       });
       response = await fetch(`${this.baseUrl}/users/${encodeURIComponent(input.ownerUserId)}/taskgroups`, {
@@ -109,7 +111,7 @@ export class HttpTaskGroupService implements ITaskGroupService {
     }
   }
 
-  async editGroup(groupId: string, input: { name?: string; privacy?: string; type?: 'cooperative' | 'competitive'; isBingo?: boolean }): Promise<Result<void>> {
+  async editGroup(groupId: string, input: { name?: string; privacy?: string; type?: 'cooperative' | 'competitive'; isBingo?: boolean; bingoSize?: number }): Promise<Result<void>> {
     let response: Response;
     try {
       const actingUser = CurrentUser.get();
@@ -120,6 +122,7 @@ export class HttpTaskGroupService implements ITaskGroupService {
       if (input.privacy !== undefined) bodyPayload.privacy = input.privacy;
       if (input.type !== undefined) bodyPayload.type = input.type;
       if (input.isBingo !== undefined) bodyPayload.is_bingo = input.isBingo;
+      if (input.bingoSize !== undefined) bodyPayload.bingo_size = input.bingoSize;
 
       response = await fetch(`${this.baseUrl}/users/${encodeURIComponent(actingUser)}/taskgroups/${encodeURIComponent(
         groupId,
@@ -200,7 +203,7 @@ export class HttpTaskGroupService implements ITaskGroupService {
     return { ok: true, value: undefined };
   }
 
-  async cancelInvitation(invitationId: string): Promise<Result<void>> {
+  async cancelInvitation(_invitationId: string): Promise<Result<void>> {
     // no backend endpoint to cancel by id in this API surface; treat as not-implemented
     return { ok: false, error: { code: 'not-implemented' } };
   }
@@ -257,7 +260,7 @@ export class HttpTaskGroupService implements ITaskGroupService {
     return this.addMember(input.groupId, input.userId);
   }
 
-  async rejectRequest(invitationId: string): Promise<Result<void>> {
+  async rejectRequest(_invitationId: string): Promise<Result<void>> {
     // no backend endpoint for rejecting stored invitations in this simplified API
     return { ok: true, value: undefined };
   }

@@ -34,6 +34,7 @@ export function reduceFrontendState(state: FrontendState, action: AppAction): Re
     case 'task-groups/delete':
     case 'task-groups/add-member':
     case 'task-groups/remove-member':
+    case 'task-groups/change-role':
     case 'task-groups/leave':
       return handleTaskGroups(state, action);
 

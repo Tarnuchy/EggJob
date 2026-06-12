@@ -1,5 +1,5 @@
 import type { Result } from './index';
-import type { TaskGroupPrivacy, TaskGroupType } from '../../application/state';
+import type { BingoSize, TaskGroupPrivacy, TaskGroupType } from '../../application/state';
 
 export interface ITaskGroupService {
   joinByInviteCode(input: { inviteCode: string; userId: string }): Promise<Result<void>>;
@@ -10,10 +10,11 @@ export interface ITaskGroupService {
     name: string;
     privacy: TaskGroupPrivacy;
     isBingo: boolean;
+    bingoSize?: BingoSize;
     type: TaskGroupType;
   }): Promise<Result<{ id?: string; inviteCode?: string }>>;
 
-  editGroup(groupId: string, input: { name?: string; privacy?: string; type?: TaskGroupType; isBingo?: boolean }): Promise<Result<void>>;
+  editGroup(groupId: string, input: { name?: string; privacy?: string; type?: TaskGroupType; isBingo?: boolean; bingoSize?: BingoSize }): Promise<Result<void>>;
 
   deleteGroup(groupId: string): Promise<Result<void>>;
 

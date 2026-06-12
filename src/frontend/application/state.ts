@@ -1,5 +1,8 @@
 export type TaskColor = string;
 
+export type TaskKind = 'one_time' | 'endless';
+export type BingoSize = 3 | 4 | 5;
+
 export type TaskGroupPrivacy = 'public' | 'private' | 'friends';
 export type TaskGroupType = 'cooperative' | 'competitive';
 export type MemberRole = 'member' | 'admin' | 'owner';
@@ -21,6 +24,7 @@ export type TaskGroup = {
   privacy: TaskGroupPrivacy;
   type: TaskGroupType;
   isBingo: boolean;
+  bingoSize?: BingoSize;
   inviteCode: string;
   taskIds: string[];
   memberIds: string[];
@@ -37,6 +41,7 @@ export type Task = {
   name: string;
   goal: number;
   progressId: string;
+  kind?: TaskKind;
   params: TaskParams;
 };
 

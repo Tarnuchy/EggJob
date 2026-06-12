@@ -9,39 +9,28 @@ import { AppInput } from '../../components/common/AppInput';
 import { AppButton } from '../../components/common/AppButton';
 import { SegmentedControl, type SegmentedControlOption } from '../../components/common/SegmentedControl';
 import { useAppState } from '../../application/AppStateContext';
-import { useCurrentUserId } from '../../hooks/useCurrentUserId';
-import { selectTaskGroupsByMember } from '../../application/selectors';
 import { taskService } from '../../services';
 import { colors } from '../../theme/colors';
 import { SCREEN_PADDING_H, spacing } from '../../theme/spacing';
 import type { TaskColor, TaskKind } from '../../application/state';
-import { DEFAULT_TASK_COLOR, findTaskColorId, TASK_COLORS } from './taskColors';
+import { findTaskColorId, TASK_COLORS } from './taskColors';
 
-const generateId = (prefix: string) =>
-  `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
-
-export const CreateTaskScreen = ({ navigation, route }: any) => {
+export const EditTaskScreen = ({ navigation, route }: any) => {
   const { t } = useTranslation();
-  const { dispatch, state } = useAppState();
-  const currentUserId = useCurrentUserId();
-  const initialGroupId = (route.params as { groupId?: string } | undefined)?.groupId ?? null;
+  const { state, dispatch } = useAppState();
+  const { groupId, taskId } = route.params as { groupId: string; taskId: string };
 
-  const memberGroups = useMemo(
-    () => selectTaskGroupsByMember(state, currentUserId),
-    [state, currentUserId],
-  );
+  const group = state.entities.taskGroups[groupId];
+  const task = state.entities.tasks[taskId];
 
-  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(initialGroupId);
-  const [groupPickerOpen, setGroupPickerOpen] = useState(false);
-  const [taskName, setTaskName] = useState('');
-  const [taskKind, setTaskKind] = useState<TaskKind>('one_time');
-  const [taskGoal, setTaskGoal] = useState('10');
-  const [taskColor, setTaskColor] = useState<TaskColor>(DEFAULT_TASK_COLOR);
+  const [taskName, setTaskName] = useState(task?.name ?? '');
+  const [taskKind, setTaskKind] = useState<TaskKind>(task?.kind ?? (task && task.goal > 1 ? 'endless' : 'one_time'));
+  const [taskGoal, setTaskGoal] = useState(String(task?.goal ?? 1));
+  const [taskColor, setTaskColor] = useState<TaskColor>(task?.params.color ?? TASK_COLORS[4].value);
   const [colorPickerOpen, setColorPickerOpen] = useState(false);
-  const [taskPhotoRequired, setTaskPhotoRequired] = useState(false);
-  const [taskNotifications, setTaskNotifications] = useState(true);
+  const [taskPhotoRequired, setTaskPhotoRequired] = useState(task?.params.photoRequired ?? false);
+  const [taskNotifications, setTaskNotifications] = useState(task?.params.notifications ?? true);
 
-  const selectedGroup = selectedGroupId ? state.entities.taskGroups[selectedGroupId] : null;
   const selectedColorId = findTaskColorId(taskColor);
 
   const taskKindOptions = useMemo(
@@ -53,12 +42,20 @@ export const CreateTaskScreen = ({ navigation, route }: any) => {
     [t],
   );
 
-  const handleCreateTask = async () => {
-    if (!selectedGroupId || !selectedGroup) {
-      Alert.alert(t('tasks.tasks.missingGroupTitle'), t('tasks.tasks.missingGroupMessage'));
-      return;
-    }
+  if (!group || !task) {
+    return (
+      <View style={styles.root}>
+        <TopBar title={t('tasks.tasks.editTask')} showBackButton showRightActions={false} />
+        <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
+          <View style={styles.content}>
+            <AppText variant="label">{t('tasks.groups.notFound')}</AppText>
+          </View>
+        </SafeAreaView>
+      </View>
+    );
+  }
 
+  const handleSave = async () => {
     const trimmedName = taskName.trim();
     const parsedGoal = taskKind === 'one_time' ? 1 : Number(taskGoal);
     if (!trimmedName || Number.isNaN(parsedGoal) || parsedGoal <= 0) {
@@ -66,103 +63,73 @@ export const CreateTaskScreen = ({ navigation, route }: any) => {
       return;
     }
 
-    const taskId = generateId('tsk');
-    const progressId = generateId('prg');
     const params = {
       color: taskColor,
       photoRequired: taskPhotoRequired,
       notifications: taskNotifications,
     };
 
-    const serviceResult = await taskService.createTask({
-      taskId,
-      groupId: selectedGroupId,
-      progressId,
+    const serviceResult = await taskService.editTask(taskId, {
       name: trimmedName,
       goal: parsedGoal,
-      status: 'active',
-      kind: taskKind,
       params,
     });
     if (!serviceResult.ok) {
-      Alert.alert(t('tasks.tasks.createErrorTitle'), t('tasks.tasks.createErrorMessage'));
+      Alert.alert(t('tasks.tasks.editErrorTitle'), t('tasks.tasks.editErrorMessage'));
       return;
     }
 
     const result = dispatch({
-      type: 'tasks/create',
+      type: 'tasks/edit',
       taskId,
-      groupId: selectedGroupId,
-      progressId,
       name: trimmedName,
       goal: parsedGoal,
       kind: taskKind,
       params,
     });
     if (!result.ok) {
-      Alert.alert(t('tasks.tasks.createErrorTitle'), t('tasks.tasks.createErrorMessage'));
+      Alert.alert(t('tasks.tasks.editErrorTitle'), t('tasks.tasks.editErrorMessage'));
       return;
     }
 
-    Alert.alert(t('tasks.tasks.createSuccessTitle'), t('tasks.tasks.createSuccessMessage'));
+    Alert.alert(t('tasks.tasks.editSuccessTitle'), t('tasks.tasks.editSuccessMessage'));
     navigation.goBack();
+  };
+
+  const handleDelete = () => {
+    Alert.alert(t('tasks.tasks.deleteTitle'), t('tasks.tasks.deleteMessage'), [
+      { text: t('tasks.common.cancel'), style: 'cancel' },
+      {
+        text: t('tasks.common.delete'),
+        style: 'destructive',
+        onPress: async () => {
+          const serviceResult = await taskService.deleteTask(taskId);
+          if (!serviceResult.ok) {
+            Alert.alert(t('tasks.tasks.deleteErrorTitle'), t('tasks.tasks.deleteErrorMessage'));
+            return;
+          }
+          const result = dispatch({ type: 'tasks/delete', taskId });
+          if (!result.ok) {
+            Alert.alert(t('tasks.tasks.deleteErrorTitle'), t('tasks.tasks.deleteErrorMessage'));
+            return;
+          }
+          Alert.alert(t('tasks.tasks.deleteSuccessTitle'), t('tasks.tasks.deleteSuccessMessage'));
+          navigation.goBack();
+        },
+      },
+    ]);
   };
 
   return (
     <View style={styles.root}>
-      <TopBar title={t('tasks.tasks.createTask')} showBackButton showRightActions={false} />
+      <TopBar title={t('tasks.tasks.editTask')} showBackButton showRightActions={false} />
       <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.card}>
             <AppText variant="caption" color="muted" style={styles.sectionTitle}>
               {t('tasks.tasks.groupPickerSection')}
             </AppText>
-            <Pressable
-              onPress={() => setGroupPickerOpen((value) => !value)}
-              style={({ pressed }) => [styles.dropdownTrigger, pressed && styles.dropdownTriggerPressed]}
-              accessibilityRole="button"
-              accessibilityState={{ expanded: groupPickerOpen }}
-            >
-              <AppText variant="label" color={selectedGroup ? 'textPrimary' : 'textSecondary'}>
-                {selectedGroup ? selectedGroup.name : t('tasks.tasks.noGroupSelectedTitle')}
-              </AppText>
-              <Ionicons
-                name={groupPickerOpen ? 'chevron-up' : 'chevron-down'}
-                size={18}
-                color={colors.muted}
-              />
-            </Pressable>
-            {groupPickerOpen ? (
-              <View style={styles.dropdownList}>
-                {memberGroups.map(({ id, group }) => (
-                  <Pressable
-                    key={id}
-                    onPress={() => {
-                      setSelectedGroupId(id);
-                      setGroupPickerOpen(false);
-                    }}
-                    style={({ pressed }) => [
-                      styles.dropdownRow,
-                      selectedGroupId === id && styles.dropdownRowActive,
-                      pressed && styles.dropdownRowPressed,
-                    ]}
-                    accessibilityRole="button"
-                  >
-                    <AppText
-                      variant="caption"
-                      color={selectedGroupId === id ? 'textOnPrimary' : 'textPrimary'}
-                    >
-                      {group.name}
-                    </AppText>
-                  </Pressable>
-                ))}
-                {memberGroups.length === 0 ? (
-                  <AppText variant="caption" color="textSecondary">
-                    {t('tasks.groups.emptyMessage')}
-                  </AppText>
-                ) : null}
-              </View>
-            ) : null}
+            <AppText variant="label">{group.name}</AppText>
           </View>
 
           <View style={styles.card}>
@@ -289,10 +256,11 @@ export const CreateTaskScreen = ({ navigation, route }: any) => {
 
           <View style={styles.actions}>
             <AppButton
-              title={t('tasks.tasks.createTask')}
-              onPress={handleCreateTask}
-              disabled={!taskName.trim() || !selectedGroupId || !currentUserId}
+              title={t('tasks.tasks.saveChanges')}
+              onPress={handleSave}
+              disabled={!taskName.trim()}
             />
+            <AppButton title={t('tasks.tasks.deleteTask')} onPress={handleDelete} />
           </View>
         </ScrollView>
       </SafeAreaView>
@@ -389,5 +357,7 @@ const styles = StyleSheet.create({
     borderColor: colors.dividerLine,
   },
   toggleKnobActive: { backgroundColor: colors.primary },
-  actions: { marginTop: spacing.sm },
+  actions: { marginTop: spacing.sm, gap: spacing.xs },
 });
+
+export default EditTaskScreen;
