@@ -4,9 +4,11 @@ import { MainTabs } from './MainTabs';
 import { SlideOverPanel } from '../components/layout/SlideOverPanel';
 import { PanelContext, type PanelKind } from './PanelContext';
 import { NotificationsProvider } from '../application/NotificationsContext';
+import { useBackendHydration } from '../hooks/useBackendHydration';
 
 export const PanelHost = () => {
   const [openPanel, setOpenPanel] = useState<PanelKind>(null);
+  useBackendHydration();
 
   useEffect(() => {
     if (openPanel === null) return;

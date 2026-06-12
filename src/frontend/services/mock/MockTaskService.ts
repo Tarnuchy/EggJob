@@ -37,11 +37,11 @@ class MockTaskService implements ITaskService {
     status: string;
     kind: string;
     params: TaskParams;
-  }): Promise<Result<void>> {
+  }): Promise<Result<{ id?: string }>> {
     const { taskId, progressId, name, goal, params } = input;
     this.tasks[taskId] = { name, goal, progressId, params };
     this.progresses[progressId] = { value: 0 };
-    return { ok: true, value: undefined };
+    return { ok: true, value: { id: taskId } };
   }
 
   async editTask(

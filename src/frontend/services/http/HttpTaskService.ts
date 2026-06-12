@@ -27,7 +27,7 @@ export class HttpTaskService implements ITaskService {
     status: string;
     kind: string;
     params: TaskParams;
-  }): Promise<Result<void>> {
+  }): Promise<Result<{ id?: string }>> {
     let response: Response;
     try {
       const actingUser = CurrentUser.get();
@@ -62,7 +62,12 @@ export class HttpTaskService implements ITaskService {
       return { ok: false, error: { code: `http-${response.status}` } };
     }
 
-    return { ok: true, value: undefined };
+    try {
+      const parsed = (await response.json()) as { id?: string };
+      return { ok: true, value: { id: parsed.id } };
+    } catch {
+      return { ok: true, value: {} };
+    }
   }
 
   async editTask(
@@ -89,6 +94,24 @@ export class HttpTaskService implements ITaskService {
       if (response.status === 400) return { ok: false, error: { code: 'validation' } };
       if (response.status === 404) return { ok: false, error: { code: 'not-found' } };
       return { ok: false, error: { code: `http-${response.status}` } };
+    }
+
+    if (input.params) {
+      try {
+        const headers = await buildAuthHeaders();
+        const paramsRes = await fetch(`${this.baseUrl}/task-params/${encodeURIComponent(taskId)}`, {
+          method: 'PATCH',
+          headers: { ...headers, ...JSON_HEADERS },
+          body: JSON.stringify({
+            photo_required: input.params.photoRequired,
+            color: input.params.color,
+            notifications: input.params.notifications,
+          }),
+        });
+        if (!paramsRes.ok) return { ok: false, error: { code: `http-${paramsRes.status}` } };
+      } catch {
+        return { ok: false, error: { code: 'network' } };
+      }
     }
 
     return { ok: true, value: undefined };
@@ -125,17 +148,44 @@ export class HttpTaskService implements ITaskService {
     value: number;
     note: string;
   }): Promise<Result<void>> {
-    // Need to resolve the TaskProgress id for this user and task
+    // TaskProgress is keyed by group member, not user: resolve task -> group -> my member id,
+    // then pick my progress row (competitive) or the single shared one (cooperative)
     try {
       const headers = await buildAuthHeaders();
+      const actingUser = CurrentUser.get() ?? input.authorUserId;
+
+      const taskRes = await fetch(`${this.baseUrl}/tasks/${encodeURIComponent(input.taskId)}`, {
+        method: 'GET',
+        headers: { ...headers },
+      });
+      if (!taskRes.ok) return { ok: false, error: { code: 'not-found' } };
+      const taskDetail = (await taskRes.json()) as { task?: { group_id?: string } };
+      const groupId = taskDetail.task?.group_id;
+
+      let myMemberId: string | null = null;
+      if (groupId) {
+        const membersRes = await fetch(
+          `${this.baseUrl}/taskgroups/${encodeURIComponent(groupId)}/members`,
+          { method: 'GET', headers: { ...headers } },
+        );
+        if (membersRes.ok) {
+          const membersJson = (await membersRes.json()) as {
+            items?: Array<{ id: string; user_id: string }>;
+          };
+          myMemberId = membersJson.items?.find((m) => m.user_id === actingUser)?.id ?? null;
+        }
+      }
+
       const progressRes = await fetch(`${this.baseUrl}/tasks/${encodeURIComponent(input.taskId)}/progress`, {
         method: 'GET',
         headers: { ...headers },
       });
       if (!progressRes.ok) return { ok: false, error: { code: 'not-found' } };
-      const parsed = await progressRes.json();
-      const actingUser = CurrentUser.get() ?? input.authorUserId;
-      const item = (parsed.items || []).find((p: any) => p.user_id === actingUser || p.userId === actingUser);
+      const parsed = (await progressRes.json()) as {
+        items?: Array<{ id: string; group_member_id?: string | null }>;
+      };
+      const items = parsed.items ?? [];
+      const item = items.find((p) => myMemberId !== null && p.group_member_id === myMemberId) ?? items[0];
       if (!item) return { ok: false, error: { code: 'not-found' } };
 
       const updateRes = await fetch(

@@ -1,4 +1,7 @@
 import { httpAuthService } from './http/HttpAuthService';
+import { httpNotificationService } from './http/HttpNotificationService';
+import { httpProfileService } from './http/HttpProfileService';
+import { httpSocialService } from './http/HttpSocialService';
 import { httpTaskGroupService } from './http/HttpTaskGroupService';
 import { USE_HTTP_SERVICES } from './http/config';
 import { mockAuthService } from './mock/MockAuthService';
@@ -28,9 +31,9 @@ interface ServiceContainer {
 
 export const services: ServiceContainer = {
   authService: USE_HTTP_SERVICES ? httpAuthService : mockAuthService,
-  profileService: mockProfileService,
-  socialService: mockSocialService,
+  profileService: USE_HTTP_SERVICES ? httpProfileService : mockProfileService,
+  socialService: USE_HTTP_SERVICES ? httpSocialService : mockSocialService,
   taskGroupService: USE_HTTP_SERVICES ? httpTaskGroupService : mockTaskGroupService,
   taskService: USE_HTTP_SERVICES ? httpTaskService : mockTaskService,
-  notificationService: mockNotificationService,
+  notificationService: USE_HTTP_SERVICES ? httpNotificationService : mockNotificationService,
 };

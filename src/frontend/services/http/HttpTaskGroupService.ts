@@ -75,7 +75,6 @@ export class HttpTaskGroupService implements ITaskGroupService {
     name: string;
     privacy: string;
     isBingo: boolean;
-    bingoSize?: number;
     type: 'cooperative' | 'competitive';
   }): Promise<Result<{ id?: string; inviteCode?: string }>> {
     let response: Response;
@@ -85,7 +84,6 @@ export class HttpTaskGroupService implements ITaskGroupService {
         name: input.name,
         privacy: input.privacy,
         is_bingo: input.isBingo,
-        bingo_size: input.isBingo ? input.bingoSize ?? 3 : null,
         type: input.type,
       });
       response = await fetch(`${this.baseUrl}/users/${encodeURIComponent(input.ownerUserId)}/taskgroups`, {
@@ -111,7 +109,7 @@ export class HttpTaskGroupService implements ITaskGroupService {
     }
   }
 
-  async editGroup(groupId: string, input: { name?: string; privacy?: string; type?: 'cooperative' | 'competitive'; isBingo?: boolean; bingoSize?: number }): Promise<Result<void>> {
+  async editGroup(groupId: string, input: { name?: string; privacy?: string; type?: 'cooperative' | 'competitive'; isBingo?: boolean }): Promise<Result<void>> {
     let response: Response;
     try {
       const actingUser = CurrentUser.get();
@@ -120,9 +118,7 @@ export class HttpTaskGroupService implements ITaskGroupService {
       const bodyPayload: Record<string, unknown> = {};
       if (input.name !== undefined) bodyPayload.name = input.name;
       if (input.privacy !== undefined) bodyPayload.privacy = input.privacy;
-      if (input.type !== undefined) bodyPayload.type = input.type;
       if (input.isBingo !== undefined) bodyPayload.is_bingo = input.isBingo;
-      if (input.bingoSize !== undefined) bodyPayload.bingo_size = input.bingoSize;
 
       response = await fetch(`${this.baseUrl}/users/${encodeURIComponent(actingUser)}/taskgroups/${encodeURIComponent(
         groupId,
@@ -141,6 +137,28 @@ export class HttpTaskGroupService implements ITaskGroupService {
       if (response.status === 401) return { ok: false, error: { code: 'unauthorized' } };
       if (response.status === 403) return { ok: false, error: { code: 'forbidden' } };
       return { ok: false, error: { code: `http-${response.status}` } };
+    }
+
+    // group type has its own endpoint — the PATCH body ignores `type`
+    if (input.type !== undefined) {
+      try {
+        const actingUser = CurrentUser.get();
+        if (!actingUser) return { ok: false, error: { code: 'unauthorized' } };
+        const headers = await buildAuthHeaders();
+        const typeRes = await fetch(
+          `${this.baseUrl}/users/${encodeURIComponent(actingUser)}/taskgroups/${encodeURIComponent(groupId)}/type`,
+          {
+            method: 'POST',
+            headers: { ...headers, ...JSON_HEADERS },
+            body: JSON.stringify({ new_type: input.type }),
+          },
+        );
+        if (!typeRes.ok && typeRes.status !== 403) {
+          return { ok: false, error: { code: `http-${typeRes.status}` } };
+        }
+      } catch {
+        return { ok: false, error: { code: 'network' } };
+      }
     }
 
     return { ok: true, value: undefined };

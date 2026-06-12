@@ -1,5 +1,6 @@
 import type { AppAction } from './actions';
 import { handleAuth } from './handlers/auth';
+import { handleHydration } from './handlers/hydration';
 import { handleNotifications } from './handlers/notifications';
 import { handleProfile } from './handlers/profile';
 import { handleSocial } from './handlers/social';
@@ -57,6 +58,9 @@ export function reduceFrontendState(state: FrontendState, action: AppAction): Re
     case 'notifications/add':
     case 'notifications/read':
       return handleNotifications(state, action);
+
+    case 'hydrate/task-data':
+      return handleHydration(state, action);
 
     default: {
       const exhaustive: never = action;

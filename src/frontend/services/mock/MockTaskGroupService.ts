@@ -18,7 +18,7 @@ class MockTaskGroupService implements ITaskGroupService {
   > = {
     'grp-seed-1': {
       name: 'Morning Run Club',
-      privacy: 'friends',
+      privacy: 'private',
       type: 'cooperative',
       isBingo: false,
       inviteCode: 'MORN01',

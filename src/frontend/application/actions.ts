@@ -1,4 +1,14 @@
-import type { BingoSize, TaskGroupPrivacy, TaskGroupType, TaskKind, TaskParams, MemberRole } from './state';
+import type {
+  MemberRole,
+  Task,
+  TaskGroup,
+  TaskGroupPrivacy,
+  TaskGroupType,
+  TaskKind,
+  TaskParams,
+  TaskProgress,
+  User,
+} from './state';
 
 export type AppAction =
   | {
@@ -56,7 +66,6 @@ export type AppAction =
       privacy: TaskGroupPrivacy;
       groupType: TaskGroupType;
       isBingo: boolean;
-      bingoSize?: BingoSize;
       inviteCode?: string;
       createdAt?: Date;
     }
@@ -67,7 +76,6 @@ export type AppAction =
       privacy?: TaskGroupPrivacy;
       groupType?: TaskGroupType;
       isBingo?: boolean;
-      bingoSize?: BingoSize;
     }
   | {
       type: 'task-groups/delete';
@@ -188,6 +196,13 @@ export type AppAction =
   | {
       type: 'notifications/read';
       notificationId: string;
+    }
+  | {
+      type: 'hydrate/task-data';
+      taskGroups: Record<string, TaskGroup>;
+      tasks: Record<string, Task>;
+      taskProgresses: Record<string, TaskProgress>;
+      users: Record<string, User>;
     };
 
 export type AppActionType = AppAction['type'];

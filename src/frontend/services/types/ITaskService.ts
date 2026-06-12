@@ -16,7 +16,7 @@ export interface ITaskService {
     status: string;
     kind: string;
     params: TaskParams;
-  }): Promise<Result<void>>;
+  }): Promise<Result<{ id?: string }>>;
 
   editTask(
     taskId: string,
