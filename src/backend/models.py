@@ -19,6 +19,8 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
     Uuid,
+    event,
+    inspect,
 )
 from sqlalchemy.orm import Mapped, Session, mapped_column, relationship, synonym, validates
 
@@ -32,6 +34,7 @@ from src.backend.exceptions import (
     ValidationError,
 )
 from src.backend.security import hash_password, password_needs_rehash, verify_password
+from src.backend.storage import storage
 
 
 def utcnow() -> datetime:
@@ -39,6 +42,15 @@ def utcnow() -> datetime:
 
 
 _COLOR_HEX_RE = re.compile(r"^#[0-9a-fA-F]+$")
+
+_PHOTO_URL_RE = re.compile(r"https?://\S+\.\S+")
+_MEDIA_URL_RE = re.compile(r"/media/[0-9a-fA-F]{32}\.(?:jpg|png|webp)")
+
+
+def is_valid_photo_url(url: str) -> bool:
+    """Akceptuje zewnętrzny URL http(s) albo referencję do naszego storage
+    (klucz wgrany przez POST /uploads, serwowany przez GET /media/{key})."""
+    return bool(_PHOTO_URL_RE.fullmatch(url) or _MEDIA_URL_RE.fullmatch(url))
 
 
 class PrivacyLevel(Enum):
@@ -267,8 +279,8 @@ class User(Base):
     )
 
     @staticmethod
-    def is_valid_photo_url(url: str) -> bool: #TODO jak my wgl chcemy zdjecia obsługiwać?
-        return bool(re.fullmatch(r"https?://\S+\.\S+", url))
+    def is_valid_photo_url(url: str) -> bool:
+        return is_valid_photo_url(url)
     @staticmethod
     def is_unique_username(db_session: Session, username: str) -> bool:
         return (db_session.query(User).filter_by(username=username).first() is None and username != "")
@@ -1416,6 +1428,14 @@ class ProgressEntry(Base):
         cascade="all, delete-orphan",
     )
 
+    @validates("photoUrl")
+    def _validate_photo_url(self, key: str, value: str | None) -> str | None:
+        if value is None:
+            return None
+        if not is_valid_photo_url(value):
+            raise ValidationError("Invalid photo URL")
+        return value
+
     def validate(self, db_session: Session) -> bool:
         params = db_session.query(TaskParams).filter(TaskParams.taskID == self.taskProgress.taskID).first()
         if not params:
@@ -1476,6 +1496,48 @@ class Comment(Base):
             raise PermissionDeniedError("User does not have permission to delete this comment")
         db_session.delete(self)
         db_session.flush()
+
+
+# --- Sprzątanie plików w storage po usunięciu/podmianie zdjęć (User, ProgressEntry) ---
+# Klucze do skasowania zbieramy podczas flush (łapie też usunięcia kaskadowe),
+# a pliki kasujemy dopiero PO udanym commicie, żeby rollback nie usunął pliku
+# wciąż wskazywanego przez bazę. Zewnętrzne URL-e (http) są ignorowane.
+_MEDIA_PENDING_KEY = "_media_pending_delete"
+
+
+@event.listens_for(Session, "before_flush")
+def _stage_orphaned_media(session: Session, flush_context, instances) -> None:
+    pending: set[str] = session.info.setdefault(_MEDIA_PENDING_KEY, set())
+    for obj in session.deleted:
+        if isinstance(obj, (User, ProgressEntry)):
+            key = storage.key_from_url(obj.photoUrl)
+            if key:
+                pending.add(key)
+    for obj in session.dirty:
+        if not isinstance(obj, (User, ProgressEntry)):
+            continue
+        history = inspect(obj).attrs.photoUrl.history
+        if not history.has_changes():
+            continue
+        for old in history.deleted:  # poprzednia wartość podmieniana w tym flushu
+            key = storage.key_from_url(old)
+            if key:
+                pending.add(key)
+
+
+@event.listens_for(Session, "after_commit")
+def _delete_orphaned_media(session: Session) -> None:
+    pending = session.info.pop(_MEDIA_PENDING_KEY, None)
+    for key in pending or ():
+        try:
+            storage.delete(key)
+        except Exception:
+            pass  # brak pliku / błąd IO nie może wywrócić zatwierdzonej operacji
+
+
+@event.listens_for(Session, "after_rollback")
+def _discard_orphaned_media(session: Session) -> None:
+    session.info.pop(_MEDIA_PENDING_KEY, None)
 
 
 __all__ = [ #do importów

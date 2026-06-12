@@ -9,3 +9,6 @@ yarn-error.*
 .env
 .env.*
 !.env.example
+
+# Uploaded media (local storage backend)
+media_uploads/

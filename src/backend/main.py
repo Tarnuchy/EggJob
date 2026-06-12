@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from src.backend.basics import router as basics_router
 from src.backend.database import get_db, transaction
+from src.backend.media import router as media_router
 from src.backend.exceptions import *
 from src.backend.models import *
 from src.backend.request import *
@@ -30,6 +31,7 @@ app.add_middleware(
 )
 
 app.include_router(basics_router)
+app.include_router(media_router)
 
 
 @app.exception_handler(ValidationError)
