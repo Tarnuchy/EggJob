@@ -1,4 +1,14 @@
-import type { TaskGroupPrivacy, TaskParams } from './state';
+import type {
+  MemberRole,
+  Task,
+  TaskGroup,
+  TaskGroupPrivacy,
+  TaskGroupType,
+  TaskKind,
+  TaskParams,
+  TaskProgress,
+  User,
+} from './state';
 
 export type AppAction =
   | {
@@ -54,6 +64,8 @@ export type AppAction =
       ownerUserId: string;
       name: string;
       privacy: TaskGroupPrivacy;
+      groupType: TaskGroupType;
+      isBingo: boolean;
       inviteCode?: string;
       createdAt?: Date;
     }
@@ -62,6 +74,8 @@ export type AppAction =
       groupId: string;
       name?: string;
       privacy?: TaskGroupPrivacy;
+      groupType?: TaskGroupType;
+      isBingo?: boolean;
     }
   | {
       type: 'task-groups/delete';
@@ -76,6 +90,12 @@ export type AppAction =
       type: 'task-groups/remove-member';
       groupId: string;
       userId: string;
+    }
+  | {
+      type: 'task-groups/change-role';
+      groupId: string;
+      userId: string;
+      role: MemberRole;
     }
   | {
       type: 'task-groups/leave';
@@ -129,7 +149,7 @@ export type AppAction =
       params: TaskParams;
       description?: string;
       status?: string;
-      kind?: string;
+      kind?: TaskKind;
       createdAt?: Date;
     }
   | {
@@ -140,6 +160,7 @@ export type AppAction =
       params?: Partial<TaskParams>;
       description?: string;
       status?: string;
+      kind?: TaskKind;
       createdAt?: Date;
     }
   | {
@@ -175,6 +196,13 @@ export type AppAction =
   | {
       type: 'notifications/read';
       notificationId: string;
+    }
+  | {
+      type: 'hydrate/task-data';
+      taskGroups: Record<string, TaskGroup>;
+      tasks: Record<string, Task>;
+      taskProgresses: Record<string, TaskProgress>;
+      users: Record<string, User>;
     };
 
 export type AppActionType = AppAction['type'];

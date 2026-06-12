@@ -10,13 +10,13 @@ class MockTaskService implements ITaskService {
       name: 'Run 5km',
       goal: 5,
       progressId: 'prg-seed-1',
-      params: { photoRequired: false, color: 'blue', notifications: true },
+      params: { photoRequired: false, color: '#2563EB', notifications: true },
     },
     'tsk-seed-2': {
       name: 'Push-ups 100',
       goal: 100,
       progressId: 'prg-seed-2',
-      params: { photoRequired: false, color: 'green', notifications: false },
+      params: { photoRequired: false, color: '#16A34A', notifications: false },
     },
   };
 
@@ -37,11 +37,11 @@ class MockTaskService implements ITaskService {
     status: string;
     kind: string;
     params: TaskParams;
-  }): Promise<Result<void>> {
+  }): Promise<Result<{ id?: string }>> {
     const { taskId, progressId, name, goal, params } = input;
     this.tasks[taskId] = { name, goal, progressId, params };
     this.progresses[progressId] = { value: 0 };
-    return { ok: true, value: undefined };
+    return { ok: true, value: { id: taskId } };
   }
 
   async editTask(

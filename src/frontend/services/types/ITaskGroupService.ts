@@ -1,15 +1,19 @@
 import type { Result } from './index';
+import type { TaskGroupPrivacy, TaskGroupType } from '../../application/state';
 
 export interface ITaskGroupService {
+  joinByInviteCode(input: { inviteCode: string; userId: string }): Promise<Result<void>>;
+
   createGroup(input: {
     groupId: string;
     ownerUserId: string;
     name: string;
-    privacy: string;
-    inviteCode?: string;
-  }): Promise<Result<void>>;
+    privacy: TaskGroupPrivacy;
+    isBingo: boolean;
+    type: TaskGroupType;
+  }): Promise<Result<{ id?: string; inviteCode?: string }>>;
 
-  editGroup(groupId: string, input: { name?: string; privacy?: string }): Promise<Result<void>>;
+  editGroup(groupId: string, input: { name?: string; privacy?: string; type?: TaskGroupType; isBingo?: boolean }): Promise<Result<void>>;
 
   deleteGroup(groupId: string): Promise<Result<void>>;
 
@@ -51,12 +55,16 @@ export interface ITaskGroupService {
 
   removeMember(groupId: string, userId: string): Promise<Result<void>>;
 
+  changeRole(groupId: string, userId: string, role: string): Promise<Result<void>>;
+
   leaveGroup(groupId: string, userId: string): Promise<Result<void>>;
 
   getGroup(groupId: string): Promise<
     Result<{
       name: string;
       privacy: string;
+      type: string;
+      isBingo: boolean;
       inviteCode: string;
       memberIds: string[];
       taskIds: string[];

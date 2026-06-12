@@ -49,6 +49,7 @@ class CreateGroupRequest(BaseModel):
 class TaskGroupEditRequest(BaseModel):
     name: str | None = None
     privacy: str | None = None
+    is_bingo: bool | None = None
 
 
 class TaskGroupAddFriendRequest(BaseModel):

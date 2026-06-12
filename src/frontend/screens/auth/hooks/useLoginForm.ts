@@ -1,6 +1,6 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAppState } from '../../../application/AppStateContext';
-import { strings } from '../../../i18n/strings';
 import { authService } from '../../../services';
 import {
   getEmailError,
@@ -16,6 +16,7 @@ interface UseLoginFormOptions {
 
 export function useLoginForm({ onSuccess }: UseLoginFormOptions) {
   const { dispatch } = useAppState();
+  const { t } = useTranslation();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -42,13 +43,13 @@ export function useLoginForm({ onSuccess }: UseLoginFormOptions) {
   const handleEmailBlur = () => {
     if (!shouldValidateOnBlur(email)) return;
     setEmailTouched(true);
-    setEmailError(getEmailError(email));
+    setEmailError(getEmailError(t, email));
   };
 
   const handlePasswordBlur = () => {
     if (!shouldValidatePasswordOnBlur(password)) return;
     setPasswordTouched(true);
-    setPasswordError(getPasswordError(password));
+    setPasswordError(getPasswordError(t, password));
   };
 
   const resetShake = () => setShakeCount(0);
@@ -56,8 +57,8 @@ export function useLoginForm({ onSuccess }: UseLoginFormOptions) {
   const handleSubmit = async () => {
     setEmailTouched(true);
     setPasswordTouched(true);
-    const eErr = getEmailError(email);
-    const pErr = getPasswordError(password);
+    const eErr = getEmailError(t, email);
+    const pErr = getPasswordError(t, password);
     setEmailError(eErr);
     setPasswordError(pErr);
     if (eErr || pErr) {
@@ -69,7 +70,7 @@ export function useLoginForm({ onSuccess }: UseLoginFormOptions) {
     try {
       const result = await authService.login({ email: email.trim(), password });
       if (!result.ok) {
-        setLoginError(strings.auth.errors.loginFailed);
+        setLoginError(t('auth.errors.loginFailed'));
         setShakeCount((c) => c + 1);
         return;
       }
@@ -79,7 +80,7 @@ export function useLoginForm({ onSuccess }: UseLoginFormOptions) {
         userId: result.value.userId,
       });
       if (!dispatchResult.ok) {
-        setLoginError(mapReducerError(dispatchResult.error));
+        setLoginError(mapReducerError(t, dispatchResult.error));
         setShakeCount((c) => c + 1);
         return;
       }

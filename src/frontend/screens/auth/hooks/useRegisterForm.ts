@@ -1,6 +1,6 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAppState } from '../../../application/AppStateContext';
-import { strings } from '../../../i18n/strings';
 import { authService } from '../../../services';
 import {
   getRegConfirmError,
@@ -18,6 +18,7 @@ interface UseRegisterFormOptions {
 
 export function useRegisterForm({ onSuccess }: UseRegisterFormOptions) {
   const { dispatch } = useAppState();
+  const { t } = useTranslation();
 
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
@@ -64,25 +65,25 @@ export function useRegisterForm({ onSuccess }: UseRegisterFormOptions) {
   const handleEmailBlur = () => {
     if (!shouldValidateOnBlur(email)) return;
     setEmailTouched(true);
-    setEmailError(getRegEmailError(email));
+    setEmailError(getRegEmailError(t, email));
   };
 
   const handleUsernameBlur = () => {
     if (!shouldValidateOnBlur(username)) return;
     setUsernameTouched(true);
-    setUsernameError(getRegUsernameError(username));
+    setUsernameError(getRegUsernameError(t, username));
   };
 
   const handlePasswordBlur = () => {
     if (!shouldValidatePasswordOnBlur(password)) return;
     setPasswordTouched(true);
-    setPasswordError(getRegPasswordError(password));
+    setPasswordError(getRegPasswordError(t, password));
   };
 
   const handleConfirmBlur = () => {
     if (!shouldValidatePasswordOnBlur(confirm)) return;
     setConfirmTouched(true);
-    setConfirmError(getRegConfirmError(confirm, password));
+    setConfirmError(getRegConfirmError(t, confirm, password));
   };
 
   const togglePasswordVisibility = () => setPasswordVisible((v) => !v);
@@ -94,10 +95,10 @@ export function useRegisterForm({ onSuccess }: UseRegisterFormOptions) {
     setUsernameTouched(true);
     setPasswordTouched(true);
     setConfirmTouched(true);
-    const eErr = getRegEmailError(email);
-    const uErr = getRegUsernameError(username);
-    const pErr = getRegPasswordError(password);
-    const cErr = getRegConfirmError(confirm, password);
+    const eErr = getRegEmailError(t, email);
+    const uErr = getRegUsernameError(t, username);
+    const pErr = getRegPasswordError(t, password);
+    const cErr = getRegConfirmError(t, confirm, password);
     setEmailError(eErr);
     setUsernameError(uErr);
     setPasswordError(pErr);
@@ -117,12 +118,12 @@ export function useRegisterForm({ onSuccess }: UseRegisterFormOptions) {
       if (!result.ok) {
         if (result.error.field === 'email') {
           setEmailTouched(true);
-          setEmailError(strings.auth.errors.emailInUse);
+          setEmailError(t('auth.errors.emailInUse'));
         } else if (result.error.field === 'username') {
           setUsernameTouched(true);
-          setUsernameError(strings.auth.errors.usernameTaken);
+          setUsernameError(t('auth.errors.usernameTaken'));
         } else {
-          setRegisterError(strings.auth.errors.registrationFailed);
+          setRegisterError(t('auth.errors.registrationFailed'));
         }
         setShakeCount((c) => c + 1);
         return;
@@ -136,11 +137,11 @@ export function useRegisterForm({ onSuccess }: UseRegisterFormOptions) {
       });
       if (!dispatchResult.ok) {
         if (dispatchResult.error.field === 'email') {
-          setEmailError(mapReducerError(dispatchResult.error));
+          setEmailError(mapReducerError(t, dispatchResult.error));
         } else if (dispatchResult.error.field === 'username') {
-          setUsernameError(mapReducerError(dispatchResult.error));
+          setUsernameError(mapReducerError(t, dispatchResult.error));
         } else {
-          setRegisterError(mapReducerError(dispatchResult.error));
+          setRegisterError(mapReducerError(t, dispatchResult.error));
         }
         setShakeCount((c) => c + 1);
         return;

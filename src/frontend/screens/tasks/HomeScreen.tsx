@@ -1,7 +1,8 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { PlaceholderScreen } from '../../components/layout/PlaceholderScreen';
-import { strings } from '../../i18n/strings';
 
-export const HomeScreen = () => (
-  <PlaceholderScreen title={strings.screens.home} text={strings.placeholders.home} />
-);
+export const HomeScreen = () => {
+  const { t } = useTranslation();
+  return <PlaceholderScreen title={t('screens.home')} text={t('placeholders.home')} />;
+};

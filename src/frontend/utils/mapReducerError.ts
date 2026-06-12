@@ -1,24 +1,22 @@
+import type { TFunction } from 'i18next';
 import type { ReducerResult } from '../application/reducer';
-import { strings } from '../i18n/strings';
 
 type ReducerError = Extract<ReducerResult, { ok: false }>['error'];
 
-const messages = strings.reducerErrors;
-
-export function mapReducerError(error: ReducerError): string {
+export function mapReducerError(t: TFunction, error: ReducerError): string {
   switch (error.code) {
     case 'validation':
-      if (error.field === 'email') return messages.validationEmail;
-      if (error.field === 'username') return messages.validationUsername;
-      if (error.field === 'name') return messages.validationName;
-      if (error.field === 'inviteCode') return messages.validationInviteCode;
-      if (error.field === 'value') return messages.validationValue;
-      return messages.validationGeneric;
+      if (error.field === 'email') return t('reducerErrors.validationEmail');
+      if (error.field === 'username') return t('reducerErrors.validationUsername');
+      if (error.field === 'name') return t('reducerErrors.validationName');
+      if (error.field === 'inviteCode') return t('reducerErrors.validationInviteCode');
+      if (error.field === 'value') return t('reducerErrors.validationValue');
+      return t('reducerErrors.validationGeneric');
     case 'not-found':
-      return messages.notFound;
+      return t('reducerErrors.notFound');
     case 'unknown-action':
-      return messages.unknownAction;
+      return t('reducerErrors.unknownAction');
     default:
-      return messages.unknown;
+      return t('reducerErrors.unknown');
   }
 }

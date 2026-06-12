@@ -1,8 +1,15 @@
 export type RootStackParamList = {
   Auth: undefined;
   Main: undefined;
-  Notifications: undefined;
-  Settings: undefined;
+  UserProfile: { userId: string };
+  EditProfile: undefined;
+  CreateGroup: undefined;
+  CreateTask: { groupId?: string } | undefined;
+  EditTask: { groupId: string; taskId: string };
+  AddProgress: { groupId?: string; taskId?: string } | undefined;
+  JoinGroup: undefined;
+  EditGroup: { groupId: string };
+  GroupTasks: { groupId: string };
 };
 
 export type TabParamList = {
