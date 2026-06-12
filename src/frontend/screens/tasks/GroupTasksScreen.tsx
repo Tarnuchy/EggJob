@@ -1,34 +1,74 @@
 import React, { useMemo } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { TopBar } from '../../components/layout/TopBar';
 import { AppText } from '../../components/common/AppText';
 import { EmptyState } from '../../components/common/EmptyState';
+import { BingoGrid, type BingoCell } from '../../components/tasks/BingoGrid';
 import { useAppState } from '../../application/AppStateContext';
 import { selectTasksByGroup } from '../../application/selectors';
+import { useCurrentUserId } from '../../hooks/useCurrentUserId';
 import { colors } from '../../theme/colors';
 import { SCREEN_PADDING_H, spacing } from '../../theme/spacing';
+import type { BingoSize } from '../../application/state';
 
 export const GroupTasksScreen = ({ navigation, route }: any) => {
   const { t } = useTranslation();
   const { state } = useAppState();
+  const currentUserId = useCurrentUserId();
   const { groupId } = route.params as { groupId: string };
 
   const group = state.entities.taskGroups[groupId];
   const tasks = useMemo(() => selectTasksByGroup(state, groupId), [state, groupId]);
+
+  const cells = useMemo<BingoCell[]>(
+    () =>
+      tasks.map(({ id, task }) => {
+        const progressValue = state.entities.taskProgresses[task.progressId]?.value ?? 0;
+        return task.name === ''
+          ? null
+          : { taskId: id, task, progress: progressValue, isDone: progressValue >= task.goal };
+      }),
+    [state.entities.taskProgresses, tasks],
+  );
 
   if (!group) {
     return (
       <View style={styles.root}>
         <TopBar title={t('tasks.tasks.listSection')} showBackButton showRightActions={false} />
         <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
-          <AppText variant="label">{t('tasks.groups.notFound') || 'Group not found'}</AppText>
+          <AppText variant="label">{t('tasks.groups.notFound')}</AppText>
         </SafeAreaView>
       </View>
     );
   }
+
+  const isBingoGroup = group.isBingo;
+  const size = Math.round(Math.sqrt(tasks.length)) as BingoSize;
+  const canEdit =
+    group.ownerUserId === currentUserId || group.memberRoles[currentUserId] === 'admin';
+
+  // TODO: npx expo install expo-clipboard — then replace this Alert with
+  // Clipboard.setStringAsync(group.inviteCode) + inviteCodeCopied success toast
+  const handleCopyCode = () => {
+    Alert.alert(t('tasks.groups.inviteCodeSection'), group.inviteCode || '-');
+  };
+
+  const handleCellPress = (index: number) => {
+    const cell = cells[index];
+    if (cell) {
+      navigation.navigate('EditTask', { groupId, taskId: cell.taskId });
+      return;
+    }
+    if (canEdit) {
+      const placeholderTask = tasks[index];
+      if (placeholderTask) {
+        navigation.navigate('EditTask', { groupId, taskId: placeholderTask.id });
+      }
+    }
+  };
 
   return (
     <View style={styles.root}>
@@ -40,23 +80,46 @@ export const GroupTasksScreen = ({ navigation, route }: any) => {
               {t('tasks.tasks.listSection')}
             </AppText>
             <AppText variant="label">{group.name}</AppText>
+            <View style={styles.codeRow}>
+              <AppText
+                variant="caption"
+                color="muted"
+                numberOfLines={1}
+                ellipsizeMode="middle"
+                style={styles.codeText}
+              >
+                {t('tasks.groups.inviteCodeSection')}: {group.inviteCode || '-'}
+              </AppText>
+              <Pressable
+                onPress={handleCopyCode}
+                hitSlop={8}
+                accessibilityRole="button"
+                accessibilityLabel={t('tasks.groups.inviteCodeCopy')}
+              >
+                <Ionicons name="copy-outline" size={14} color={colors.muted} />
+              </Pressable>
+            </View>
             <AppText variant="caption" color="textSecondary">
               {t('tasks.groups.taskCount', { count: group.taskIds.length })}
             </AppText>
           </View>
 
-          <Pressable
-            onPress={() => navigation.navigate('CreateTask', { groupId })}
-            style={({ pressed }) => [styles.actionBar, pressed && styles.actionBarPressed]}
-            accessibilityRole="button"
-          >
-            <AppText variant="label" color="textOnPrimary">
-              {t('tasks.tasks.addTaskAction')}
-            </AppText>
-            <Ionicons name="add" size={20} color={colors.textOnPrimary} />
-          </Pressable>
+          {!isBingoGroup ? (
+            <Pressable
+              onPress={() => navigation.navigate('CreateTask', { groupId })}
+              style={({ pressed }) => [styles.actionBar, pressed && styles.actionBarPressed]}
+              accessibilityRole="button"
+            >
+              <AppText variant="label" color="textOnPrimary">
+                {t('tasks.tasks.addTaskAction')}
+              </AppText>
+              <Ionicons name="add" size={20} color={colors.textOnPrimary} />
+            </Pressable>
+          ) : null}
 
-          {tasks.length === 0 ? (
+          {isBingoGroup ? (
+            <BingoGrid cells={cells} size={size} canEdit={canEdit} onCellPress={handleCellPress} />
+          ) : tasks.length === 0 ? (
             <EmptyState
               icon="clipboard-outline"
               title={t('tasks.tasks.emptyTitle')}
@@ -103,6 +166,15 @@ export const GroupTasksScreen = ({ navigation, route }: any) => {
                         ) : null}
                       </View>
                     </View>
+                    <Pressable
+                      onPress={() => navigation.navigate('AddProgress', { groupId, taskId: id })}
+                      hitSlop={8}
+                      style={({ pressed }) => pressed && styles.addProgressPressed}
+                      accessibilityRole="button"
+                      accessibilityLabel={t('tasks.tasks.addProgressAction')}
+                    >
+                      <Ionicons name="add-circle-outline" size={22} color={colors.muted} />
+                    </Pressable>
                     <Ionicons name="chevron-forward" size={18} color={colors.muted} />
                   </Pressable>
                 );
@@ -141,6 +213,14 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.6,
   },
+  codeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  codeText: {
+    flexShrink: 1,
+  },
   actionBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -159,7 +239,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.cardSurfaceTranslucent,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: colors.cardBorderTranslucent,
@@ -183,6 +263,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.xs,
   },
+  addProgressPressed: { opacity: 0.7 },
   pill: {
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,

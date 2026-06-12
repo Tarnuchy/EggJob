@@ -15,7 +15,7 @@ type TaskGroupAction = ActionOf<
 
 export function handleTaskGroups(state: FrontendState, action: TaskGroupAction): ReducerResult {
   if (action.type === 'task-groups/create') {
-    const { groupId, ownerUserId, name, privacy, groupType, isBingo, bingoSize, inviteCode } = action;
+    const { groupId, ownerUserId, name, privacy, groupType, isBingo, inviteCode } = action;
 
     if (!name || name.trim().length === 0) {
       return { ok: false, error: { code: 'validation', field: 'name' } };
@@ -35,7 +35,6 @@ export function handleTaskGroups(state: FrontendState, action: TaskGroupAction):
               privacy,
               type: groupType,
               isBingo,
-              ...(isBingo ? { bingoSize: bingoSize ?? 3 } : {}),
               inviteCode: inviteCode ?? '',
               taskIds: [],
               memberIds: [],
@@ -48,7 +47,7 @@ export function handleTaskGroups(state: FrontendState, action: TaskGroupAction):
   }
 
   if (action.type === 'task-groups/edit') {
-    const { groupId, name, privacy, groupType, isBingo, bingoSize } = action;
+    const { groupId, name, privacy, groupType, isBingo } = action;
 
     if (name !== undefined && name.trim().length === 0) {
       return { ok: false, error: { code: 'validation', field: 'name' } };
@@ -73,7 +72,6 @@ export function handleTaskGroups(state: FrontendState, action: TaskGroupAction):
               ...(privacy !== undefined ? { privacy } : {}),
               ...(groupType !== undefined ? { type: groupType } : {}),
               ...(isBingo !== undefined ? { isBingo } : {}),
-              ...(bingoSize !== undefined ? { bingoSize } : {}),
             },
           },
         },

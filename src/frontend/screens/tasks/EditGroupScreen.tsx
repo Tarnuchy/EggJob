@@ -2,22 +2,23 @@ import React, { useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, View, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
+import { Ionicons } from '@expo/vector-icons';
 import { AppInput } from '../../components/common/AppInput';
 import { AppButton } from '../../components/common/AppButton';
 import { AppText } from '../../components/common/AppText';
-import { SegmentedControl, type SegmentedControlOption } from '../../components/common/SegmentedControl';
+import { SegmentedControl } from '../../components/common/SegmentedControl';
 import { useAppState } from '../../application/AppStateContext';
+import { useToast } from '../../context/ToastContext';
 import { taskGroupService } from '../../services';
 import { TopBar } from '../../components/layout/TopBar';
 import { colors } from '../../theme/colors';
 import { SCREEN_PADDING_H, spacing } from '../../theme/spacing';
-import type { BingoSize, MemberRole, TaskGroupPrivacy, TaskGroupType } from '../../application/state';
-
-type BingoSizeValue = '3' | '4' | '5';
+import type { MemberRole, TaskGroupPrivacy, TaskGroupType } from '../../application/state';
 
 export const EditGroupScreen = ({ navigation, route }: any) => {
   const { t } = useTranslation();
   const { state, dispatch } = useAppState();
+  const { showToast } = useToast();
   const { groupId } = route.params as { groupId: string };
 
   const group = state.entities.taskGroups[groupId];
@@ -25,7 +26,6 @@ export const EditGroupScreen = ({ navigation, route }: any) => {
   const [privacy, setPrivacy] = useState<TaskGroupPrivacy>(group?.privacy ?? 'private');
   const [groupType, setGroupType] = useState<TaskGroupType>(group?.type ?? 'cooperative');
   const [isBingo, setIsBingo] = useState<boolean>(group?.isBingo ?? false);
-  const [bingoSize, setBingoSize] = useState<BingoSizeValue>(String(group?.bingoSize ?? 3) as BingoSizeValue);
   const [expandedMemberId, setExpandedMemberId] = useState<string | null>(null);
   const editableRoles: Exclude<MemberRole, 'owner'>[] = ['member', 'admin'];
   const currentUserRole: MemberRole = group?.ownerUserId === state.session.currentUserId
@@ -49,15 +49,6 @@ export const EditGroupScreen = ({ navigation, route }: any) => {
     [t],
   );
 
-  const bingoSizeOptions = useMemo(
-    () => [
-      { value: '3', label: '3×3' },
-      { value: '4', label: '4×4' },
-      { value: '5', label: '5×5' },
-    ] as const satisfies ReadonlyArray<SegmentedControlOption<BingoSizeValue>>,
-    [],
-  );
-
   if (!group) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -72,22 +63,40 @@ export const EditGroupScreen = ({ navigation, route }: any) => {
   const handleSave = async () => {
     const trimmed = name.trim();
     if (!trimmed) {
-      Alert.alert(t('tasks.groups.validationTitle'), t('tasks.groups.nameRequired'));
+      showToast({ message: t('tasks.groups.nameRequired'), variant: 'error' });
       return;
     }
 
+    if (isBingo && !group.isBingo) {
+      const count = group.taskIds.length;
+      if (count !== 9 && count !== 16 && count !== 25) {
+        showToast({
+          message: t('tasks.groups.bingoConvertInvalidCount', { count }),
+          variant: 'error',
+        });
+        return;
+      }
+    }
+    if (!isBingo && group.isBingo) {
+      const hasPlaceholders = group.taskIds.some(
+        (taskId) => state.entities.tasks[taskId]?.name === '',
+      );
+      if (hasPlaceholders) {
+        showToast({ message: t('tasks.groups.bingoConvertPlaceholders'), variant: 'error' });
+        return;
+      }
+    }
+
     const effectiveGroupType: TaskGroupType = isBingo ? 'cooperative' : groupType;
-    const effectiveBingoSize = isBingo ? (Number(bingoSize) as BingoSize) : undefined;
 
     const res = await taskGroupService.editGroup(groupId, {
       name: trimmed,
       privacy,
       type: effectiveGroupType,
       isBingo,
-      bingoSize: effectiveBingoSize,
     });
     if (!res.ok) {
-      Alert.alert(t('tasks.groups.editErrorTitle'), t('tasks.groups.editErrorMessage'));
+      showToast({ message: t('tasks.groups.editErrorMessage'), variant: 'error' });
       return;
     }
 
@@ -98,15 +107,21 @@ export const EditGroupScreen = ({ navigation, route }: any) => {
       privacy,
       groupType: effectiveGroupType,
       isBingo,
-      bingoSize: effectiveBingoSize,
     });
+    showToast({ message: t('tasks.groups.editSuccessMessage'), variant: 'success' });
     navigation.goBack();
+  };
+
+  // TODO: npx expo install expo-clipboard — then replace this Alert with
+  // Clipboard.setStringAsync(group.inviteCode) + inviteCodeCopied success toast
+  const handleCopyCode = () => {
+    Alert.alert(t('tasks.groups.inviteCodeSection'), group.inviteCode || '-');
   };
 
   const handleRemoveMember = async (userId: string) => {
     const res = await taskGroupService.removeMember(groupId, userId);
     if (!res.ok) {
-      Alert.alert(t('tasks.groups.memberErrorTitle'), 'Could not remove member');
+      showToast({ message: t('tasks.groups.removeMemberErrorMessage'), variant: 'error' });
       return;
     }
 
@@ -116,7 +131,7 @@ export const EditGroupScreen = ({ navigation, route }: any) => {
   const handleChangeRole = async (userId: string, newRole: Exclude<MemberRole, 'owner'>) => {
     const res = await taskGroupService.changeRole(groupId, userId, newRole);
     if (!res.ok) {
-      Alert.alert(t('tasks.groups.memberErrorTitle'), 'Could not change member role');
+      showToast({ message: t('tasks.groups.changeRoleErrorMessage'), variant: 'error' });
       return;
     }
 
@@ -135,6 +150,36 @@ export const EditGroupScreen = ({ navigation, route }: any) => {
               {t('tasks.groups.basicInfoSection')}
             </AppText>
             <AppInput value={name} onChangeText={setName} placeholder={t('tasks.groups.groupNamePlaceholder')} />
+          </View>
+
+          <View style={styles.card}>
+            <AppText variant="caption" color="muted" style={styles.sectionTitle}>
+              {t('tasks.groups.inviteCodeSection')}
+            </AppText>
+            <View style={styles.inviteCodeRow}>
+              <AppText
+                variant="label"
+                numberOfLines={1}
+                ellipsizeMode="middle"
+                style={styles.inviteCodeText}
+              >
+                {group.inviteCode || '-'}
+              </AppText>
+              <Pressable
+                onPress={handleCopyCode}
+                style={({ pressed }) => [styles.copyButton, pressed && styles.copyButtonPressed]}
+                accessibilityRole="button"
+                accessibilityLabel={t('tasks.groups.inviteCodeCopy')}
+              >
+                <Ionicons name="copy-outline" size={16} color={colors.textOnPrimary} />
+                <AppText variant="caption" color="textOnPrimary">
+                  {t('tasks.groups.inviteCodeCopy')}
+                </AppText>
+              </Pressable>
+            </View>
+            <AppText variant="caption" color="textSecondary">
+              {t('tasks.groups.inviteCodeHint')}
+            </AppText>
           </View>
 
           <View style={styles.card}>
@@ -188,19 +233,6 @@ export const EditGroupScreen = ({ navigation, route }: any) => {
               </View>
               <View style={[styles.toggleKnob, isBingo && styles.toggleKnobActive]} />
             </Pressable>
-            {isBingo ? (
-              <>
-                <AppText variant="caption" color="muted" style={styles.sectionTitle}>
-                  {t('tasks.groups.bingoSizeSection')}
-                </AppText>
-                <SegmentedControl<BingoSizeValue>
-                  options={bingoSizeOptions}
-                  value={bingoSize}
-                  onChange={setBingoSize}
-                  accessibilityLabel={t('tasks.groups.bingoSizeSection')}
-                />
-              </>
-            ) : null}
           </View>
 
           <View style={styles.card}>
@@ -315,6 +347,27 @@ const styles = StyleSheet.create({
   sectionTitle: {
     textTransform: 'uppercase',
     letterSpacing: 0.6,
+  },
+  inviteCodeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  inviteCodeText: {
+    flex: 1,
+  },
+  copyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    backgroundColor: colors.primary,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: 10,
+  },
+  copyButtonPressed: {
+    backgroundColor: colors.primaryPressed,
   },
   toggleCard: {
     minHeight: 56,

@@ -9,6 +9,7 @@ import { AppInput } from '../../components/common/AppInput';
 import { AppButton } from '../../components/common/AppButton';
 import { SegmentedControl, type SegmentedControlOption } from '../../components/common/SegmentedControl';
 import { useAppState } from '../../application/AppStateContext';
+import { useToast } from '../../context/ToastContext';
 import { taskService } from '../../services';
 import { colors } from '../../theme/colors';
 import { SCREEN_PADDING_H, spacing } from '../../theme/spacing';
@@ -18,10 +19,12 @@ import { findTaskColorId, TASK_COLORS } from './taskColors';
 export const EditTaskScreen = ({ navigation, route }: any) => {
   const { t } = useTranslation();
   const { state, dispatch } = useAppState();
+  const { showToast } = useToast();
   const { groupId, taskId } = route.params as { groupId: string; taskId: string };
 
   const group = state.entities.taskGroups[groupId];
   const task = state.entities.tasks[taskId];
+  const isInBingoGroup = group?.isBingo ?? false;
 
   const [taskName, setTaskName] = useState(task?.name ?? '');
   const [taskKind, setTaskKind] = useState<TaskKind>(task?.kind ?? (task && task.goal > 1 ? 'endless' : 'one_time'));
@@ -57,9 +60,10 @@ export const EditTaskScreen = ({ navigation, route }: any) => {
 
   const handleSave = async () => {
     const trimmedName = taskName.trim();
-    const parsedGoal = taskKind === 'one_time' ? 1 : Number(taskGoal);
+    // goal and kind are fixed for bingo cells — only name, color and params can change
+    const parsedGoal = isInBingoGroup ? task.goal : taskKind === 'one_time' ? 1 : Number(taskGoal);
     if (!trimmedName || Number.isNaN(parsedGoal) || parsedGoal <= 0) {
-      Alert.alert(t('tasks.tasks.validationTitle'), t('tasks.tasks.validationMessage'));
+      showToast({ message: t('tasks.tasks.validationMessage'), variant: 'error' });
       return;
     }
 
@@ -71,11 +75,11 @@ export const EditTaskScreen = ({ navigation, route }: any) => {
 
     const serviceResult = await taskService.editTask(taskId, {
       name: trimmedName,
-      goal: parsedGoal,
+      ...(isInBingoGroup ? {} : { goal: parsedGoal }),
       params,
     });
     if (!serviceResult.ok) {
-      Alert.alert(t('tasks.tasks.editErrorTitle'), t('tasks.tasks.editErrorMessage'));
+      showToast({ message: t('tasks.tasks.editErrorMessage'), variant: 'error' });
       return;
     }
 
@@ -83,16 +87,15 @@ export const EditTaskScreen = ({ navigation, route }: any) => {
       type: 'tasks/edit',
       taskId,
       name: trimmedName,
-      goal: parsedGoal,
-      kind: taskKind,
+      ...(isInBingoGroup ? {} : { goal: parsedGoal, kind: taskKind }),
       params,
     });
     if (!result.ok) {
-      Alert.alert(t('tasks.tasks.editErrorTitle'), t('tasks.tasks.editErrorMessage'));
+      showToast({ message: t('tasks.tasks.editErrorMessage'), variant: 'error' });
       return;
     }
 
-    Alert.alert(t('tasks.tasks.editSuccessTitle'), t('tasks.tasks.editSuccessMessage'));
+    showToast({ message: t('tasks.tasks.editSuccessMessage'), variant: 'success' });
     navigation.goBack();
   };
 
@@ -105,15 +108,15 @@ export const EditTaskScreen = ({ navigation, route }: any) => {
         onPress: async () => {
           const serviceResult = await taskService.deleteTask(taskId);
           if (!serviceResult.ok) {
-            Alert.alert(t('tasks.tasks.deleteErrorTitle'), t('tasks.tasks.deleteErrorMessage'));
+            showToast({ message: t('tasks.tasks.deleteErrorMessage'), variant: 'error' });
             return;
           }
           const result = dispatch({ type: 'tasks/delete', taskId });
           if (!result.ok) {
-            Alert.alert(t('tasks.tasks.deleteErrorTitle'), t('tasks.tasks.deleteErrorMessage'));
+            showToast({ message: t('tasks.tasks.deleteErrorMessage'), variant: 'error' });
             return;
           }
-          Alert.alert(t('tasks.tasks.deleteSuccessTitle'), t('tasks.tasks.deleteSuccessMessage'));
+          showToast({ message: t('tasks.tasks.deleteSuccessMessage'), variant: 'success' });
           navigation.goBack();
         },
       },
@@ -143,30 +146,32 @@ export const EditTaskScreen = ({ navigation, route }: any) => {
             />
           </View>
 
-          <View style={styles.card}>
-            <AppText variant="caption" color="muted" style={styles.sectionTitle}>
-              {t('tasks.tasks.taskTypeSection')}
-            </AppText>
-            <SegmentedControl<TaskKind>
-              options={taskKindOptions}
-              value={taskKind}
-              onChange={setTaskKind}
-              accessibilityLabel={t('tasks.tasks.taskTypeSection')}
-            />
-            <AppText variant="caption" color="textSecondary">
-              {taskKind === 'one_time'
-                ? t('tasks.tasks.taskTypeOneTimeDescription')
-                : t('tasks.tasks.taskTypeProgressDescription')}
-            </AppText>
-            {taskKind === 'endless' ? (
-              <AppInput
-                value={taskGoal}
-                onChangeText={setTaskGoal}
-                keyboardType="numeric"
-                placeholder={t('tasks.tasks.goalPlaceholder')}
+          {!isInBingoGroup ? (
+            <View style={styles.card}>
+              <AppText variant="caption" color="muted" style={styles.sectionTitle}>
+                {t('tasks.tasks.taskTypeSection')}
+              </AppText>
+              <SegmentedControl<TaskKind>
+                options={taskKindOptions}
+                value={taskKind}
+                onChange={setTaskKind}
+                accessibilityLabel={t('tasks.tasks.taskTypeSection')}
               />
-            ) : null}
-          </View>
+              <AppText variant="caption" color="textSecondary">
+                {taskKind === 'one_time'
+                  ? t('tasks.tasks.taskTypeOneTimeDescription')
+                  : t('tasks.tasks.taskTypeProgressDescription')}
+              </AppText>
+              {taskKind === 'endless' ? (
+                <AppInput
+                  value={taskGoal}
+                  onChangeText={setTaskGoal}
+                  keyboardType="numeric"
+                  placeholder={t('tasks.tasks.goalPlaceholder')}
+                />
+              ) : null}
+            </View>
+          ) : null}
 
           <View style={styles.card}>
             <AppText variant="caption" color="muted" style={styles.sectionTitle}>
@@ -260,7 +265,9 @@ export const EditTaskScreen = ({ navigation, route }: any) => {
               onPress={handleSave}
               disabled={!taskName.trim()}
             />
-            <AppButton title={t('tasks.tasks.deleteTask')} onPress={handleDelete} />
+            {!isInBingoGroup ? (
+              <AppButton title={t('tasks.tasks.deleteTask')} onPress={handleDelete} />
+            ) : null}
           </View>
         </ScrollView>
       </SafeAreaView>

@@ -24,7 +24,6 @@ export type TaskGroup = {
   privacy: TaskGroupPrivacy;
   type: TaskGroupType;
   isBingo: boolean;
-  bingoSize?: BingoSize;
   inviteCode: string;
   taskIds: string[];
   memberIds: string[];
