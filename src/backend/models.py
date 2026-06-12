@@ -1363,9 +1363,9 @@ class TaskParams(Base):
             return color
         raise ValidationError("Invalid color")
 
-    def edit(self, db_session: Session, **new_data: Any) -> None:
+    def edit(self, db_session: Session, user_id: UUID, **new_data: Any) -> None:
         # new_data: photoRequired, color, notifications (None / pominięte = bez zmiany)
-        if not self.task.group.checkPerms(db_session, self.task.ownerID, GroupRole.ADMIN):
+        if not self.task.group.checkPerms(db_session, user_id, GroupRole.ADMIN):
             raise PermissionDeniedError("User does not have permission to edit this task's parameters")
         if new_data.get("photoRequired") is not None:
             self.photoRequired = new_data["photoRequired"]

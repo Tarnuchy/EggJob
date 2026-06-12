@@ -4,6 +4,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
+from src.backend.auth import get_current_user
 from src.backend.database import get_db, transaction
 from src.backend.exceptions import ConflictError, NotFoundError, ValidationError
 from src.backend.models import (
@@ -58,7 +59,8 @@ from src.backend.response import (
     RepeatableStreakResponse,
 )
 
-router = APIRouter(prefix="", tags=["basics"])
+# Wszystkie odczyty wymagają zalogowania (ważny token Bearer).
+router = APIRouter(prefix="", tags=["basics"], dependencies=[Depends(get_current_user)])
 
 
 def _user_payload(user: User) -> UserSummaryResponse:

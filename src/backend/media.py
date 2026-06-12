@@ -3,16 +3,17 @@
 Upload przyjmuje surowe body obrazu (nagłówek ``Content-Type`` decyduje o typie),
 więc nie wymaga ``python-multipart`` i działa tak samo jak ``PUT`` do object storage.
 """
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import FileResponse
 
+from src.backend.auth import get_current_user
 from src.backend.exceptions import NotFoundError, ValidationError
 from src.backend.storage import ALLOWED_IMAGE_TYPES, MAX_IMAGE_BYTES, storage
 
 router = APIRouter(tags=["media"])
 
 
-@router.post("/uploads", status_code=201)
+@router.post("/uploads", status_code=201, dependencies=[Depends(get_current_user)])
 async def upload_image(request: Request) -> dict[str, str]:
     content_type = (request.headers.get("content-type") or "").split(";")[0].strip()
     if content_type not in ALLOWED_IMAGE_TYPES:

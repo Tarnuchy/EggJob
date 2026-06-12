@@ -12,6 +12,8 @@ class AuthResponse(BaseModel):
     email: str
     username: str
     photo_url: str | None = None
+    access_token: str
+    token_type: str = "bearer"
 
 
 class UserSummaryResponse(BaseModel):

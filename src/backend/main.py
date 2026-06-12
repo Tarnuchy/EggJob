@@ -6,10 +6,11 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from src.backend.auth import assert_self, create_access_token, get_current_user
 from src.backend.basics import router as basics_router
 from src.backend.database import get_db, transaction
-from src.backend.media import router as media_router
 from src.backend.exceptions import *
+from src.backend.media import router as media_router
 from src.backend.models import *
 from src.backend.request import *
 from src.backend.response import (
@@ -46,7 +47,11 @@ def handle_conflict_error(_: Request, exc: ConflictError) -> JSONResponse:
 
 @app.exception_handler(AuthenticationError)
 def handle_authentication_error(_: Request, exc: AuthenticationError) -> JSONResponse:
-    return JSONResponse(status_code=401, content={"detail": str(exc)})
+    return JSONResponse(
+        status_code=401,
+        content={"detail": str(exc)},
+        headers={"WWW-Authenticate": "Bearer"},
+    )
 
 
 @app.exception_handler(PermissionDeniedError)
@@ -101,9 +106,14 @@ def _auth_payload(account: Account, user: User) -> AuthResponse:
         email=account.email,
         username=user.username,
         photo_url=user.photoUrl,
+        access_token=create_access_token(user_id=user.id, account_id=account.id),
+        token_type="bearer",
     )
 
 
+# ----------------------------------------------------------------------------
+# Auth (publiczne — wydają token)
+# ----------------------------------------------------------------------------
 @app.post("/auth/register", status_code=201, response_model=AuthResponse)
 def register(payload: RegisterRequest, db: Session = Depends(get_db)):
     account = Account()
@@ -135,10 +145,14 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
 
 
 @app.post("/auth/password", response_model=MessageResponse)
-def change_password(payload: ChangePasswordRequest, db: Session = Depends(get_db)):
-    account = db.query(Account).filter_by(email=payload.email).first()
-    if account is None:
-        raise NotFoundError("Account does not exist")
+def change_password(
+    payload: ChangePasswordRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    account = current_user.account
+    if account is None or account.email != payload.email:
+        raise PermissionDeniedError("Cannot change another account's password")
 
     with transaction(db):
         account.changePassword(
@@ -151,7 +165,14 @@ def change_password(payload: ChangePasswordRequest, db: Session = Depends(get_db
 
 
 @app.post("/accounts/{account_id}/delete", response_model=MessageResponse)
-def delete_account(account_id: UUID, payload: DeleteAccountRequest, db: Session = Depends(get_db)):
+def delete_account(
+    account_id: UUID,
+    payload: DeleteAccountRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if current_user.accountID != account_id:
+        raise PermissionDeniedError("Cannot delete another account")
     account = _get_or_404(db, Account, id=account_id)
     with transaction(db):
         account.deleteAccount(password=payload.password, db_session=db)
@@ -159,8 +180,17 @@ def delete_account(account_id: UUID, payload: DeleteAccountRequest, db: Session 
     return MessageResponse(message="account_deleted")
 
 
+# ----------------------------------------------------------------------------
+# User-scoped actions (wymagają tokenu == user_id)
+# ----------------------------------------------------------------------------
 @app.patch("/users/{user_id}/profile", response_model=MessageResponse)
-def update_profile(user_id: UUID, payload: UserProfileUpdateRequest, db: Session = Depends(get_db)):
+def update_profile(
+    user_id: UUID,
+    payload: UserProfileUpdateRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    assert_self(user_id, current_user)
     user = _get_or_404(db, User, id=user_id)
     with transaction(db):
         user.editProfile(db_session=db, username=payload.username, photoUrl=payload.photo_url)
@@ -169,7 +199,13 @@ def update_profile(user_id: UUID, payload: UserProfileUpdateRequest, db: Session
 
 
 @app.post("/users/{user_id}/friends/invitations", response_model=MessageResponse)
-def invite_friend(user_id: UUID, payload: InviteFriendRequest, db: Session = Depends(get_db)):
+def invite_friend(
+    user_id: UUID,
+    payload: InviteFriendRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    assert_self(user_id, current_user)
     user = _get_or_404(db, User, id=user_id)
     with transaction(db):
         user.inviteFriend(db_session=db, friend_id=payload.friend_id)
@@ -178,7 +214,13 @@ def invite_friend(user_id: UUID, payload: InviteFriendRequest, db: Session = Dep
 
 
 @app.post("/users/{user_id}/notifications", response_model=MessageResponse)
-def create_notification(user_id: UUID, payload: NotifyRequest, db: Session = Depends(get_db)):
+def create_notification(
+    user_id: UUID,
+    payload: NotifyRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    assert_self(user_id, current_user)
     user = _get_or_404(db, User, id=user_id)
     with transaction(db):
         user.notify(db_session=db, message=payload.message)
@@ -187,7 +229,13 @@ def create_notification(user_id: UUID, payload: NotifyRequest, db: Session = Dep
 
 
 @app.post("/users/{user_id}/taskgroups", status_code=201, response_model=TaskGroupResponse)
-def create_taskgroup(user_id: UUID, payload: CreateGroupRequest, db: Session = Depends(get_db)):
+def create_taskgroup(
+    user_id: UUID,
+    payload: CreateGroupRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    assert_self(user_id, current_user)
     user = _get_or_404(db, User, id=user_id)
     privacy = _parse_enum(PrivacyLevel, payload.privacy, "privacy") or PrivacyLevel.PUBLIC
     group_type = _parse_enum(TaskGroupType, payload.type, "type") or TaskGroupType.COMPETITIVE
@@ -213,7 +261,14 @@ def create_taskgroup(user_id: UUID, payload: CreateGroupRequest, db: Session = D
 
 
 @app.delete("/friendships/{user_one_id}/{user_two_id}", response_model=MessageResponse)
-def delete_friendship(user_one_id: UUID, user_two_id: UUID, db: Session = Depends(get_db)):
+def delete_friendship(
+    user_one_id: UUID,
+    user_two_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if current_user.id not in (user_one_id, user_two_id):
+        raise PermissionDeniedError("Cannot delete a friendship you are not part of")
     friendship = db.query(Friendship).filter(
         ((Friendship.userOneID == user_one_id) & (Friendship.userTwoID == user_two_id))
         | ((Friendship.userOneID == user_two_id) & (Friendship.userTwoID == user_one_id))
@@ -238,7 +293,13 @@ def _get_invitation(db: Session, from_user_id: UUID, to_user_id: UUID) -> Invita
 
 
 @app.post("/invitations/{from_user_id}/{to_user_id}/accept", response_model=MessageResponse)
-def accept_invitation(from_user_id: UUID, to_user_id: UUID, db: Session = Depends(get_db)):
+def accept_invitation(
+    from_user_id: UUID,
+    to_user_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    assert_self(to_user_id, current_user)  # tylko adresat akceptuje
     invitation = _get_invitation(db, from_user_id, to_user_id)
     with transaction(db):
         invitation.accept(db_session=db)
@@ -247,7 +308,13 @@ def accept_invitation(from_user_id: UUID, to_user_id: UUID, db: Session = Depend
 
 
 @app.post("/invitations/{from_user_id}/{to_user_id}/reject", response_model=MessageResponse)
-def reject_invitation(from_user_id: UUID, to_user_id: UUID, db: Session = Depends(get_db)):
+def reject_invitation(
+    from_user_id: UUID,
+    to_user_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    assert_self(to_user_id, current_user)  # tylko adresat odrzuca
     invitation = _get_invitation(db, from_user_id, to_user_id)
     with transaction(db):
         invitation.reject(db_session=db)
@@ -256,7 +323,13 @@ def reject_invitation(from_user_id: UUID, to_user_id: UUID, db: Session = Depend
 
 
 @app.post("/invitations/{from_user_id}/{to_user_id}/cancel", response_model=MessageResponse)
-def cancel_invitation(from_user_id: UUID, to_user_id: UUID, db: Session = Depends(get_db)):
+def cancel_invitation(
+    from_user_id: UUID,
+    to_user_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    assert_self(from_user_id, current_user)  # tylko nadawca anuluje
     invitation = _get_invitation(db, from_user_id, to_user_id)
     with transaction(db):
         invitation.cancel(db_session=db)
@@ -265,8 +338,14 @@ def cancel_invitation(from_user_id: UUID, to_user_id: UUID, db: Session = Depend
 
 
 @app.post("/notifications/{notification_id}/read", response_model=MessageResponse)
-def read_notification(notification_id: UUID, db: Session = Depends(get_db)):
+def read_notification(
+    notification_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     notification = _get_or_404(db, Notification, id=notification_id)
+    if notification.userID != current_user.id:
+        raise PermissionDeniedError("Not your notification")
     with transaction(db):
         notification.read(db_session=db)
 
@@ -274,7 +353,14 @@ def read_notification(notification_id: UUID, db: Session = Depends(get_db)):
 
 
 @app.patch("/users/{user_id}/taskgroups/{group_id}", response_model=MessageResponse)
-def edit_taskgroup(user_id: UUID, group_id: UUID, payload: TaskGroupEditRequest, db: Session = Depends(get_db)):
+def edit_taskgroup(
+    user_id: UUID,
+    group_id: UUID,
+    payload: TaskGroupEditRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    assert_self(user_id, current_user)
     group = _get_or_404(db, TaskGroup, id=group_id)
     privacy = _parse_enum(PrivacyLevel, payload.privacy, "privacy") if payload.privacy else None
 
@@ -285,7 +371,13 @@ def edit_taskgroup(user_id: UUID, group_id: UUID, payload: TaskGroupEditRequest,
 
 
 @app.delete("/users/{user_id}/taskgroups/{group_id}", response_model=MessageResponse)
-def delete_taskgroup(user_id: UUID, group_id: UUID, db: Session = Depends(get_db)):
+def delete_taskgroup(
+    user_id: UUID,
+    group_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    assert_self(user_id, current_user)
     group = _get_or_404(db, TaskGroup, id=group_id)
     with transaction(db):
         group.delete(db_session=db, user_id=user_id)
@@ -299,7 +391,9 @@ def add_taskgroup_member(
     group_id: UUID,
     payload: TaskGroupAddFriendRequest,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
+    assert_self(user_id, current_user)
     group = _get_or_404(db, TaskGroup, id=group_id)
     role = _parse_enum(GroupRole, payload.role, "role")
 
@@ -315,7 +409,9 @@ def change_taskgroup_type(
     group_id: UUID,
     payload: TaskGroupChangeTypeRequest,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
+    assert_self(user_id, current_user)
     group = _get_or_404(db, TaskGroup, id=group_id)
     new_type = _parse_enum(TaskGroupType, payload.new_type, "type")
 
@@ -331,7 +427,9 @@ def create_task(
     group_id: UUID,
     payload: TaskCreateRequest,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
+    assert_self(user_id, current_user)
     group = _get_or_404(db, TaskGroup, id=group_id)
     task_type = _parse_task_type(payload.task_type)
     frequency = _parse_enum(TimeInterval, payload.frequency, "frequency") if payload.frequency else None
@@ -365,7 +463,14 @@ def create_task(
 
 
 @app.patch("/users/{user_id}/tasks/{task_id}", response_model=MessageResponse)
-def edit_task(user_id: UUID, task_id: UUID, payload: TaskEditRequest, db: Session = Depends(get_db)):
+def edit_task(
+    user_id: UUID,
+    task_id: UUID,
+    payload: TaskEditRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    assert_self(user_id, current_user)
     task = _get_or_404(db, Task, id=task_id)
     with transaction(db):
         task.edit(
@@ -380,7 +485,13 @@ def edit_task(user_id: UUID, task_id: UUID, payload: TaskEditRequest, db: Sessio
 
 
 @app.delete("/users/{user_id}/tasks/{task_id}", response_model=MessageResponse)
-def delete_task(user_id: UUID, task_id: UUID, db: Session = Depends(get_db)):
+def delete_task(
+    user_id: UUID,
+    task_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    assert_self(user_id, current_user)
     task = _get_or_404(db, Task, id=task_id)
     with transaction(db):
         task.delete(db_session=db, user_id=user_id)
@@ -389,7 +500,14 @@ def delete_task(user_id: UUID, task_id: UUID, db: Session = Depends(get_db)):
 
 
 @app.post("/users/{user_id}/tasks/{task_id}/type", response_model=MessageResponse)
-def change_task_type(user_id: UUID, task_id: UUID, payload: TaskChangeTypeRequest, db: Session = Depends(get_db)):
+def change_task_type(
+    user_id: UUID,
+    task_id: UUID,
+    payload: TaskChangeTypeRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    assert_self(user_id, current_user)
     task = _get_or_404(db, Task, id=task_id)
     new_type = _parse_task_type(payload.new_type)
 
@@ -405,7 +523,9 @@ def change_groupmember_role(
     member_id: UUID,
     payload: GroupMemberChangeRoleRequest,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
+    assert_self(user_id, current_user)
     member = _get_or_404(db, GroupMember, id=member_id)
     new_role = _parse_enum(GroupRole, payload.new_role, "role")
 
@@ -421,7 +541,9 @@ def remove_groupmember(
     member_id: UUID,
     payload: GroupMemberRemoveRequest,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
+    assert_self(user_id, current_user)
     member = _get_or_404(db, GroupMember, id=member_id)
     with transaction(db):
         member.removeMember(db_session=db, take_progress=payload.take_progress, punisher=user_id)
@@ -435,7 +557,9 @@ def update_task_progress(
     progress_id: UUID,
     payload: TaskProgressUpdateRequest,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
+    assert_self(user_id, current_user)
     progress = _get_or_404(db, TaskProgress, id=progress_id)
 
     with transaction(db):
@@ -451,11 +575,17 @@ def update_task_progress(
 
 
 @app.patch("/task-params/{task_id}", response_model=MessageResponse)
-def edit_task_params(task_id: UUID, payload: TaskParamsEditRequest, db: Session = Depends(get_db)):
+def edit_task_params(
+    task_id: UUID,
+    payload: TaskParamsEditRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     params = _get_or_404(db, TaskParams, taskID=task_id)
     with transaction(db):
         params.edit(
             db_session=db,
+            user_id=current_user.id,
             photoRequired=payload.photo_required,
             color=payload.color,
             notifications=payload.notifications,
@@ -465,13 +595,23 @@ def edit_task_params(task_id: UUID, payload: TaskParamsEditRequest, db: Session 
 
 
 @app.get("/progress-entries/{entry_id}/validate", response_model=ProgressValidationResponse)
-def validate_progress_entry(entry_id: UUID, db: Session = Depends(get_db)):
+def validate_progress_entry(
+    entry_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     entry = _get_or_404(db, ProgressEntry, id=entry_id)
     return ProgressValidationResponse(is_valid=entry.validate(db_session=db))
 
 
 @app.delete("/users/{user_id}/progress-entries/{entry_id}", response_model=MessageResponse)
-def delete_progress_entry(user_id: UUID, entry_id: UUID, db: Session = Depends(get_db)):
+def delete_progress_entry(
+    user_id: UUID,
+    entry_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    assert_self(user_id, current_user)
     entry = _get_or_404(db, ProgressEntry, id=entry_id)
     with transaction(db):
         entry.delete(db_session=db, user_id=user_id)
@@ -485,7 +625,9 @@ def add_progress_comment(
     entry_id: UUID,
     payload: ProgressEntryCommentRequest,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
+    assert_self(user_id, current_user)
     entry = _get_or_404(db, ProgressEntry, id=entry_id)
     with transaction(db):
         entry.addComment(db_session=db, user_id=user_id, message=payload.message)
@@ -494,7 +636,13 @@ def add_progress_comment(
 
 
 @app.delete("/users/{user_id}/comments/{comment_id}", response_model=MessageResponse)
-def delete_comment(user_id: UUID, comment_id: UUID, db: Session = Depends(get_db)):
+def delete_comment(
+    user_id: UUID,
+    comment_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    assert_self(user_id, current_user)
     comment = _get_or_404(db, Comment, id=comment_id)
     with transaction(db):
         comment.deleteComment(db_session=db, user_id=user_id)
