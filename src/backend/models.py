@@ -528,18 +528,8 @@ class TaskGroup(Base):
         if privacy is not None:
             new_privacy = privacy
         if isBingo is not None and isBingo != self.isBingo:
-            if isBingo:
-                if self.taskCount not in (9, 16, 25):
-                    raise ValidationError("Bingo group must have exactly 9, 16 or 25 tasks")
-            else:
-                has_unnamed = (
-                    db_session.query(Task)
-                    .filter(Task.groupID == self.id, Task.name == "")
-                    .first()
-                    is not None
-                )
-                if has_unnamed:
-                    raise ValidationError("Name all bingo cells before disabling bingo")
+            if isBingo and self.taskCount not in (9, 16, 25):
+                raise ValidationError("Bingo group must have exactly 9, 16 or 25 tasks")
             self.isBingo = isBingo
         self.name = new_name
         self.privacy = new_privacy
@@ -657,7 +647,7 @@ class CompetetiveTaskGroup(TaskGroup):
             raise ValidationError("Invalid task type")
 
         new_task.name = (taskparams.get("name", "") or "").strip()
-        if new_task.name == "" and not self.isBingo:
+        if new_task.name == "":
             raise ValidationError("Task name cannot be empty")
         new_task.description = taskparams.get("description") or ""
         new_task.goal = taskparams.get("goal")
@@ -807,7 +797,7 @@ class CooperativeTaskGroup(TaskGroup):
             raise ValidationError("Invalid task type")
 
         new_task.name = (taskparams.get("name", "") or "").strip()
-        if new_task.name == "" and not self.isBingo:
+        if new_task.name == "":
             raise ValidationError("Task name cannot be empty")
         new_task.description = taskparams.get("description") or ""
         new_task.goal = taskparams.get("goal")

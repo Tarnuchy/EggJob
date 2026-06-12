@@ -77,15 +77,6 @@ export const EditGroupScreen = ({ navigation, route }: any) => {
         return;
       }
     }
-    if (!isBingo && group.isBingo) {
-      const hasPlaceholders = group.taskIds.some(
-        (taskId) => state.entities.tasks[taskId]?.name === '',
-      );
-      if (hasPlaceholders) {
-        showToast({ message: t('tasks.groups.bingoConvertPlaceholders'), variant: 'error' });
-        return;
-      }
-    }
 
     const effectiveGroupType: TaskGroupType = isBingo ? 'cooperative' : groupType;
 

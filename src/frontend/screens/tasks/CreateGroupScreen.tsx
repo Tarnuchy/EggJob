@@ -55,6 +55,7 @@ export const CreateGroupScreen = ({ navigation }: any) => {
     for (let i = 0; i < cellCount; i++) {
       const taskId = generateId('tsk');
       const progressId = generateId('prg');
+      const cellName = t('tasks.groups.bingoCellDefaultName', { number: i + 1 });
       const placeholderParams = {
         color: DEFAULT_TASK_COLOR,
         photoRequired: false,
@@ -65,7 +66,7 @@ export const CreateGroupScreen = ({ navigation }: any) => {
         taskId,
         groupId,
         progressId,
-        name: '',
+        name: cellName,
         goal: 1,
         status: 'todo',
         kind: 'one_time',
@@ -80,7 +81,7 @@ export const CreateGroupScreen = ({ navigation }: any) => {
         taskId: taskResult.value?.id ?? taskId,
         groupId,
         progressId,
-        name: '',
+        name: cellName,
         goal: 1,
         kind: 'one_time',
         params: placeholderParams,

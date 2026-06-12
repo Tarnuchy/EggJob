@@ -210,7 +210,7 @@ const en = {
       bingoCreatingTasks: 'Creating tasks...',
       bingoConvertInvalidCount:
         'A group can become a bingo board only with exactly 9, 16 or 25 tasks (currently {{count}}).',
-      bingoConvertPlaceholders: 'Name all bingo cells before turning bingo off.',
+      bingoCellDefaultName: 'Task {{number}}',
       privacy: {
         private: 'Private',
         friends: 'Friends',

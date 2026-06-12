@@ -212,7 +212,7 @@ const pl: Translation = {
       bingoCreatingTasks: 'Tworzenie zadań...',
       bingoConvertInvalidCount:
         'Grupę można zamienić na bingo tylko przy dokładnie 9, 16 lub 25 taskach (obecnie {{count}}).',
-      bingoConvertPlaceholders: 'Nazwij wszystkie kratki bingo, zanim wyłączysz tryb bingo.',
+      bingoCellDefaultName: 'Task {{number}}',
       privacy: {
         private: 'Prywatna',
         friends: 'Znajomi',

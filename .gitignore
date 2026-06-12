@@ -12,3 +12,6 @@ yarn-error.*
 
 # Claude environment files
 .claude
+
+# Uploaded media (local storage backend)
+media_uploads/

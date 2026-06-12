@@ -92,14 +92,14 @@ export const TasksScreen = () => {
       isBingo: true,
       inviteCode: 'BINGO1',
     });
-    // bingo group always holds exactly size² tasks — seed the 3×3 placeholders up front
+    // bingo group always holds exactly size² tasks — seed the 3×3 board up front
     for (let i = 0; i < 9; i++) {
       dispatch({
         type: 'tasks/create',
         taskId: `tsk-starter-bingo-${i}`,
         groupId: joinableGroupId,
         progressId: `prg-starter-bingo-${i}`,
-        name: '',
+        name: `Task ${i + 1}`,
         goal: 1,
         kind: 'one_time',
         params: { color: DEFAULT_TASK_COLOR, photoRequired: false, notifications: false },
