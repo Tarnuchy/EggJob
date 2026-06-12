@@ -365,7 +365,7 @@ def edit_taskgroup(
     privacy = _parse_enum(PrivacyLevel, payload.privacy, "privacy") if payload.privacy else None
 
     with transaction(db):
-        group.edit(db_session=db, user_id=user_id, name=payload.name, privacy=privacy)
+        group.edit(db_session=db, user_id=user_id, name=payload.name, privacy=privacy, isBingo=payload.is_bingo)
 
     return MessageResponse(message="taskgroup_updated")
 

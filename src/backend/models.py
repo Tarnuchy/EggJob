@@ -560,7 +560,7 @@ class TaskGroup(Base):
         return False
 
     def edit(self, db_session: Session, user_id: UUID, **new_data: Any) -> None:
-        # new_data: name, privacy (None / pominięte = bez zmiany)
+        # new_data: name, privacy, isBingo (None / pominięte = bez zmiany)
         if not self.checkPerms(db_session, user_id, GroupRole.ADMIN):
             raise PermissionDeniedError("User does not have permission to edit this group")
         if new_data.get("name") is not None:
@@ -569,6 +569,10 @@ class TaskGroup(Base):
             self.name = new_data["name"]
         if new_data.get("privacy") is not None:
             self.privacy = new_data["privacy"]
+        if new_data.get("isBingo") is not None and new_data["isBingo"] != self.isBingo:
+            if new_data["isBingo"] and self.taskCount not in (9, 16, 25):
+                raise ValidationError("Bingo group must have exactly 9, 16 or 25 tasks")
+            self.isBingo = new_data["isBingo"]
         db_session.flush()
 
     def delete(self, db_session: Session, user_id: UUID) -> None:
