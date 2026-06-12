@@ -9,6 +9,7 @@ import {
   type LocalePreference,
 } from './src/frontend/application/LocaleContext';
 import { ErrorBoundary } from './src/frontend/components/common/ErrorBoundary';
+import { ToastProvider } from './src/frontend/context/ToastContext';
 import { AppNavigator } from './src/frontend/navigation/AppNavigator';
 import type { SupportedLocale } from './src/frontend/i18n';
 import { interFonts } from './src/frontend/theme';
@@ -66,7 +67,9 @@ export default function App() {
           initialResolvedLocale={initialLocale.resolvedLocale}
         >
           <AppStateProvider>
-            <AppNavigator />
+            <ToastProvider>
+              <AppNavigator />
+            </ToastProvider>
           </AppStateProvider>
         </LocaleProvider>
       </ErrorBoundary>
