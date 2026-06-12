@@ -10,8 +10,5 @@ yarn-error.*
 .env.*
 !.env.example
 
-# Claude environment files
-.claude
-
 # Uploaded media (local storage backend)
 media_uploads/

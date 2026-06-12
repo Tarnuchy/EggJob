@@ -673,7 +673,7 @@ def shoppingList_bundle(
 # -------------------------------------- EATING EGGS -------------------------------------
 @pytest.fixture
 def TG_eggChallenge(db_session, user_b):
-    taskGroup = CompetetiveTaskGroup()
+    taskGroup = CompetitiveTaskGroup()
     taskGroup.id = uuid4()
     taskGroup.ownerID = user_b.id
     taskGroup.name = "EGG EATING CHALLENGE"
