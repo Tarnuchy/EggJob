@@ -1,28 +1,24 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Animated, Pressable, StyleSheet, View } from 'react-native';
-import { BlurView } from 'expo-blur';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { AppText } from '../../common/AppText';
 import { colors } from '../../../theme/colors';
 import { duration, easing } from '../../../theme/animations';
 import { spacing } from '../../../theme/spacing';
 
-interface Props {
-  isOpen: boolean;
-  onSelectRegular: () => void;
-  onSelectBingo: () => void;
-  regularLabel: string;
-  bingoLabel: string;
+export interface QuickActionItem {
+  key: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  onPress: () => void;
 }
 
-export const QuickActionMenu = ({
-  isOpen,
-  onSelectRegular,
-  onSelectBingo,
-  regularLabel,
-  bingoLabel,
-}: Props) => {
+interface Props {
+  isOpen: boolean;
+  actions: QuickActionItem[];
+}
+
+export const QuickActionMenu = ({ isOpen, actions }: Props) => {
   const openAnim = useRef(new Animated.Value(isOpen ? 1 : 0)).current;
   const [isMounted, setIsMounted] = useState(isOpen);
 
@@ -66,44 +62,22 @@ export const QuickActionMenu = ({
         { opacity: openAnim, transform: [{ translateY }, { scale }] },
       ]}
     >
-      <BlurView intensity={18} tint="light" style={styles.blur}>
-        <LinearGradient
-          colors={[
-            'rgba(244, 236, 227, 0.22)',
-            'rgba(244, 236, 227, 0)',
-            'rgba(67, 38, 23, 0.06)',
-          ]}
-          locations={[0, 0.45, 1]}
-          start={{ x: 0.5, y: 0 }}
-          end={{ x: 0.5, y: 1 }}
-          style={StyleSheet.absoluteFillObject}
-          pointerEvents="none"
-        />
-        <View style={styles.inner}>
+      <View style={styles.inner}>
+        {actions.map((action) => (
           <Pressable
+            key={action.key}
             style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-            onPress={onSelectRegular}
+            onPress={action.onPress}
             accessibilityRole="menuitem"
-            accessibilityLabel={regularLabel}
+            accessibilityLabel={action.label}
           >
-            <Ionicons name="checkbox-outline" size={20} color={colors.primary} />
+            <Ionicons name={action.icon} size={20} color={colors.primary} />
             <AppText variant="body" color="textPrimary" style={styles.rowLabel}>
-              {regularLabel}
+              {action.label}
             </AppText>
           </Pressable>
-          <Pressable
-            style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-            onPress={onSelectBingo}
-            accessibilityRole="menuitem"
-            accessibilityLabel={bingoLabel}
-          >
-            <Ionicons name="grid-outline" size={20} color={colors.primary} />
-            <AppText variant="body" color="textPrimary" style={styles.rowLabel}>
-              {bingoLabel}
-            </AppText>
-          </Pressable>
-        </View>
-      </BlurView>
+        ))}
+      </View>
     </Animated.View>
   );
 };
@@ -114,13 +88,8 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: colors.cardBorderTranslucent,
-    borderTopColor: 'rgba(244, 236, 227, 0.45)',
-    backgroundColor: colors.cardSurfaceTranslucent,
-  },
-  blur: {
-    borderRadius: 18,
-    overflow: 'hidden',
+    borderColor: colors.dividerLine,
+    backgroundColor: colors.surfaceAlt,
   },
   inner: {
     paddingVertical: spacing.xs,

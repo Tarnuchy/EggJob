@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { TabBarItem } from './TabBarItem';
 import { QuickActionFab } from './QuickActionFab';
-import { QuickActionMenu } from './QuickActionMenu';
+import { QuickActionMenu, type QuickActionItem } from './QuickActionMenu';
 import { colors } from '../../../theme/colors';
 import { shadows } from '../../../theme/shadows';
 import { createSectionConfig } from '../../../navigation/sectionConfig';
@@ -49,15 +49,38 @@ export const CustomTabBar = ({ state, navigation }: BottomTabBarProps) => {
 
   const closeMenu = () => setIsMenuOpen(false);
 
-  const handleSelectRegular = () => {
-    // TODO: Navigate to create-task screen (regular task) when CreateTaskScreen exists.
+  const navigateFromMenu = (screen: 'CreateTask' | 'AddProgress' | 'JoinGroup' | 'CreateGroup') => {
     closeMenu();
+    // unhandled by the tab navigator, the action bubbles up to the root stack
+    navigation.navigate(screen as never);
   };
 
-  const handleSelectBingo = () => {
-    // TODO: Navigate to create-task screen (bingo task) when CreateTaskScreen exists.
-    closeMenu();
-  };
+  const quickActions: QuickActionItem[] = [
+    {
+      key: 'add-task',
+      icon: 'checkbox-outline',
+      label: t('quickAction.addTask'),
+      onPress: () => navigateFromMenu('CreateTask'),
+    },
+    {
+      key: 'add-progress',
+      icon: 'trending-up',
+      label: t('quickAction.addProgress'),
+      onPress: () => navigateFromMenu('AddProgress'),
+    },
+    {
+      key: 'join-group',
+      icon: 'enter-outline',
+      label: t('quickAction.joinGroup'),
+      onPress: () => navigateFromMenu('JoinGroup'),
+    },
+    {
+      key: 'create-group',
+      icon: 'people-circle-outline',
+      label: t('quickAction.createGroup'),
+      onPress: () => navigateFromMenu('CreateGroup'),
+    },
+  ];
 
   const renderItem = (route: BottomTabBarProps['state']['routes'][number]) => {
     if (!isTabName(route.name)) return null;
@@ -115,13 +138,7 @@ export const CustomTabBar = ({ state, navigation }: BottomTabBarProps) => {
         pointerEvents="box-none"
         style={[styles.menuAnchor, { bottom: insets.bottom + 84 }]}
       >
-        <QuickActionMenu
-          isOpen={isMenuOpen}
-          onSelectRegular={handleSelectRegular}
-          onSelectBingo={handleSelectBingo}
-          regularLabel={t('quickAction.regularTask')}
-          bingoLabel={t('quickAction.bingoTask')}
-        />
+        <QuickActionMenu isOpen={isMenuOpen} actions={quickActions} />
       </View>
     </View>
   );
