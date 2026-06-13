@@ -91,7 +91,7 @@ export const EditGroupScreen = ({ navigation, route }: any) => {
       return;
     }
 
-    dispatch({
+    const result = dispatch({
       type: 'task-groups/edit',
       groupId,
       name: trimmed,
@@ -99,6 +99,10 @@ export const EditGroupScreen = ({ navigation, route }: any) => {
       groupType: effectiveGroupType,
       isBingo,
     });
+    if (!result.ok) {
+      showToast({ message: t('tasks.groups.editErrorMessage'), variant: 'error' });
+      return;
+    }
     showToast({ message: t('tasks.groups.editSuccessMessage'), variant: 'success' });
     navigation.goBack();
   };
