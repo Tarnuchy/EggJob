@@ -33,13 +33,12 @@ class MockTaskGroupService implements ITaskGroupService {
     {};
 
   async joinByInviteCode(input: { inviteCode: string; userId: string }): Promise<Result<void>> {
+    // Kod jest walidowany lokalnie wobec stanu reducera przed wywołaniem serwisu (tryb mock),
+    // więc brak grupy w lokalnym store nie jest błędem.
     const group = Object.values(this.groups).find(
       (item) => item.inviteCode.toUpperCase() === input.inviteCode.toUpperCase(),
     );
-    if (!group) {
-      return { ok: false, error: { code: 'not-found' } };
-    }
-    if (!group.memberIds.includes(input.userId)) {
+    if (group && !group.memberIds.includes(input.userId)) {
       group.memberIds.push(input.userId);
       group.memberRoles[input.userId] = 'member';
     }
@@ -84,21 +83,20 @@ class MockTaskGroupService implements ITaskGroupService {
     input: { name?: string; privacy?: string; type?: 'cooperative' | 'competitive'; isBingo?: boolean },
   ): Promise<Result<void>> {
     const group = this.groups[groupId];
-    if (!group) {
-      return { ok: false, error: { code: 'not-found' } };
-    }
-
-    if (input.name !== undefined) {
-      group.name = input.name;
-    }
-    if (input.privacy !== undefined) {
-      group.privacy = input.privacy;
-    }
-    if (input.type !== undefined) {
-      group.type = input.type;
-    }
-    if (input.isBingo !== undefined) {
-      group.isBingo = input.isBingo;
+    // W trybie mock źródłem prawdy jest reducer — brak grupy w lokalnym store nie jest błędem.
+    if (group) {
+      if (input.name !== undefined) {
+        group.name = input.name;
+      }
+      if (input.privacy !== undefined) {
+        group.privacy = input.privacy;
+      }
+      if (input.type !== undefined) {
+        group.type = input.type;
+      }
+      if (input.isBingo !== undefined) {
+        group.isBingo = input.isBingo;
+      }
     }
 
     return { ok: true, value: undefined };
@@ -154,11 +152,9 @@ class MockTaskGroupService implements ITaskGroupService {
     permissions: string;
   }): Promise<Result<void>> {
     void input.permissions;
+    // W trybie mock źródłem prawdy jest reducer — kod walidujemy tylko gdy grupa jest w lokalnym store.
     const group = this.groups[input.groupId];
-    if (!group) {
-      return { ok: false, error: { code: 'not-found' } };
-    }
-    if (group.inviteCode && input.inviteCode !== group.inviteCode) {
+    if (group && group.inviteCode && input.inviteCode !== group.inviteCode) {
       return { ok: false, error: { code: 'validation', field: 'inviteCode' } };
     }
 
@@ -194,15 +190,8 @@ class MockTaskGroupService implements ITaskGroupService {
 
   async addMember(groupId: string, userId: string): Promise<Result<void>> {
     const group = this.groups[groupId];
-    if (!group) {
-      return { ok: false, error: { code: 'not-found' } };
-    }
-
-    if (group.ownerUserId === userId) {
-      return { ok: true, value: undefined };
-    }
-
-    if (!group.memberIds.includes(userId)) {
+    // W trybie mock źródłem prawdy jest reducer — brak grupy w lokalnym store nie jest błędem.
+    if (group && group.ownerUserId !== userId && !group.memberIds.includes(userId)) {
       group.memberIds.push(userId);
       group.memberRoles[userId] = 'member';
     }
@@ -224,20 +213,22 @@ class MockTaskGroupService implements ITaskGroupService {
   }
 
   async changeRole(groupId: string, userId: string, role: string): Promise<Result<void>> {
-    const group = this.groups[groupId];
-    if (!group) {
-      return { ok: false, error: { code: 'not-found' } };
-    }
-
-    if (role === 'owner' || group.ownerUserId === userId) {
+    // Promocja do 'owner' jest niedozwolona niezależnie od stanu (spójnie z reducerem).
+    if (role === 'owner') {
       return { ok: false, error: { code: 'validation', field: 'role' } };
     }
 
-    if (!group.memberIds.includes(userId)) {
-      return { ok: false, error: { code: 'not-found' } };
+    const group = this.groups[groupId];
+    // W trybie mock źródłem prawdy jest reducer — brak grupy/członka w lokalnym store nie jest błędem.
+    if (group) {
+      if (group.ownerUserId === userId) {
+        return { ok: false, error: { code: 'validation', field: 'role' } };
+      }
+      if (group.memberIds.includes(userId)) {
+        group.memberRoles[userId] = role;
+      }
     }
 
-    group.memberRoles[userId] = role;
     return { ok: true, value: undefined };
   }
 

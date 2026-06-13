@@ -8,6 +8,8 @@ import { AppText } from '../../components/common/AppText';
 import { EmptyState } from '../../components/common/EmptyState';
 import { BingoGrid, type BingoCell } from '../../components/tasks/BingoGrid';
 import { useAppState } from '../../application/AppStateContext';
+import { useToast } from '../../context/ToastContext';
+import { taskService } from '../../services';
 import { selectTasksByGroup } from '../../application/selectors';
 import { useCurrentUserId } from '../../hooks/useCurrentUserId';
 import { colors } from '../../theme/colors';
@@ -16,7 +18,8 @@ import type { BingoSize } from '../../application/state';
 
 export const GroupTasksScreen = ({ navigation, route }: any) => {
   const { t } = useTranslation();
-  const { state } = useAppState();
+  const { state, dispatch } = useAppState();
+  const { showToast } = useToast();
   const currentUserId = useCurrentUserId();
   const { groupId } = route.params as { groupId: string };
 
@@ -56,17 +59,47 @@ export const GroupTasksScreen = ({ navigation, route }: any) => {
     Alert.alert(t('tasks.groups.inviteCodeSection'), group.inviteCode || '-');
   };
 
-  const handleCellPress = (index: number) => {
-    const cell = cells[index];
-    if (cell) {
-      navigation.navigate('EditTask', { groupId, taskId: cell.taskId });
+  const handleToggleDone = async (cell: NonNullable<BingoCell>) => {
+    // przełączenie ukończenia = ustawienie progresu na cel (done) albo 0 (undone)
+    const target = cell.isDone ? 0 : cell.task.goal;
+    const res = await taskService.setProgress({
+      taskId: cell.taskId,
+      authorUserId: currentUserId,
+      value: target,
+    });
+    if (!res.ok) {
+      showToast({ message: t('tasks.progress.errorMessage'), variant: 'error' });
       return;
     }
+    const result = dispatch({ type: 'tasks/set-progress', taskId: cell.taskId, value: target });
+    if (!result.ok) {
+      showToast({ message: t('tasks.progress.errorMessage'), variant: 'error' });
+    }
+  };
+
+  const handleCellPress = (index: number) => {
+    const cell = cells[index];
+    // wypełniona komórka: tap przełącza ukończenie (dostępne dla wszystkich członków)
+    if (cell) {
+      handleToggleDone(cell);
+      return;
+    }
+    // pusty placeholder: tap otwiera edycję, by nazwać task (owner/admin)
     if (canEdit) {
       const placeholderTask = tasks[index];
       if (placeholderTask) {
         navigation.navigate('EditTask', { groupId, taskId: placeholderTask.id });
       }
+    }
+  };
+
+  const handleCellLongPress = (index: number) => {
+    // długie przytrzymanie = edycja taska (nazwa/kolor) — tylko owner/admin
+    if (!canEdit) return;
+    const cell = cells[index];
+    const taskId = cell ? cell.taskId : tasks[index]?.id;
+    if (taskId) {
+      navigation.navigate('EditTask', { groupId, taskId });
     }
   };
 
@@ -118,7 +151,13 @@ export const GroupTasksScreen = ({ navigation, route }: any) => {
           ) : null}
 
           {isBingoGroup ? (
-            <BingoGrid cells={cells} size={size} canEdit={canEdit} onCellPress={handleCellPress} />
+            <BingoGrid
+              cells={cells}
+              size={size}
+              canEdit={canEdit}
+              onCellPress={handleCellPress}
+              onCellLongPress={handleCellLongPress}
+            />
           ) : tasks.length === 0 ? (
             <EmptyState
               icon="clipboard-outline"

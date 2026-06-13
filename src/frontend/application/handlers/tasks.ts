@@ -8,6 +8,7 @@ type TaskAction = ActionOf<
   | 'tasks/edit'
   | 'tasks/delete'
   | 'tasks/add-progress'
+  | 'tasks/set-progress'
   | 'tasks/add-comment'
   | 'tasks/delete-comment'
 >;
@@ -105,6 +106,34 @@ export function handleTasks(state: FrontendState, action: TaskAction): ReducerRe
           taskProgresses: {
             ...state.entities.taskProgresses,
             [progressId]: { value: (currentProgress?.value ?? 0) + value },
+          },
+        },
+      },
+    };
+  }
+
+  if (action.type === 'tasks/set-progress') {
+    const { taskId, value } = action;
+
+    if (value < 0) {
+      return { ok: false, error: { code: 'validation', field: 'value' } };
+    }
+
+    const task = state.entities.tasks[taskId];
+    if (!task) {
+      return { ok: false, error: { code: 'not-found' } };
+    }
+
+    // ustawienie absolutnej wartości progresu (używane m.in. do przełączania komórek bingo)
+    return {
+      ok: true,
+      value: {
+        ...state,
+        entities: {
+          ...state.entities,
+          taskProgresses: {
+            ...state.entities.taskProgresses,
+            [task.progressId]: { value },
           },
         },
       },

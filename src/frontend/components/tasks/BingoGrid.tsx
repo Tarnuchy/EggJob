@@ -19,6 +19,7 @@ export type BingoGridProps = {
   size: BingoSize;
   canEdit: boolean;
   onCellPress: (index: number) => void;
+  onCellLongPress?: (index: number) => void;
 };
 
 const GRID_GAP = spacing.sm;
@@ -34,7 +35,7 @@ function buildLines(size: number): number[][] {
   return lines;
 }
 
-export const BingoGrid = ({ cells, size, canEdit, onCellPress }: BingoGridProps) => {
+export const BingoGrid = ({ cells, size, canEdit, onCellPress, onCellLongPress }: BingoGridProps) => {
   const { t } = useTranslation();
 
   const cellSize =
@@ -66,6 +67,8 @@ export const BingoGrid = ({ cells, size, canEdit, onCellPress }: BingoGridProps)
             <Pressable
               key={cell ? cell.taskId : `placeholder-${index}`}
               onPress={() => onCellPress(index)}
+              onLongPress={onCellLongPress ? () => onCellLongPress(index) : undefined}
+              delayLongPress={300}
               style={({ pressed }) => [
                 styles.cell,
                 { width: cellSize, height: cellSize },

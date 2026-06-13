@@ -203,6 +203,30 @@ export class HttpTaskService implements ITaskService {
     }
   }
 
+  async setProgress(input: {
+    taskId: string;
+    authorUserId: string;
+    value: number;
+  }): Promise<Result<void>> {
+    // Backend operuje na deltach (delta_value) — liczymy różnicę względem bieżącej sumy wpisów
+    // i delegujemy do addProgress. Używane przez przełączanie komórek bingo.
+    const entriesRes = await this.getProgressEntries(input.taskId);
+    const current = entriesRes.ok
+      ? entriesRes.value.reduce((sum, entry) => sum + entry.value, 0)
+      : 0;
+    const delta = input.value - current;
+    if (delta === 0) {
+      return { ok: true, value: undefined };
+    }
+    return this.addProgress({
+      entryId: '',
+      taskId: input.taskId,
+      authorUserId: input.authorUserId,
+      value: delta,
+      note: '',
+    });
+  }
+
   async addComment(input: {
     commentId: string;
     progressEntryId: string;

@@ -33,6 +33,12 @@ export interface ITaskService {
     note: string;
   }): Promise<Result<void>>;
 
+  setProgress(input: {
+    taskId: string;
+    authorUserId: string;
+    value: number;
+  }): Promise<Result<void>>;
+
   addComment(input: {
     commentId: string;
     progressEntryId: string;

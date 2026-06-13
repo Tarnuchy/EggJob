@@ -50,13 +50,12 @@ class MockTaskService implements ITaskService {
   ): Promise<Result<void>> {
     const { name, goal, params } = input;
     const task = this.tasks[taskId];
-    if (!task) {
-      return { ok: false, error: { code: 'not-found' } };
+    // W trybie mock źródłem prawdy jest reducer — brak wpisu w lokalnym store nie jest błędem.
+    if (task) {
+      if (name !== undefined) task.name = name;
+      if (goal !== undefined) task.goal = goal;
+      if (params) task.params = { ...task.params, ...params };
     }
-
-    if (name !== undefined) task.name = name;
-    if (goal !== undefined) task.goal = goal;
-    if (params) task.params = { ...task.params, ...params };
 
     return { ok: true, value: undefined };
   }
@@ -78,16 +77,33 @@ class MockTaskService implements ITaskService {
       return { ok: false, error: { code: 'validation', field: 'value' } };
     }
 
+    // W trybie mock źródłem prawdy jest reducer — brak taska w lokalnym store nie jest błędem.
     const task = this.tasks[taskId];
-    if (!task) {
-      return { ok: false, error: { code: 'not-found' } };
+    if (task) {
+      this.entries[entryId] = { taskId, value, commentIds: [] };
+      const progress = this.progresses[task.progressId];
+      if (progress) {
+        progress.value += value;
+      }
     }
 
-    this.entries[entryId] = { taskId, value, commentIds: [] };
+    return { ok: true, value: undefined };
+  }
 
-    const progress = this.progresses[task.progressId];
-    if (progress) {
-      progress.value += value;
+  async setProgress(input: {
+    taskId: string;
+    authorUserId: string;
+    value: number;
+  }): Promise<Result<void>> {
+    const { taskId, value } = input;
+    if (value < 0) {
+      return { ok: false, error: { code: 'validation', field: 'value' } };
+    }
+
+    // W trybie mock źródłem prawdy jest reducer — brak taska w lokalnym store nie jest błędem.
+    const task = this.tasks[taskId];
+    if (task) {
+      this.progresses[task.progressId] = { value };
     }
 
     return { ok: true, value: undefined };

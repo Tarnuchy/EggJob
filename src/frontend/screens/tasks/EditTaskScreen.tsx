@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,6 +7,7 @@ import { TopBar } from '../../components/layout/TopBar';
 import { AppText } from '../../components/common/AppText';
 import { AppInput } from '../../components/common/AppInput';
 import { AppButton } from '../../components/common/AppButton';
+import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import { SegmentedControl, type SegmentedControlOption } from '../../components/common/SegmentedControl';
 import { useAppState } from '../../application/AppStateContext';
 import { useToast } from '../../context/ToastContext';
@@ -33,6 +34,7 @@ export const EditTaskScreen = ({ navigation, route }: any) => {
   const [colorPickerOpen, setColorPickerOpen] = useState(false);
   const [taskPhotoRequired, setTaskPhotoRequired] = useState(task?.params.photoRequired ?? false);
   const [taskNotifications, setTaskNotifications] = useState(task?.params.notifications ?? true);
+  const [confirmDeleteVisible, setConfirmDeleteVisible] = useState(false);
 
   const selectedColorId = findTaskColorId(taskColor);
 
@@ -99,28 +101,20 @@ export const EditTaskScreen = ({ navigation, route }: any) => {
     navigation.goBack();
   };
 
-  const handleDelete = () => {
-    Alert.alert(t('tasks.tasks.deleteTitle'), t('tasks.tasks.deleteMessage'), [
-      { text: t('tasks.common.cancel'), style: 'cancel' },
-      {
-        text: t('tasks.common.delete'),
-        style: 'destructive',
-        onPress: async () => {
-          const serviceResult = await taskService.deleteTask(taskId);
-          if (!serviceResult.ok) {
-            showToast({ message: t('tasks.tasks.deleteErrorMessage'), variant: 'error' });
-            return;
-          }
-          const result = dispatch({ type: 'tasks/delete', taskId });
-          if (!result.ok) {
-            showToast({ message: t('tasks.tasks.deleteErrorMessage'), variant: 'error' });
-            return;
-          }
-          showToast({ message: t('tasks.tasks.deleteSuccessMessage'), variant: 'success' });
-          navigation.goBack();
-        },
-      },
-    ]);
+  const handleConfirmDelete = async () => {
+    setConfirmDeleteVisible(false);
+    const serviceResult = await taskService.deleteTask(taskId);
+    if (!serviceResult.ok) {
+      showToast({ message: t('tasks.tasks.deleteErrorMessage'), variant: 'error' });
+      return;
+    }
+    const result = dispatch({ type: 'tasks/delete', taskId });
+    if (!result.ok) {
+      showToast({ message: t('tasks.tasks.deleteErrorMessage'), variant: 'error' });
+      return;
+    }
+    showToast({ message: t('tasks.tasks.deleteSuccessMessage'), variant: 'success' });
+    navigation.goBack();
   };
 
   return (
@@ -266,11 +260,21 @@ export const EditTaskScreen = ({ navigation, route }: any) => {
               disabled={!taskName.trim()}
             />
             {!isInBingoGroup ? (
-              <AppButton title={t('tasks.tasks.deleteTask')} onPress={handleDelete} />
+              <AppButton title={t('tasks.tasks.deleteTask')} onPress={() => setConfirmDeleteVisible(true)} />
             ) : null}
           </View>
         </ScrollView>
       </SafeAreaView>
+      <ConfirmDialog
+        visible={confirmDeleteVisible}
+        title={t('tasks.tasks.deleteTitle')}
+        message={t('tasks.tasks.deleteMessage')}
+        confirmLabel={t('tasks.common.delete')}
+        cancelLabel={t('tasks.common.cancel')}
+        destructive
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setConfirmDeleteVisible(false)}
+      />
     </View>
   );
 };
