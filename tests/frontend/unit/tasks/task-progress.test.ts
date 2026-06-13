@@ -139,4 +139,64 @@ describe('Task and progress reducer (UC-28, UC-32)', () => {
     expect(progressAdded.error.code).toBe('validation');
     expect(progressAdded.error.field).toBe('value');
   });
+
+  it('sets absolute progress value and can toggle it back to zero (bingo toggle)', () => {
+    const state = prepareGroup();
+    const taskCreated = reduceFrontendState(state, {
+      type: 'tasks/create',
+      taskId: 'tsk-1',
+      groupId: 'grp-1',
+      progressId: 'prg-1',
+      name: 'Komórka bingo',
+      goal: 1,
+      status: 'active',
+      kind: 'one_time',
+      params: { photoRequired: false, color: 'blue', notifications: false },
+    });
+    if (!taskCreated.ok) throw new Error('Expected precondition to create task');
+
+    const marked = reduceFrontendState(taskCreated.value, {
+      type: 'tasks/set-progress',
+      taskId: 'tsk-1',
+      value: 1,
+    });
+    expect(marked.ok).toBe(true);
+    if (!marked.ok) return;
+    expect(marked.value.entities.taskProgresses['prg-1']?.value).toBe(1);
+
+    const unmarked = reduceFrontendState(marked.value, {
+      type: 'tasks/set-progress',
+      taskId: 'tsk-1',
+      value: 0,
+    });
+    expect(unmarked.ok).toBe(true);
+    if (!unmarked.ok) return;
+    expect(unmarked.value.entities.taskProgresses['prg-1']?.value).toBe(0);
+  });
+
+  it('rejects negative set-progress value', () => {
+    const state = prepareGroup();
+    const taskCreated = reduceFrontendState(state, {
+      type: 'tasks/create',
+      taskId: 'tsk-1',
+      groupId: 'grp-1',
+      progressId: 'prg-1',
+      name: 'Komórka bingo',
+      goal: 1,
+      status: 'active',
+      kind: 'one_time',
+      params: { photoRequired: false, color: 'blue', notifications: false },
+    });
+    if (!taskCreated.ok) throw new Error('Expected precondition to create task');
+
+    const result = reduceFrontendState(taskCreated.value, {
+      type: 'tasks/set-progress',
+      taskId: 'tsk-1',
+      value: -1,
+    });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error.code).toBe('validation');
+    expect(result.error.field).toBe('value');
+  });
 });

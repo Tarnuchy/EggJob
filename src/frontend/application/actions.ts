@@ -177,6 +177,11 @@ export type AppAction =
       createdAt?: Date;
     }
   | {
+      type: 'tasks/set-progress';
+      taskId: string;
+      value: number;
+    }
+  | {
       type: 'tasks/add-comment';
       commentId: string;
       progressEntryId: string;
