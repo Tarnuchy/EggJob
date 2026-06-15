@@ -324,6 +324,7 @@ const pl: Translation = {
   settings: {
     sections: {
       preferences: 'Preferencje',
+      notifications: 'Powiadomienia',
     },
     rows: {
       language: 'Język',
@@ -334,6 +335,13 @@ const pl: Translation = {
       english: 'English',
       polish: 'Polski',
       close: 'Zamknij',
+    },
+    notifications: {
+      systemToggle: 'Powiadomienia systemowe',
+      sendTest: 'Wyślij powiadomienie testowe',
+      permissionDenied: 'Włącz powiadomienia w ustawieniach urządzenia, aby je otrzymywać.',
+      testTitle: 'EggJob',
+      testBody: 'Powiadomienia są włączone — to test.',
     },
   },
   relativeTime: {

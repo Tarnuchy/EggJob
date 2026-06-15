@@ -13,10 +13,13 @@ import { mockTaskService } from './mock/MockTaskService';
 import { httpTaskService } from './http/HttpTaskService';
 import { httpUploadService } from './http/HttpUploadService';
 import { mockUploadService } from './mock/MockUploadService';
+import { httpPushService } from './http/HttpPushService';
+import { mockPushService } from './mock/MockPushService';
 import type {
   IAuthService,
   INotificationService,
   IProfileService,
+  IPushService,
   ISocialService,
   ITaskGroupService,
   ITaskService,
@@ -31,6 +34,7 @@ interface ServiceContainer {
   taskService: ITaskService;
   notificationService: INotificationService;
   uploadService: IUploadService;
+  pushService: IPushService;
 }
 
 export const services: ServiceContainer = {
@@ -41,4 +45,5 @@ export const services: ServiceContainer = {
   taskService: USE_HTTP_SERVICES ? httpTaskService : mockTaskService,
   notificationService: USE_HTTP_SERVICES ? httpNotificationService : mockNotificationService,
   uploadService: USE_HTTP_SERVICES ? httpUploadService : mockUploadService,
+  pushService: USE_HTTP_SERVICES ? httpPushService : mockPushService,
 };

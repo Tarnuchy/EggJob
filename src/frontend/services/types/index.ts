@@ -21,3 +21,4 @@ export type { ITaskGroupService } from './ITaskGroupService';
 export type { ITaskService, TaskParams } from './ITaskService';
 export type { IUploadService, UploadableImage } from './IUploadService';
 export type { INotificationService, NotificationItem } from './INotificationService';
+export type { IPushService } from './IPushService';

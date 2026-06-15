@@ -15,6 +15,8 @@ interface Props {
   showChevron?: boolean;
   showDivider?: boolean;
   accessibilityLabel?: string;
+  /** Trailing control (e.g. a Switch). When set, it replaces the chevron. */
+  rightAccessory?: React.ReactNode;
 }
 
 export const SettingsRow = ({
@@ -25,6 +27,7 @@ export const SettingsRow = ({
   showChevron = true,
   showDivider = false,
   accessibilityLabel,
+  rightAccessory,
 }: Props) => {
   const content = (
     <View style={[styles.row, showDivider && styles.divider]}>
@@ -43,7 +46,9 @@ export const SettingsRow = ({
           {value}
         </AppText>
       ) : null}
-      {onPress && showChevron ? (
+      {rightAccessory ? (
+        rightAccessory
+      ) : onPress && showChevron ? (
         <Ionicons name="chevron-forward" size={18} color={colors.muted} />
       ) : null}
     </View>

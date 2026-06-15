@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ScrollView, StyleSheet } from 'react-native';
+import { ScrollView, StyleSheet, Switch } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useLocale, type LocalePreference } from '../../application/LocaleContext';
 import {
@@ -7,6 +7,8 @@ import {
   SettingsRow,
   SettingsSection,
 } from '../../components/settings';
+import { useSystemNotifications } from '../../hooks/useSystemNotifications';
+import { presentTestNotification } from '../../notifications/systemNotifications';
 import { colors } from '../../theme/colors';
 import { spacing, SCREEN_PADDING_H } from '../../theme/spacing';
 
@@ -22,11 +24,19 @@ const PREFERENCE_LABEL_KEYS: Record<
 export const SettingsScreen = () => {
   const { t } = useTranslation();
   const { preference, setPreference } = useLocale();
+  const systemNotifications = useSystemNotifications();
   const [pickerVisible, setPickerVisible] = useState(false);
 
   const handleSelect = (next: LocalePreference) => {
     setPickerVisible(false);
     void setPreference(next);
+  };
+
+  const handleSendTest = () => {
+    void presentTestNotification(
+      t('settings.notifications.testTitle'),
+      t('settings.notifications.testBody'),
+    );
   };
 
   return (
@@ -43,6 +53,31 @@ export const SettingsScreen = () => {
             value={t(PREFERENCE_LABEL_KEYS[preference])}
             onPress={() => setPickerVisible(true)}
           />
+        </SettingsSection>
+
+        <SettingsSection title={t('settings.sections.notifications')}>
+          <SettingsRow
+            icon="notifications-outline"
+            label={t('settings.notifications.systemToggle')}
+            accessibilityLabel={t('settings.notifications.systemToggle')}
+            rightAccessory={
+              <Switch
+                value={systemNotifications.enabled}
+                onValueChange={() => void systemNotifications.toggle()}
+                disabled={systemNotifications.busy}
+                trackColor={{ true: colors.primary, false: colors.inputBorderIdle }}
+                accessibilityLabel={t('settings.notifications.systemToggle')}
+              />
+            }
+          />
+          {systemNotifications.enabled ? (
+            <SettingsRow
+              icon="send-outline"
+              label={t('settings.notifications.sendTest')}
+              onPress={handleSendTest}
+              showDivider
+            />
+          ) : null}
         </SettingsSection>
       </ScrollView>
       <LanguagePickerModal

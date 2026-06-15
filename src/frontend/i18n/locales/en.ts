@@ -322,6 +322,7 @@ const en = {
   settings: {
     sections: {
       preferences: 'Preferences',
+      notifications: 'Notifications',
     },
     rows: {
       language: 'Language',
@@ -332,6 +333,13 @@ const en = {
       english: 'English',
       polish: 'Polski',
       close: 'Close',
+    },
+    notifications: {
+      systemToggle: 'System notifications',
+      sendTest: 'Send a test notification',
+      permissionDenied: 'Enable notifications in your device settings to receive them.',
+      testTitle: 'EggJob',
+      testBody: 'Notifications are on — this is a test.',
     },
   },
   relativeTime: {
