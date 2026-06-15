@@ -310,10 +310,20 @@ export class HttpTaskService implements ITaskService {
       Array<{
         entryId: string;
         value: number;
+        message: string;
+        photoUrl?: string;
+        createdAt: string;
         commentIds: string[];
       }>
     >
   > {
+    type ProgressEntryItem = {
+      id: string;
+      value?: number;
+      message?: string;
+      photo_url?: string | null;
+      created_at?: string;
+    };
     try {
       const headers = await buildAuthHeaders();
       const res = await fetch(`${this.baseUrl}/tasks/${encodeURIComponent(taskId)}/progress-entries`, {
@@ -321,8 +331,15 @@ export class HttpTaskService implements ITaskService {
         headers: { ...headers },
       });
       if (!res.ok) return { ok: false, error: { code: 'not-found' } };
-      const parsed = await res.json();
-      const items = (parsed.items || []).map((it: any) => ({ entryId: it.id, value: it.value, commentIds: [] }));
+      const parsed = (await res.json()) as { items?: ProgressEntryItem[] };
+      const items = (parsed.items ?? []).map((it) => ({
+        entryId: it.id,
+        value: it.value ?? 0,
+        message: it.message ?? '',
+        photoUrl: it.photo_url ?? undefined,
+        createdAt: it.created_at ?? '',
+        commentIds: [] as string[],
+      }));
       return { ok: true, value: items };
     } catch {
       return { ok: false, error: { code: 'network' } };

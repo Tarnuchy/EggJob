@@ -53,6 +53,8 @@ export type ProgressEntry = {
   value: number;
   commentIds: string[];
   photoUrl?: string;
+  message?: string;
+  createdAt?: string;
 };
 
 export type Comment = {

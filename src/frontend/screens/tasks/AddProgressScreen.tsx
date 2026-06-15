@@ -123,6 +123,7 @@ export const AddProgressScreen = ({ navigation, route }: any) => {
         value,
         note: note || undefined,
         photoUrl: photoUrl ?? undefined,
+        createdAt: new Date(),
       });
       if (!result.ok) {
         showToast({ message: t('tasks.progress.errorMessage'), variant: 'error' });

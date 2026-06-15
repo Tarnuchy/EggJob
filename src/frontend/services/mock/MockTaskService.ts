@@ -25,7 +25,10 @@ class MockTaskService implements ITaskService {
     'prg-seed-2': { value: 0 },
   };
 
-  private entries: Record<string, { taskId: string; value: number; commentIds: string[] }> = {};
+  private entries: Record<
+    string,
+    { taskId: string; value: number; message: string; photoUrl?: string; createdAt: string; commentIds: string[] }
+  > = {};
   private comments: Record<string, { message: string }> = {};
 
   async createTask(input: {
@@ -73,15 +76,23 @@ class MockTaskService implements ITaskService {
     note: string;
     photoUrl?: string;
   }): Promise<Result<void>> {
-    const { entryId, taskId, value } = input;
+    const { entryId, taskId, value, note, photoUrl } = input;
     if (value < 0) {
       return { ok: false, error: { code: 'validation', field: 'value' } };
     }
 
-    // W trybie mock źródłem prawdy jest reducer — brak taska w lokalnym store nie jest błędem.
+    // Record the entry unconditionally so the progress timeline can read it back (the reducer
+    // remains authoritative for aggregate progress). Missing task in the local store is not an error.
+    this.entries[entryId] = {
+      taskId,
+      value,
+      message: note,
+      ...(photoUrl !== undefined ? { photoUrl } : {}),
+      createdAt: new Date().toISOString(),
+      commentIds: [],
+    };
     const task = this.tasks[taskId];
     if (task) {
-      this.entries[entryId] = { taskId, value, commentIds: [] };
       const progress = this.progresses[task.progressId];
       if (progress) {
         progress.value += value;
@@ -148,16 +159,29 @@ class MockTaskService implements ITaskService {
     return { ok: true, value: { ...task } };
   }
 
-  async getProgressEntries(
-    taskId: string,
-  ): Promise<Result<Array<{ entryId: string; value: number; commentIds: string[] }>>> {
+  async getProgressEntries(taskId: string): Promise<
+    Result<
+      Array<{
+        entryId: string;
+        value: number;
+        message: string;
+        photoUrl?: string;
+        createdAt: string;
+        commentIds: string[];
+      }>
+    >
+  > {
     const result = Object.entries(this.entries)
       .filter(([, entry]) => entry.taskId === taskId)
       .map(([entryId, entry]) => ({
         entryId,
         value: entry.value,
+        message: entry.message,
+        ...(entry.photoUrl !== undefined ? { photoUrl: entry.photoUrl } : {}),
+        createdAt: entry.createdAt,
         commentIds: [...entry.commentIds],
-      }));
+      }))
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 
     return { ok: true, value: result };
   }

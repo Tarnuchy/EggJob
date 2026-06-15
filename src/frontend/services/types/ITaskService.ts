@@ -63,6 +63,9 @@ export interface ITaskService {
       Array<{
         entryId: string;
         value: number;
+        message: string;
+        photoUrl?: string;
+        createdAt: string;
         commentIds: string[];
       }>
     >
