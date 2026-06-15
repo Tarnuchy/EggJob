@@ -1,9 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { profileService } from '../../../services';
+import { useAppState } from '../../../application/AppStateContext';
 import { useCurrentUserId } from '../../../hooks/useCurrentUserId';
+import { usePhotoUpload } from '../../../hooks/usePhotoUpload';
 import { getRegUsernameError } from '../../../utils/authValidation';
-import { isValidPhotoUrl } from '../../../utils/validation';
+import { getPhotoErrorMessage } from '../../../utils/getPhotoErrorMessage';
+import { afterInteractions } from '../../../utils/afterInteractions';
+import type { PickSource } from '../../../utils/pickImage';
 
 interface UseEditProfileFormOptions {
   onSuccess: () => void;
@@ -11,19 +15,20 @@ interface UseEditProfileFormOptions {
 
 export function useEditProfileForm({ onSuccess }: UseEditProfileFormOptions) {
   const { t } = useTranslation();
+  const { dispatch } = useAppState();
   const currentUserId = useCurrentUserId();
+  const { uploading, pickAndUpload } = usePhotoUpload();
 
   const [username, setUsername] = useState('');
   const [photoUrl, setPhotoUrl] = useState('');
   const [usernameTouched, setUsernameTouched] = useState(false);
-  const [photoTouched, setPhotoTouched] = useState(false);
   const [usernameError, setUsernameError] = useState('');
-  const [photoError, setPhotoError] = useState('');
   const [formError, setFormError] = useState('');
   const [shakeCount, setShakeCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [sheetVisible, setSheetVisible] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -49,53 +54,60 @@ export function useEditProfileForm({ onSuccess }: UseEditProfileFormOptions) {
     if (formError) setFormError('');
   };
 
-  const handlePhotoUrlChange = (value: string) => {
-    setPhotoUrl(value);
-    if (photoError) setPhotoError('');
-    if (formError) setFormError('');
-  };
-
   const handleUsernameBlur = () => {
     setUsernameTouched(true);
     setUsernameError(getRegUsernameError(t, username));
   };
 
-  const validatePhoto = (): string => {
-    const trimmed = photoUrl.trim();
-    if (trimmed.length === 0) return '';
-    return isValidPhotoUrl(trimmed) ? '' : t('profile.edit.photoInvalid');
-  };
+  const openPhotoSheet = () => setSheetVisible(true);
+  const closePhotoSheet = () => setSheetVisible(false);
 
-  const handlePhotoUrlBlur = () => {
-    setPhotoTouched(true);
-    setPhotoError(validatePhoto());
+  const handleSelectSource = async (source: PickSource) => {
+    setSheetVisible(false);
+    await afterInteractions();
+    const outcome = await pickAndUpload(source);
+    if (outcome.status === 'uploaded') {
+      setPhotoUrl(outcome.url);
+      if (formError) setFormError('');
+    } else if (outcome.status === 'error') {
+      setFormError(getPhotoErrorMessage(t, outcome.code));
+      setShakeCount((c) => c + 1);
+    }
   };
 
   const resetShake = () => setShakeCount(0);
 
   const handleSubmit = async () => {
     setUsernameTouched(true);
-    setPhotoTouched(true);
     const uErr = getRegUsernameError(t, username);
-    const pErr = validatePhoto();
     setUsernameError(uErr);
-    setPhotoError(pErr);
-    if (uErr || pErr) {
+    if (uErr) {
       setShakeCount((c) => c + 1);
       return;
     }
 
     setIsSaving(true);
     try {
+      const trimmedUsername = username.trim();
+      const nextPhotoUrl = photoUrl.trim() || undefined;
       const result = await profileService.editProfile(currentUserId, {
-        username: username.trim(),
-        photoUrl: photoUrl.trim(),
+        username: trimmedUsername,
+        photoUrl: nextPhotoUrl,
       });
       if (!result.ok) {
         setFormError(t('profile.edit.saveError'));
         setShakeCount((c) => c + 1);
         return;
       }
+      // Keep the reducer's user cache in sync so member lists (e.g. group screens) reflect the
+      // edit without a reload. Best-effort: a logged-in user may not be in the local cache yet,
+      // and that is not a save failure — the service is the source of truth for persistence.
+      dispatch({
+        type: 'profile/edit',
+        userId: currentUserId,
+        username: trimmedUsername,
+        photoUrl: nextPhotoUrl,
+      });
       onSuccess();
     } finally {
       setIsSaving(false);
@@ -106,18 +118,19 @@ export function useEditProfileForm({ onSuccess }: UseEditProfileFormOptions) {
     username,
     photoUrl,
     usernameTouched,
-    photoTouched,
     usernameError,
-    photoError,
     formError,
     shakeCount,
     loading,
     loadError,
     isSaving,
+    uploading,
+    sheetVisible,
     handleUsernameChange,
-    handlePhotoUrlChange,
     handleUsernameBlur,
-    handlePhotoUrlBlur,
+    openPhotoSheet,
+    closePhotoSheet,
+    handleSelectSource,
     handleSubmit,
     resetShake,
   };

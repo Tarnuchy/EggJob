@@ -6,6 +6,9 @@ import { useTranslation } from 'react-i18next';
 import { AppText } from '../../components/common/AppText';
 import { AppInput } from '../../components/common/AppInput';
 import { AppButton } from '../../components/common/AppButton';
+import { OutlineButton } from '../../components/common/OutlineButton';
+import { Avatar } from '../../components/common/Avatar';
+import { PhotoSourceSheet } from '../../components/common/PhotoSourceSheet';
 import { EmptyState } from '../../components/common/EmptyState';
 import { LoadingIndicator } from '../../components/common/LoadingIndicator';
 import { useEditProfileForm } from './hooks/useEditProfileForm';
@@ -48,6 +51,20 @@ export const EditProfileScreen = () => {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
+          <View style={styles.photoSection}>
+            <Avatar photoUrl={form.photoUrl} size={120} accessibilityLabel={form.username} />
+            <AppText variant="caption" color="muted" style={styles.photoLabel}>
+              {t('profile.edit.photoSectionLabel')}
+            </AppText>
+            <OutlineButton
+              title={form.uploading ? t('photo.uploading') : t('photo.change')}
+              onPress={form.openPhotoSheet}
+              isLoading={form.uploading}
+              disabled={form.isSaving}
+              style={styles.changePhoto}
+            />
+          </View>
+
           <AppInput
             label={t('profile.edit.usernameLabel')}
             placeholder={t('profile.edit.usernamePlaceholder')}
@@ -59,21 +76,6 @@ export const EditProfileScreen = () => {
             autoCapitalize="none"
             autoCorrect={false}
           />
-          <AppInput
-            label={t('profile.edit.photoLabel')}
-            placeholder={t('profile.edit.photoPlaceholder')}
-            value={form.photoUrl}
-            onChangeText={form.handlePhotoUrlChange}
-            onBlur={form.handlePhotoUrlBlur}
-            touched={form.photoTouched}
-            error={form.photoError}
-            autoCapitalize="none"
-            autoCorrect={false}
-            keyboardType="url"
-          />
-          <AppText variant="caption" color="muted" style={styles.hint}>
-            {t('profile.edit.photoHint')}
-          </AppText>
 
           {form.formError ? (
             <AppText variant="caption" color="danger" style={styles.formError}>
@@ -85,11 +87,18 @@ export const EditProfileScreen = () => {
             title={t('profile.edit.save')}
             onPress={form.handleSubmit}
             isLoading={form.isSaving}
+            disabled={form.uploading}
             shakeCount={form.shakeCount}
             style={styles.save}
           />
         </ScrollView>
       )}
+
+      <PhotoSourceSheet
+        visible={form.sheetVisible}
+        onSelect={form.handleSelectSource}
+        onCancel={form.closePhotoSheet}
+      />
     </SafeAreaView>
   );
 };
@@ -127,9 +136,17 @@ const styles = StyleSheet.create({
     paddingTop: spacing.lg,
     paddingBottom: spacing.xxl,
   },
-  hint: {
-    marginTop: -spacing.sm,
-    marginBottom: spacing.md,
+  photoSection: {
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.lg,
+  },
+  photoLabel: {
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+  },
+  changePhoto: {
+    marginTop: spacing.xs,
   },
   formError: {
     marginBottom: spacing.md,
