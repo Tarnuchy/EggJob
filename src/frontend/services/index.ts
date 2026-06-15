@@ -6,6 +6,7 @@ export const socialService = services.socialService;
 export const taskGroupService = services.taskGroupService;
 export const taskService = services.taskService;
 export const notificationService = services.notificationService;
+export const uploadService = services.uploadService;
 
 export type {
   IAuthService,
@@ -14,6 +15,8 @@ export type {
   ITaskGroupService,
   ITaskService,
   INotificationService,
+  IUploadService,
+  UploadableImage,
   NotificationItem,
   UserStats,
   UserSearchResult,
