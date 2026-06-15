@@ -23,7 +23,3 @@ export function isValidPassword(password: string): boolean {
 export function passwordsMatch(password: string, confirmPassword: string): boolean {
   return password === confirmPassword;
 }
-
-export function isValidPhotoUrl(url: string): boolean {
-  return /^https:\/\/\S+$/.test(url.trim());
-}
