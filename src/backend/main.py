@@ -212,6 +212,46 @@ def delete_profile_photo(
     return MessageResponse(message="avatar_removed")
 
 
+@app.post("/users/{user_id}/push-token", status_code=201, response_model=MessageResponse)
+def register_push_token(
+    user_id: UUID,
+    payload: PushTokenRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    assert_self(user_id, current_user)
+    with transaction(db):
+        # upsert: ten sam token = jedno urządzenie (może zmienić właściciela/platformę)
+        existing = db.query(DeviceToken).filter_by(token=payload.token).first()
+        if existing is not None:
+            existing.userID = user_id
+            existing.platform = payload.platform
+        else:
+            device = DeviceToken()
+            device.userID = user_id
+            device.token = payload.token
+            device.platform = payload.platform
+            db.add(device)
+
+    return MessageResponse(message="push_token_registered")
+
+
+@app.delete("/users/{user_id}/push-token", response_model=MessageResponse)
+def delete_push_token(
+    user_id: UUID,
+    payload: PushTokenRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    assert_self(user_id, current_user)
+    with transaction(db):
+        db.query(DeviceToken).filter_by(userID=user_id, token=payload.token).delete(
+            synchronize_session=False
+        )
+
+    return MessageResponse(message="push_token_deleted")
+
+
 @app.post("/users/{user_id}/friends/invitations", response_model=MessageResponse)
 def invite_friend(
     user_id: UUID,

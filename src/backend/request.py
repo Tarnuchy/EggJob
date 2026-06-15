@@ -39,6 +39,11 @@ class NotifyRequest(BaseModel):
     message: str
 
 
+class PushTokenRequest(BaseModel):
+    token: str
+    platform: str | None = None
+
+
 class CreateGroupRequest(BaseModel):
     name: str
     privacy: str | None = None

@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from enum import Enum
 import re
+import threading
 from typing import Any
 from uuid import UUID, uuid4
 
@@ -35,6 +36,7 @@ from src.backend.exceptions import (
 )
 from src.backend.security import hash_password, password_needs_rehash, verify_password
 from src.backend.storage import storage
+from src.backend.push import push_enabled, send_to_tokens
 
 
 def utcnow() -> datetime:
@@ -277,6 +279,11 @@ class User(Base):
         back_populates="user",
         cascade="all, delete-orphan",
     )
+    deviceTokens: Mapped[list[DeviceToken]] = relationship(
+        "DeviceToken",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
 
     @staticmethod
     def is_valid_photo_url(url: str) -> bool:
@@ -469,6 +476,26 @@ class Notification(Base):
     def read(self, db_session: Session) -> None:
         self.active = False
         db_session.flush()
+
+
+class DeviceToken(Base):
+    __tablename__ = "device_tokens"
+    __table_args__ = (
+        UniqueConstraint("token", name="uq_device_tokens_token"),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    userID: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    token: Mapped[str] = mapped_column(String(256), nullable=False)
+    platform: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    createdAt: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=utcnow)
+
+    user: Mapped[User] = relationship("User", back_populates="deviceTokens")
 
 
 def _build_task(task_type: TaskType, taskparams: dict[str, Any]) -> Task:
@@ -1530,6 +1557,68 @@ def _discard_orphaned_media(session: Session) -> None:
     session.info.pop(_MEDIA_PENDING_KEY, None)
 
 
+# --- Push (Expo) po utworzeniu Notification ---
+# Nowe powiadomienia zbieramy podczas flush, a wysyłamy PO commicie w wątku w tle
+# (best-effort, nieblokująco). Martwe tokeny usuwamy na podstawie odpowiedzi Expo.
+# Wątek używa tego samego silnika DB co żądanie (get_bind), więc w testach trafia
+# do bazy testowej, a nie produkcyjnej.
+_PUSH_PENDING_KEY = "_push_pending"
+
+
+@event.listens_for(Session, "before_flush")
+def _stage_push_notifications(session: Session, flush_context, instances) -> None:
+    pending = session.info.setdefault(_PUSH_PENDING_KEY, [])
+    for obj in session.new:
+        if isinstance(obj, Notification):
+            pending.append((obj.userID, obj.message))
+
+
+@event.listens_for(Session, "after_commit")
+def _dispatch_push_notifications(session: Session) -> None:
+    pending = session.info.pop(_PUSH_PENDING_KEY, None)
+    if not pending or not push_enabled():
+        return
+    engine = session.get_bind()
+    threading.Thread(
+        target=_send_push_batch, args=(engine, list(pending)), daemon=True
+    ).start()
+
+
+@event.listens_for(Session, "after_rollback")
+def _discard_push_notifications(session: Session) -> None:
+    session.info.pop(_PUSH_PENDING_KEY, None)
+
+
+def _send_push_batch(engine, items: list[tuple[UUID, str]]) -> None:
+    from collections import defaultdict
+
+    by_user: dict[UUID, list[str]] = defaultdict(list)
+    for user_id, message in items:
+        if user_id is not None:
+            by_user[user_id].append(message)
+    if not by_user:
+        return
+
+    db = Session(bind=engine)
+    try:
+        dead: list[str] = []
+        for user_id, messages in by_user.items():
+            tokens = [t.token for t in db.query(DeviceToken).filter_by(userID=user_id).all()]
+            if not tokens:
+                continue
+            for message in messages:
+                dead.extend(send_to_tokens(tokens, message))
+        if dead:
+            db.query(DeviceToken).filter(
+                DeviceToken.token.in_(set(dead))
+            ).delete(synchronize_session=False)
+            db.commit()
+    except Exception:
+        db.rollback()
+    finally:
+        db.close()
+
+
 __all__ = [ #do importów
     "PrivacyLevel",
     "GroupRole",
@@ -1542,6 +1631,7 @@ __all__ = [ #do importów
     "Friendship",
     "Invitation",
     "Notification",
+    "DeviceToken",
     "TaskGroup",
     "CompetitiveTaskGroup",
     "CooperativeTaskGroup",
