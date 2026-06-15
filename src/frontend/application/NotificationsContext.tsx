@@ -2,20 +2,23 @@ import React, {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
-  useState,
   type ReactNode,
 } from 'react';
 import { notificationService } from '../services';
 import type { NotificationItem } from '../services';
 import { useCurrentUserId } from '../hooks/useCurrentUserId';
+import { usePaginatedList } from '../hooks/usePaginatedList';
 
 interface NotificationsContextValue {
   notifications: NotificationItem[];
-  unreadCount: number;
+  /** Whether any loaded notification is unread (drives the dot indicator). */
+  hasUnread: boolean;
   loading: boolean;
+  loadingMore: boolean;
+  hasMore: boolean;
   error: boolean;
+  loadMore: () => void;
   refresh: () => Promise<void>;
   markAsRead: (notificationId: string) => Promise<void>;
   markAllAsRead: () => Promise<void>;
@@ -24,35 +27,23 @@ interface NotificationsContextValue {
 const NotificationsContext = createContext<NotificationsContextValue | null>(null);
 
 /**
- * Holds the current user's notifications once for the whole authenticated
- * shell, so the panel list and the top-bar unread badge stay in sync.
+ * Holds the current user's notifications (paginated) once for the whole authenticated
+ * shell, so the panel list and the top-bar unread dot stay in sync.
  */
 export const NotificationsProvider = ({ children }: { children: ReactNode }) => {
   const userId = useCurrentUserId();
-  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
 
-  const refresh = useCallback(async () => {
-    setLoading(true);
-    setError(false);
-    const result = await notificationService.getNotifications(userId);
-    if (result.ok) {
-      setNotifications(result.value);
-    } else {
-      setNotifications([]);
-      setError(true);
-    }
-    setLoading(false);
-  }, [userId]);
+  const fetchPage = useCallback(
+    (offset: number, limit: number) => notificationService.getNotifications(userId, { offset, limit }),
+    [userId],
+  );
 
-  useEffect(() => {
-    void refresh();
-  }, [refresh]);
+  const { items, loading, loadingMore, error, hasMore, loadMore, refresh, mutateItems } =
+    usePaginatedList<NotificationItem>(fetchPage);
 
   const markAsRead = useCallback(
     async (notificationId: string) => {
-      setNotifications((prev) =>
+      mutateItems((prev) =>
         prev.map((item) =>
           item.notificationId === notificationId ? { ...item, active: false } : item,
         ),
@@ -62,25 +53,33 @@ export const NotificationsProvider = ({ children }: { children: ReactNode }) => 
         void refresh();
       }
     },
-    [refresh],
+    [mutateItems, refresh],
   );
 
   const markAllAsRead = useCallback(async () => {
-    setNotifications((prev) => prev.map((item) => ({ ...item, active: false })));
+    mutateItems((prev) => prev.map((item) => ({ ...item, active: false })));
     const result = await notificationService.markAllAsRead(userId);
     if (!result.ok) {
       void refresh();
     }
-  }, [refresh, userId]);
+  }, [mutateItems, refresh, userId]);
 
-  const unreadCount = useMemo(
-    () => notifications.filter((item) => item.active).length,
-    [notifications],
-  );
+  const hasUnread = useMemo(() => items.some((item) => item.active), [items]);
 
   const value = useMemo<NotificationsContextValue>(
-    () => ({ notifications, unreadCount, loading, error, refresh, markAsRead, markAllAsRead }),
-    [notifications, unreadCount, loading, error, refresh, markAsRead, markAllAsRead],
+    () => ({
+      notifications: items,
+      hasUnread,
+      loading,
+      loadingMore,
+      hasMore,
+      error,
+      loadMore,
+      refresh,
+      markAsRead,
+      markAllAsRead,
+    }),
+    [items, hasUnread, loading, loadingMore, hasMore, error, loadMore, refresh, markAsRead, markAllAsRead],
   );
 
   return <NotificationsContext.Provider value={value}>{children}</NotificationsContext.Provider>;

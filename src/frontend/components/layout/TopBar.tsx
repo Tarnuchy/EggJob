@@ -64,7 +64,7 @@ export const TopBar = ({ title, showBackButton = false, showRightActions = true 
 
 const RightActionsPill = () => {
   const { openPanel, setOpenPanel } = usePanelContext();
-  const { unreadCount } = useNotifications();
+  const { hasUnread } = useNotifications();
   const { t } = useTranslation();
   const sectionConfig = createSectionConfig(t);
   const notificationsConfig = sectionConfig.Notifications;
@@ -76,7 +76,11 @@ const RightActionsPill = () => {
         style={({ pressed }) => [pillStyles.button, pressed && pillStyles.buttonPressed]}
         onPress={() => setOpenPanel('notifications')}
         accessibilityRole="button"
-        accessibilityLabel={t('topBar.notifications')}
+        accessibilityLabel={
+          hasUnread
+            ? `${t('topBar.notifications')}, ${t('topBar.unreadNotifications')}`
+            : t('topBar.notifications')
+        }
       >
         <Ionicons
           name={
@@ -87,13 +91,7 @@ const RightActionsPill = () => {
           size={20}
           color={colors.primary}
         />
-        {unreadCount > 0 ? (
-          <View style={pillStyles.badge}>
-            <AppText variant="caption" color="textOnPrimary" style={pillStyles.badgeText}>
-              {unreadCount > 9 ? '9+' : String(unreadCount)}
-            </AppText>
-          </View>
-        ) : null}
+        {hasUnread ? <View style={pillStyles.dot} /> : null}
       </Pressable>
       <View style={pillStyles.divider} />
       <Pressable
@@ -178,20 +176,13 @@ const pillStyles = StyleSheet.create({
     height: 22,
     backgroundColor: colors.cardBorderTranslucent,
   },
-  badge: {
+  dot: {
     position: 'absolute',
-    top: 4,
-    right: 6,
-    minWidth: 16,
-    height: 16,
-    borderRadius: 8,
-    paddingHorizontal: 3,
+    top: 6,
+    right: 8,
+    width: 9,
+    height: 9,
+    borderRadius: 5,
     backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  badgeText: {
-    fontSize: 10,
-    lineHeight: 12,
   },
 });

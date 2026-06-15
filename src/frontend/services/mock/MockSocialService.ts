@@ -1,5 +1,6 @@
 import type { FeedItem, ISocialService, UserSearchResult } from '../types/ISocialService';
-import type { Result } from '../types/index';
+import type { Page, PageOptions, Result } from '../types/index';
+import { DEFAULT_PAGE_SIZE } from '../pagination';
 import { mockProfileService } from './MockProfileService';
 
 const HOUR = 60 * 60 * 1000;
@@ -111,17 +112,37 @@ class MockSocialService implements ISocialService {
 
   async getFriends(
     userId: string,
-  ): Promise<Result<Array<{ friendshipId: string; friendUserId: string }>>> {
-    const result = Object.entries(this.friendships)
+    opts?: PageOptions,
+  ): Promise<
+    Result<
+      Page<{ friendshipId: string; friendUserId: string; username: string; photoUrl?: string }>
+    >
+  > {
+    const profiles = new Map(
+      mockProfileService.getAllProfiles().map((profile) => [profile.userId, profile]),
+    );
+
+    const all = Object.entries(this.friendships)
       .filter(
         ([, friendship]) => friendship.userId === userId || friendship.friendUserId === userId,
       )
-      .map(([friendshipId, friendship]) => ({
-        friendshipId,
-        friendUserId: friendship.userId === userId ? friendship.friendUserId : friendship.userId,
-      }));
+      .map(([friendshipId, friendship]) => {
+        const friendUserId =
+          friendship.userId === userId ? friendship.friendUserId : friendship.userId;
+        const profile = profiles.get(friendUserId);
+        return {
+          friendshipId,
+          friendUserId,
+          username: profile?.username ?? '',
+          photoUrl: profile?.photoUrl,
+        };
+      })
+      // parity with the backend, which orders friends by username asc
+      .sort((a, b) => a.username.localeCompare(b.username));
 
-    return { ok: true, value: result };
+    const offset = opts?.offset ?? 0;
+    const limit = opts?.limit ?? DEFAULT_PAGE_SIZE;
+    return { ok: true, value: { items: all.slice(offset, offset + limit), total: all.length } };
   }
 
   async getPendingInvitations(

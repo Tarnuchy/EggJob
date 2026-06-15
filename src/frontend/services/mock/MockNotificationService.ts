@@ -1,5 +1,6 @@
 import type { INotificationService, NotificationItem } from '../types/INotificationService';
-import type { Result } from '../types/index';
+import type { Page, PageOptions, Result } from '../types/index';
+import { DEFAULT_PAGE_SIZE } from '../pagination';
 
 interface StoredNotification {
   userId: string;
@@ -72,8 +73,11 @@ class MockNotificationService implements INotificationService {
     return { ok: true, value: undefined };
   }
 
-  async getNotifications(userId: string): Promise<Result<NotificationItem[]>> {
-    const items = Object.entries(this.notifications)
+  async getNotifications(
+    userId: string,
+    opts?: PageOptions,
+  ): Promise<Result<Page<NotificationItem>>> {
+    const all = Object.entries(this.notifications)
       .filter(([, notification]) => notification.userId === userId)
       .map(([notificationId, notification]) => ({
         notificationId,
@@ -83,7 +87,9 @@ class MockNotificationService implements INotificationService {
       }))
       .sort((a, b) => b.date.localeCompare(a.date));
 
-    return { ok: true, value: items };
+    const offset = opts?.offset ?? 0;
+    const limit = opts?.limit ?? DEFAULT_PAGE_SIZE;
+    return { ok: true, value: { items: all.slice(offset, offset + limit), total: all.length } };
   }
 }
 

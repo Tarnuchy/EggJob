@@ -64,6 +64,7 @@ const en = {
   topBar: {
     back: 'Back',
     notifications: 'Open notifications',
+    unreadNotifications: 'unread notifications',
     settings: 'Open settings',
   },
   friends: {

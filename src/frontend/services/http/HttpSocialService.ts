@@ -1,5 +1,6 @@
 import type { FeedItem, ISocialService, UserSearchResult } from '../types/ISocialService';
-import type { Result } from '../types/index';
+import type { Page, PageOptions, Result } from '../types/index';
+import { pageQueryString } from '../pagination';
 import { API_BASE_URL } from './config';
 import { buildAuthHeaders } from './buildAuthHeaders';
 import { CurrentUser } from './CurrentUser';
@@ -123,16 +124,23 @@ export class HttpSocialService implements ISocialService {
 
   async getFriends(
     userId: string,
-  ): Promise<Result<Array<{ friendshipId: string; friendUserId: string }>>> {
-    const result = await this.getJson<{ items?: UserSummaryPayload[] }>(
-      `/users/${encodeURIComponent(userId)}/friends`,
+    opts?: PageOptions,
+  ): Promise<
+    Result<
+      Page<{ friendshipId: string; friendUserId: string; username: string; photoUrl?: string }>
+    >
+  > {
+    const result = await this.getJson<{ items?: UserSummaryPayload[]; total?: number }>(
+      `/users/${encodeURIComponent(userId)}/friends${pageQueryString(opts)}`,
     );
     if (!result.ok) return result;
     const items = (result.value.items ?? []).map((friend) => ({
       friendshipId: encodePair(userId, friend.id),
       friendUserId: friend.id,
+      username: friend.username,
+      photoUrl: friend.photo_url ?? undefined,
     }));
-    return { ok: true, value: items };
+    return { ok: true, value: { items, total: result.value.total ?? items.length } };
   }
 
   async getPendingInvitations(

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { socialService } from '../../../services';
+import { fetchAllPages } from '../../../services/pagination';
 import { useCurrentUserId } from '../../../hooks/useCurrentUserId';
 import {
   deriveFriendRelationship,
@@ -32,7 +33,8 @@ export function useFriendRelationship(targetUserId: string): UseFriendRelationsh
 
   const load = useCallback(async () => {
     const [friends, sent, received] = await Promise.all([
-      socialService.getFriends(currentUserId),
+      // relationship derivation needs the COMPLETE friend set, not just the first page
+      fetchAllPages((offset, limit) => socialService.getFriends(currentUserId, { offset, limit })),
       socialService.getSentInvitations(currentUserId),
       socialService.getPendingInvitations(currentUserId),
     ]);

@@ -37,3 +37,40 @@ describe('MockSocialService friend-graph extensions', () => {
     expect(dates).toEqual([...dates].sort((a, b) => b.localeCompare(a)));
   });
 });
+
+describe('MockSocialService.getFriends pagination', () => {
+  it('returns the first page with total and display data resolved from profiles', async () => {
+    const service = new MockSocialService();
+    const result = await service.getFriends('usr-seed-1', { limit: 1, offset: 0 });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.total).toBe(2);
+    expect(result.value.items).toHaveLength(1);
+    // friends ordered by username asc (parity with backend) → bob before erin
+    expect(result.value.items[0].friendUserId).toBe('usr-seed-2');
+    expect(result.value.items[0].username).toBe('bob');
+  });
+
+  it('returns the second page at the given offset', async () => {
+    const service = new MockSocialService();
+    const result = await service.getFriends('usr-seed-1', { limit: 1, offset: 1 });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.total).toBe(2);
+    expect(result.value.items).toHaveLength(1);
+    expect(result.value.items[0].friendUserId).toBe('usr-seed-5');
+    expect(result.value.items[0].username).toBe('erin');
+  });
+
+  it('returns the whole first page when no options are given', async () => {
+    const service = new MockSocialService();
+    const result = await service.getFriends('usr-seed-1');
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.total).toBe(2);
+    expect(result.value.items).toHaveLength(2);
+  });
+});

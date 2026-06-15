@@ -1,55 +1,34 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { View, FlatList, StyleSheet, ActivityIndicator } from 'react-native';
 import { SearchBar } from '../../../components/common/SearchBar';
 import { UserListItem } from '../../../components/common/UserListItem';
 import { EmptyState } from '../../../components/common/EmptyState';
 import { useTranslation } from 'react-i18next';
-import { profileService, socialService } from '../../../services';
+import { socialService } from '../../../services';
+import { usePaginatedList } from '../../../hooks/usePaginatedList';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { useAppNavigation } from '../../../hooks/useAppNavigation';
 import { useCurrentUserId } from './useCurrentUserId';
-import type { ResolvedFriend } from './types';
 
 export const MyFriendsTab = () => {
   const currentUserId = useCurrentUserId();
   const navigation = useAppNavigation();
   const { t } = useTranslation();
   const [query, setQuery] = useState('');
-  const [friends, setFriends] = useState<ResolvedFriend[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  const loadFriends = useCallback(async () => {
-    setLoading(true);
-    const result = await socialService.getFriends(currentUserId);
-    if (!result.ok) {
-      setFriends([]);
-      setLoading(false);
-      return;
-    }
-
-    const resolved = await Promise.all(
-      result.value.map(async ({ friendshipId, friendUserId }) => {
-        const profile = await profileService.getProfile(friendUserId);
-        const username = profile.ok ? profile.value.username : t('friends.profile.unknownUser');
-        const photoUrl = profile.ok ? profile.value.photoUrl : undefined;
-        return { friendshipId, userId: friendUserId, username, photoUrl };
-      }),
-    );
-
-    setFriends(resolved);
-    setLoading(false);
-  }, [currentUserId, t]);
-
-  useEffect(() => {
-    void loadFriends();
-  }, [loadFriends]);
+  const fetchPage = useCallback(
+    (offset: number, limit: number) => socialService.getFriends(currentUserId, { offset, limit }),
+    [currentUserId],
+  );
+  const { items, loading, loadingMore, loadMore } = usePaginatedList(fetchPage);
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    if (!needle) return friends;
-    return friends.filter((friend) => friend.username.toLowerCase().includes(needle));
-  }, [friends, query]);
+    if (!needle) return items;
+    // filters the loaded pages only — there is no friends-search endpoint (see spec)
+    return items.filter((friend) => friend.username.toLowerCase().includes(needle));
+  }, [items, query]);
 
   const handleOpenProfile = (userId: string) => {
     navigation.navigate('UserProfile', { userId });
@@ -66,7 +45,7 @@ export const MyFriendsTab = () => {
         <View style={styles.center}>
           <ActivityIndicator color={colors.primary} />
         </View>
-      ) : friends.length === 0 ? (
+      ) : items.length === 0 ? (
         <EmptyState
           icon="people-outline"
           title={t('friends.empty.myFriendsTitle')}
@@ -77,11 +56,18 @@ export const MyFriendsTab = () => {
           data={filtered}
           keyExtractor={(item) => item.friendshipId}
           contentContainerStyle={styles.listContent}
+          onEndReached={() => loadMore()}
+          onEndReachedThreshold={0.4}
+          ListFooterComponent={
+            loadingMore ? (
+              <ActivityIndicator color={colors.primary} style={styles.footer} />
+            ) : null
+          }
           renderItem={({ item }) => (
             <UserListItem
               username={item.username}
               photoUrl={item.photoUrl}
-              onPress={() => handleOpenProfile(item.userId)}
+              onPress={() => handleOpenProfile(item.friendUserId)}
             />
           )}
         />
@@ -103,5 +89,8 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingBottom: spacing.xl,
+  },
+  footer: {
+    paddingVertical: spacing.md,
   },
 });

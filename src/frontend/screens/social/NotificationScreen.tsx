@@ -1,5 +1,5 @@
 import React from 'react';
-import { FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { AppText } from '../../components/common/AppText';
@@ -12,7 +12,7 @@ import { NotificationItem } from './components/NotificationItem';
 
 export const NotificationScreen = () => {
   const { t } = useTranslation();
-  const { notifications, unreadCount, loading, error, markAsRead, markAllAsRead } =
+  const { notifications, hasUnread, loading, loadingMore, error, markAsRead, markAllAsRead, loadMore } =
     useNotifications();
 
   if (loading) {
@@ -40,8 +40,10 @@ export const NotificationScreen = () => {
         styles.content,
         notifications.length === 0 && styles.contentEmpty,
       ]}
+      onEndReached={() => loadMore()}
+      onEndReachedThreshold={0.4}
       ListHeaderComponent={
-        unreadCount > 0 ? (
+        hasUnread ? (
           <Pressable
             onPress={() => void markAllAsRead()}
             style={({ pressed }) => [styles.markAll, pressed && styles.markAllPressed]}
@@ -54,6 +56,9 @@ export const NotificationScreen = () => {
             </AppText>
           </Pressable>
         ) : null
+      }
+      ListFooterComponent={
+        loadingMore ? <ActivityIndicator color={colors.primary} style={styles.footer} /> : null
       }
       ListEmptyComponent={
         <EmptyState
@@ -99,5 +104,8 @@ const styles = StyleSheet.create({
   },
   markAllPressed: {
     backgroundColor: 'rgba(107, 63, 34, 0.08)',
+  },
+  footer: {
+    paddingVertical: spacing.md,
   },
 });

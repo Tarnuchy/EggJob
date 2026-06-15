@@ -1,5 +1,6 @@
 import type { INotificationService, NotificationItem } from '../types/INotificationService';
-import type { Result } from '../types/index';
+import type { Page, PageOptions, Result } from '../types/index';
+import { fetchAllPages, pageQueryString } from '../pagination';
 import { API_BASE_URL } from './config';
 import { buildAuthHeaders } from './buildAuthHeaders';
 
@@ -57,9 +58,13 @@ export class HttpNotificationService implements INotificationService {
   }
 
   async markAllAsRead(userId: string): Promise<Result<void>> {
-    const notifications = await this.getNotifications(userId);
-    if (!notifications.ok) return notifications;
-    for (const notification of notifications.value) {
+    // Mark every unread notification across ALL pages — explicit user action, not a hot path.
+    const all = await fetchAllPages<NotificationItem>(
+      (offset, limit) => this.getNotifications(userId, { offset, limit }),
+      100,
+    );
+    if (!all.ok) return all;
+    for (const notification of all.value) {
       if (!notification.active) continue;
       const result = await this.markAsRead(notification.notificationId);
       if (!result.ok) return result;
@@ -67,22 +72,25 @@ export class HttpNotificationService implements INotificationService {
     return { ok: true, value: undefined };
   }
 
-  async getNotifications(userId: string): Promise<Result<NotificationItem[]>> {
+  async getNotifications(
+    userId: string,
+    opts?: PageOptions,
+  ): Promise<Result<Page<NotificationItem>>> {
     try {
       const headers = await buildAuthHeaders();
       const response = await fetch(
-        `${this.baseUrl}/users/${encodeURIComponent(userId)}/notifications`,
+        `${this.baseUrl}/users/${encodeURIComponent(userId)}/notifications${pageQueryString(opts)}`,
         { method: 'GET', headers },
       );
       if (!response.ok) return mapStatus(response.status);
-      const parsed = (await response.json()) as { items?: NotificationPayload[] };
+      const parsed = (await response.json()) as { items?: NotificationPayload[]; total?: number };
       const items: NotificationItem[] = (parsed.items ?? []).map((item) => ({
         notificationId: item.id,
         message: item.message,
         active: item.active,
         date: item.date,
       }));
-      return { ok: true, value: items };
+      return { ok: true, value: { items, total: parsed.total ?? items.length } };
     } catch {
       return { ok: false, error: { code: 'network' } };
     }

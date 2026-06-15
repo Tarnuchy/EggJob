@@ -66,6 +66,7 @@ const pl: Translation = {
   topBar: {
     back: 'Wstecz',
     notifications: 'Otwórz powiadomienia',
+    unreadNotifications: 'nieprzeczytane powiadomienia',
     settings: 'Otwórz ustawienia',
   },
   friends: {

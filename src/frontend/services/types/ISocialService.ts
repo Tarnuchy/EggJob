@@ -1,4 +1,4 @@
-import type { Result } from './index';
+import type { Page, PageOptions, Result } from './index';
 
 export interface UserSearchResult {
   userId: string;
@@ -36,11 +36,20 @@ export interface ISocialService {
 
   removeFriend(friendshipId: string): Promise<Result<void>>;
 
-  getFriends(userId: string): Promise<
+  /**
+   * The user's friends, paginated (newest backend order is username asc). Each item carries
+   * display data (`username`/`photoUrl`) so callers need no per-friend profile lookup.
+   */
+  getFriends(
+    userId: string,
+    opts?: PageOptions,
+  ): Promise<
     Result<
-      Array<{
+      Page<{
         friendshipId: string;
         friendUserId: string;
+        username: string;
+        photoUrl?: string;
       }>
     >
   >;

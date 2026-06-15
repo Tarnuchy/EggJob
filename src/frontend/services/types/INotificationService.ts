@@ -1,4 +1,4 @@
-import type { Result } from './index';
+import type { Page, PageOptions, Result } from './index';
 
 export interface NotificationItem {
   notificationId: string;
@@ -20,6 +20,6 @@ export interface INotificationService {
 
   markAllAsRead(userId: string): Promise<Result<void>>;
 
-  /** Returns the user's notifications, newest first. */
-  getNotifications(userId: string): Promise<Result<NotificationItem[]>>;
+  /** Returns a page of the user's notifications, newest first. */
+  getNotifications(userId: string, opts?: PageOptions): Promise<Result<Page<NotificationItem>>>;
 }
