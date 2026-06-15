@@ -217,15 +217,17 @@ export const GroupTasksScreen = ({ navigation, route }: any) => {
                         ) : null}
                       </View>
                     </View>
-                    <Pressable
-                      onPress={() => navigation.navigate('AddProgress', { groupId, taskId: id })}
-                      hitSlop={8}
-                      style={({ pressed }) => pressed && styles.addProgressPressed}
-                      accessibilityRole="button"
-                      accessibilityLabel={t('tasks.tasks.addProgressAction')}
-                    >
-                      <Ionicons name="add-circle-outline" size={22} color={colors.muted} />
-                    </Pressable>
+                    {!isDone ? (
+                      <Pressable
+                        onPress={() => navigation.navigate('AddProgress', { groupId, taskId: id })}
+                        hitSlop={8}
+                        style={({ pressed }) => pressed && styles.addProgressPressed}
+                        accessibilityRole="button"
+                        accessibilityLabel={t('tasks.tasks.addProgressAction')}
+                      >
+                        <Ionicons name="add-circle-outline" size={22} color={colors.muted} />
+                      </Pressable>
+                    ) : null}
                     <Ionicons name="chevron-forward" size={18} color={colors.muted} />
                   </Pressable>
                 );

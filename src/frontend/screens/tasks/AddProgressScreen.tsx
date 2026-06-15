@@ -238,6 +238,7 @@ export const AddProgressScreen = ({ navigation, route }: any) => {
   const renderProgressStep = () => {
     if (!selectedTask) return null;
     const currentValue = state.entities.taskProgresses[selectedTask.progressId]?.value ?? 0;
+    const isComplete = currentValue >= selectedTask.goal;
     return (
       <>
         <Pressable
@@ -263,64 +264,86 @@ export const AddProgressScreen = ({ navigation, route }: any) => {
               ? t('tasks.tasks.taskMetaOneTime')
               : t('tasks.tasks.taskMeta', { current: currentValue, goal: selectedTask.goal })}
           </AppText>
-          {selectedTask.params.photoRequired ? (
-            <View style={styles.noticeRow}>
-              <Ionicons name="camera-outline" size={16} color={colors.muted} />
-              <AppText variant="caption" color="textSecondary" style={styles.noticeText}>
-                {t('tasks.progress.photoRequiredNotice')}
-              </AppText>
-            </View>
-          ) : null}
-          {!isOneTime ? (
-            <AppInput
-              value={progressValue}
-              onChangeText={setProgressValue}
-              keyboardType="numeric"
-              placeholder={t('tasks.progress.valuePlaceholder')}
-            />
-          ) : null}
-          <AppInput
-            value={progressNote}
-            onChangeText={setProgressNote}
-            placeholder={t('tasks.progress.notePlaceholder')}
-          />
-          <View style={styles.photoBlock}>
-            {photoUrl ? (
-              <View style={styles.photoPreviewRow}>
-                <Image
-                  source={{ uri: resolvePhotoUri(photoUrl) }}
-                  style={styles.photoPreview}
-                  resizeMode="cover"
-                  accessibilityRole="image"
-                  accessibilityLabel={t('tasks.progress.photoAttached')}
-                />
-                <View style={styles.photoAttachedRow}>
-                  <Ionicons name="checkmark-circle" size={16} color={colors.primary} />
-                  <AppText variant="caption" color="textSecondary">
-                    {t('tasks.progress.photoAttached')}
+          {isComplete ? (
+            <>
+              <View style={styles.noticeRow}>
+                <Ionicons name="checkmark-circle" size={16} color={colors.primary} />
+                <AppText variant="caption" color="textSecondary" style={styles.noticeText}>
+                  {t('tasks.progress.completedMessage')}
+                </AppText>
+              </View>
+              <AppButton
+                title={t('tasks.detail.openDetails')}
+                onPress={() =>
+                  navigation.navigate('TaskDetail', {
+                    groupId: selectedGroupId,
+                    taskId: selectedTaskId,
+                  })
+                }
+              />
+            </>
+          ) : (
+            <>
+              {selectedTask.params.photoRequired ? (
+                <View style={styles.noticeRow}>
+                  <Ionicons name="camera-outline" size={16} color={colors.muted} />
+                  <AppText variant="caption" color="textSecondary" style={styles.noticeText}>
+                    {t('tasks.progress.photoRequiredNotice')}
                   </AppText>
                 </View>
+              ) : null}
+              {!isOneTime ? (
+                <AppInput
+                  value={progressValue}
+                  onChangeText={setProgressValue}
+                  keyboardType="numeric"
+                  placeholder={t('tasks.progress.valuePlaceholder')}
+                />
+              ) : null}
+              <AppInput
+                value={progressNote}
+                onChangeText={setProgressNote}
+                placeholder={t('tasks.progress.notePlaceholder')}
+              />
+              <View style={styles.photoBlock}>
+                {photoUrl ? (
+                  <View style={styles.photoPreviewRow}>
+                    <Image
+                      source={{ uri: resolvePhotoUri(photoUrl) }}
+                      style={styles.photoPreview}
+                      resizeMode="cover"
+                      accessibilityRole="image"
+                      accessibilityLabel={t('tasks.progress.photoAttached')}
+                    />
+                    <View style={styles.photoAttachedRow}>
+                      <Ionicons name="checkmark-circle" size={16} color={colors.primary} />
+                      <AppText variant="caption" color="textSecondary">
+                        {t('tasks.progress.photoAttached')}
+                      </AppText>
+                    </View>
+                  </View>
+                ) : null}
+                <OutlineButton
+                  title={
+                    uploading
+                      ? t('photo.uploading')
+                      : photoUrl
+                        ? t('photo.change')
+                        : t('photo.add')
+                  }
+                  onPress={() => setSheetVisible(true)}
+                  isLoading={uploading}
+                  disabled={isSubmitting}
+                />
               </View>
-            ) : null}
-            <OutlineButton
-              title={
-                uploading
-                  ? t('photo.uploading')
-                  : photoUrl
-                    ? t('photo.change')
-                    : t('photo.add')
-              }
-              onPress={() => setSheetVisible(true)}
-              isLoading={uploading}
-              disabled={isSubmitting}
-            />
-          </View>
-          <AppButton
-            title={isOneTime ? t('tasks.progress.markDone') : t('tasks.progress.addProgress')}
-            onPress={() => submitProgress(isOneTime ? 1 : Number(progressValue))}
-            disabled={isSubmitting || uploading || (!isOneTime && !progressValue.trim())}
-            isLoading={isSubmitting}
-          />
+              <AppButton
+                title={isOneTime ? t('tasks.progress.markDone') : t('tasks.progress.addProgress')}
+                onPress={() => submitProgress(isOneTime ? 1 : Number(progressValue))}
+                disabled={isSubmitting || uploading || (!isOneTime && !progressValue.trim())}
+                isLoading={isSubmitting}
+              />
+            </>
+          )}
         </View>
       </>
     );
