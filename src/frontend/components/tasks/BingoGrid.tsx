@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { AppText } from '../common/AppText';
 import { colors } from '../../theme/colors';
 import { spacing, SCREEN_PADDING_H } from '../../theme/spacing';
+import { computeBingoCellSize } from './bingoLayout';
 import type { BingoSize, Task } from '../../application/state';
 
 export type BingoCell = {
@@ -47,8 +48,12 @@ export const BingoGrid = ({
 }: BingoGridProps) => {
   const { t } = useTranslation();
 
-  const cellSize =
-    (Dimensions.get('window').width - 2 * SCREEN_PADDING_H - (size - 1) * GRID_GAP) / size;
+  const cellSize = computeBingoCellSize(
+    Dimensions.get('window').width,
+    size,
+    SCREEN_PADDING_H,
+    GRID_GAP,
+  );
 
   const hasBingo = useMemo(() => {
     if (cells.length === 0) return false;
