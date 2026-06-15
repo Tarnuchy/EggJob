@@ -373,6 +373,7 @@ const pl: Translation = {
   photo: {
     change: 'Zmień zdjęcie',
     add: 'Dodaj zdjęcie',
+    remove: 'Usuń zdjęcie',
     uploading: 'Wysyłanie…',
     sourceTitle: 'Dodaj zdjęcie',
     sourceMessage: 'Wybierz, skąd pobrać zdjęcie.',

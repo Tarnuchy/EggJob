@@ -371,6 +371,7 @@ const en = {
   photo: {
     change: 'Change photo',
     add: 'Add photo',
+    remove: 'Remove photo',
     uploading: 'Uploading…',
     sourceTitle: 'Add a photo',
     sourceMessage: 'Choose where to get the picture from.',

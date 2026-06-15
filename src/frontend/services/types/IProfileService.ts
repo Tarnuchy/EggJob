@@ -12,6 +12,8 @@ export interface IProfileService {
     input: { username?: string; photoUrl?: string },
   ): Promise<Result<void>>;
 
+  removeProfilePhoto(userId: string): Promise<Result<void>>;
+
   deleteAccount(accountId: string, userId: string): Promise<Result<void>>;
 
   getProfile(userId: string): Promise<Result<{ username: string; photoUrl?: string }>>;

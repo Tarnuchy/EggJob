@@ -47,6 +47,14 @@ class MockProfileService implements IProfileService {
     return { ok: true, value: undefined };
   }
 
+  async removeProfilePhoto(userId: string): Promise<Result<void>> {
+    const profile = this.profiles[userId];
+    if (profile) {
+      this.profiles[userId] = { ...profile, photoUrl: undefined };
+    }
+    return { ok: true, value: undefined };
+  }
+
   async deleteAccount(accountId: string, userId: string): Promise<Result<void>> {
     void accountId;
     delete this.profiles[userId];

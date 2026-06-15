@@ -75,6 +75,19 @@ export function useEditProfileForm({ onSuccess }: UseEditProfileFormOptions) {
     }
   };
 
+  const handleRemovePhoto = async () => {
+    const res = await profileService.removeProfilePhoto(currentUserId);
+    if (!res.ok) {
+      setFormError(t('profile.edit.saveError'));
+      setShakeCount((c) => c + 1);
+      return;
+    }
+    setPhotoUrl('');
+    if (formError) setFormError('');
+    // Best-effort reducer sync (the backend already cleared it; a logged-in user may not be cached).
+    dispatch({ type: 'profile/edit', userId: currentUserId, photoUrl: '' });
+  };
+
   const resetShake = () => setShakeCount(0);
 
   const handleSubmit = async () => {
@@ -131,6 +144,7 @@ export function useEditProfileForm({ onSuccess }: UseEditProfileFormOptions) {
     openPhotoSheet,
     closePhotoSheet,
     handleSelectSource,
+    handleRemovePhoto,
     handleSubmit,
     resetShake,
   };

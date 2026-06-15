@@ -63,6 +63,20 @@ export const EditProfileScreen = () => {
               disabled={form.isSaving}
               style={styles.changePhoto}
             />
+            {form.photoUrl ? (
+              <Pressable
+                onPress={form.handleRemovePhoto}
+                disabled={form.uploading || form.isSaving}
+                accessibilityRole="button"
+                accessibilityLabel={t('photo.remove')}
+                hitSlop={8}
+                style={styles.removePhoto}
+              >
+                <AppText variant="caption" color="danger">
+                  {t('photo.remove')}
+                </AppText>
+              </Pressable>
+            ) : null}
           </View>
 
           <AppInput
@@ -147,6 +161,9 @@ const styles = StyleSheet.create({
   },
   changePhoto: {
     marginTop: spacing.xs,
+  },
+  removePhoto: {
+    paddingVertical: spacing.xs,
   },
   formError: {
     marginBottom: spacing.md,
