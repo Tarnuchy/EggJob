@@ -29,7 +29,15 @@
       "expo-asset",
       "expo-font",
       "expo-secure-store",
-      "expo-localization"
+      "expo-localization",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "EggJob needs access to your photos so you can set a profile picture and attach photos to your progress.",
+          "cameraPermission": "EggJob needs access to your camera so you can take a profile picture or a progress photo.",
+          "microphonePermission": false
+        }
+      ]
     ]
   }
 }
