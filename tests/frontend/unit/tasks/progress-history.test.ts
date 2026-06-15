@@ -36,4 +36,25 @@ describe('MockTaskService progress history (getProgressEntries)', () => {
     if (!res.ok) return;
     expect(res.value.some((e) => e.entryId === 'e-hist-2')).toBe(true);
   });
+
+  it('deleteProgressEntry removes the entry from the history', async () => {
+    await mockTaskService.addProgress({
+      entryId: 'e-del-1',
+      taskId: 'tsk-del',
+      authorUserId: 'usr-seed-1',
+      value: 1,
+      note: 'to be removed',
+    });
+
+    const del = await mockTaskService.deleteProgressEntry({
+      entryId: 'e-del-1',
+      authorUserId: 'usr-seed-1',
+    });
+    expect(del.ok).toBe(true);
+
+    const res = await mockTaskService.getProgressEntries('tsk-del');
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    expect(res.value.some((e) => e.entryId === 'e-del-1')).toBe(false);
+  });
 });

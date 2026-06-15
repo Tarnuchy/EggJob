@@ -271,6 +271,28 @@ export class HttpTaskService implements ITaskService {
     }
   }
 
+  async deleteProgressEntry(input: { entryId: string; authorUserId: string }): Promise<Result<void>> {
+    try {
+      const actingUser = CurrentUser.get() ?? input.authorUserId;
+      const headers = await buildAuthHeaders();
+      const res = await fetch(
+        `${this.baseUrl}/users/${encodeURIComponent(actingUser)}/progress-entries/${encodeURIComponent(
+          input.entryId,
+        )}`,
+        { method: 'DELETE', headers: { ...headers } },
+      );
+      if (!res.ok) {
+        if (res.status === 401) return { ok: false, error: { code: 'unauthorized' } };
+        if (res.status === 403) return { ok: false, error: { code: 'forbidden' } };
+        if (res.status === 404) return { ok: false, error: { code: 'not-found' } };
+        return { ok: false, error: { code: `http-${res.status}` } };
+      }
+      return { ok: true, value: undefined };
+    } catch {
+      return { ok: false, error: { code: 'network' } };
+    }
+  }
+
   async getTask(taskId: string): Promise<
     Result<{
       name: string;

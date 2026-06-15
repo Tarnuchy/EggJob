@@ -52,6 +52,7 @@ export function reduceFrontendState(state: FrontendState, action: AppAction): Re
     case 'tasks/delete':
     case 'tasks/add-progress':
     case 'tasks/set-progress':
+    case 'tasks/delete-progress-entry':
     case 'tasks/add-comment':
     case 'tasks/delete-comment':
       return handleTasks(state, action);

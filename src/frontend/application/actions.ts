@@ -184,6 +184,12 @@ export type AppAction =
       value: number;
     }
   | {
+      type: 'tasks/delete-progress-entry';
+      entryId: string;
+      taskId: string;
+      value: number;
+    }
+  | {
       type: 'tasks/add-comment';
       commentId: string;
       progressEntryId: string;

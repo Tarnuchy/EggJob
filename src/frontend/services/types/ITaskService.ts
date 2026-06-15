@@ -49,6 +49,8 @@ export interface ITaskService {
 
   deleteComment(input: { commentId: string; progressEntryId: string }): Promise<Result<void>>;
 
+  deleteProgressEntry(input: { entryId: string; authorUserId: string }): Promise<Result<void>>;
+
   getTask(taskId: string): Promise<
     Result<{
       name: string;

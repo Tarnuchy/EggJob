@@ -148,6 +148,21 @@ class MockTaskService implements ITaskService {
     return { ok: true, value: undefined };
   }
 
+  async deleteProgressEntry(input: { entryId: string; authorUserId: string }): Promise<Result<void>> {
+    const entry = this.entries[input.entryId];
+    if (entry) {
+      delete this.entries[input.entryId];
+      const task = this.tasks[entry.taskId];
+      if (task) {
+        const progress = this.progresses[task.progressId];
+        if (progress) {
+          progress.value = Math.max(0, progress.value - entry.value);
+        }
+      }
+    }
+    return { ok: true, value: undefined };
+  }
+
   async getTask(
     taskId: string,
   ): Promise<Result<{ name: string; goal: number; progressId: string; params: TaskParams }>> {

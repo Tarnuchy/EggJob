@@ -9,6 +9,7 @@ type TaskAction = ActionOf<
   | 'tasks/delete'
   | 'tasks/add-progress'
   | 'tasks/set-progress'
+  | 'tasks/delete-progress-entry'
   | 'tasks/add-comment'
   | 'tasks/delete-comment'
 >;
@@ -172,6 +173,47 @@ export function handleTasks(state: FrontendState, action: TaskAction): ReducerRe
               commentIds: [...entry.commentIds, commentId],
             },
           },
+        },
+      },
+    };
+  }
+
+  if (action.type === 'tasks/delete-progress-entry') {
+    const { entryId, taskId, value } = action;
+
+    const existing = state.entities.progressEntries[entryId];
+    const { [entryId]: _removed, ...remainingEntries } = state.entities.progressEntries;
+
+    // Mirror the backend cascade: drop the entry's comments too.
+    let comments = state.entities.comments;
+    if (existing && existing.commentIds.length > 0) {
+      comments = { ...comments };
+      for (const cid of existing.commentIds) {
+        delete comments[cid];
+      }
+    }
+
+    // Decrement the cached aggregate by the entry's value (clamped). value/taskId are passed
+    // explicitly so this works in HTTP mode too, where the entry lives on the backend, not in state.
+    const progressId = state.entities.tasks[taskId]?.progressId;
+    const taskProgresses = progressId
+      ? {
+          ...state.entities.taskProgresses,
+          [progressId]: {
+            value: Math.max(0, (state.entities.taskProgresses[progressId]?.value ?? 0) - value),
+          },
+        }
+      : state.entities.taskProgresses;
+
+    return {
+      ok: true,
+      value: {
+        ...state,
+        entities: {
+          ...state.entities,
+          progressEntries: remainingEntries,
+          comments,
+          taskProgresses,
         },
       },
     };
