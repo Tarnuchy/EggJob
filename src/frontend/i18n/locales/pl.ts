@@ -207,6 +207,7 @@ const pl: Translation = {
       bingoGrid: 'Plansza bingo',
       bingoEmptyCell: 'Puste',
       bingoPlaceholderHint: 'Dotknij, aby nazwać to zadanie',
+      bingoOpenDetailsHint: 'Przytrzymaj, aby zobaczyć historię postępu',
       bingoBanner: 'Bingo!',
       bingoNoBingo: 'Tak trzymaj...',
       bingoCreatingTasks: 'Tworzenie zadań...',
@@ -304,6 +305,11 @@ const pl: Translation = {
       completedMessage: 'Postęp jest zablokowany do czasu zwiększenia celu.',
       emptyTimeline: 'Brak wpisów postępu.',
       timelineEntry: '+{{value}} · komentarze: {{comments}}',
+    },
+    detail: {
+      historyTitle: 'Historia postępu',
+      loadError: 'Nie udało się wczytać historii postępu.',
+      entryValue: '+{{value}}',
     },
   },
   settings: {

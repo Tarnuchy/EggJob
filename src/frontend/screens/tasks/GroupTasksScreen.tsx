@@ -100,10 +100,15 @@ export const GroupTasksScreen = ({ navigation, route }: any) => {
   };
 
   const handleCellLongPress = (index: number) => {
-    // długie przytrzymanie = edycja taska (nazwa/kolor) — tylko owner/admin
-    if (!canEdit) return;
     const cell = cells[index];
-    const taskId = cell ? cell.taskId : tasks[index]?.id;
+    // wypełniona komórka: długie przytrzymanie otwiera szczegóły + historię (dostępne dla wszystkich)
+    if (cell) {
+      navigation.navigate('TaskDetail', { groupId, taskId: cell.taskId });
+      return;
+    }
+    // pusty placeholder: edycja, by nazwać task — tylko owner/admin
+    if (!canEdit) return;
+    const taskId = tasks[index]?.id;
     if (taskId) {
       navigation.navigate('EditTask', { groupId, taskId });
     }
@@ -163,6 +168,7 @@ export const GroupTasksScreen = ({ navigation, route }: any) => {
               canEdit={canEdit}
               onCellPress={handleCellPress}
               onCellLongPress={handleCellLongPress}
+              filledCellHint={t('tasks.groups.bingoOpenDetailsHint')}
             />
           ) : tasks.length === 0 ? (
             <EmptyState
@@ -180,7 +186,7 @@ export const GroupTasksScreen = ({ navigation, route }: any) => {
                 return (
                   <Pressable
                     key={id}
-                    onPress={() => navigation.navigate('EditTask', { groupId, taskId: id })}
+                    onPress={() => navigation.navigate('TaskDetail', { groupId, taskId: id })}
                     style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
                     accessibilityRole="button"
                     accessibilityLabel={task.name}

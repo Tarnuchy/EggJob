@@ -20,6 +20,8 @@ export type BingoGridProps = {
   canEdit: boolean;
   onCellPress: (index: number) => void;
   onCellLongPress?: (index: number) => void;
+  /** a11y hint announced on filled cells, describing the long-press action (e.g. open details). */
+  filledCellHint?: string;
 };
 
 const GRID_GAP = spacing.sm;
@@ -35,7 +37,14 @@ function buildLines(size: number): number[][] {
   return lines;
 }
 
-export const BingoGrid = ({ cells, size, canEdit, onCellPress, onCellLongPress }: BingoGridProps) => {
+export const BingoGrid = ({
+  cells,
+  size,
+  canEdit,
+  onCellPress,
+  onCellLongPress,
+  filledCellHint,
+}: BingoGridProps) => {
   const { t } = useTranslation();
 
   const cellSize =
@@ -79,6 +88,7 @@ export const BingoGrid = ({ cells, size, canEdit, onCellPress, onCellLongPress }
               accessibilityLabel={
                 isPlaceholder ? t('tasks.groups.bingoEmptyCell') : cell.task.name
               }
+              accessibilityHint={isPlaceholder ? undefined : filledCellHint}
             >
               {isPlaceholder ? (
                 <View style={styles.placeholderContent}>

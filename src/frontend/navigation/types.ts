@@ -10,6 +10,7 @@ export type RootStackParamList = {
   JoinGroup: undefined;
   EditGroup: { groupId: string };
   GroupTasks: { groupId: string };
+  TaskDetail: { groupId: string; taskId: string };
 };
 
 export type TabParamList = {

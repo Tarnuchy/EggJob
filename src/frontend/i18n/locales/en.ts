@@ -205,6 +205,7 @@ const en = {
       bingoGrid: 'Bingo board',
       bingoEmptyCell: 'Empty',
       bingoPlaceholderHint: 'Tap to name this task',
+      bingoOpenDetailsHint: 'Long press to view progress history',
       bingoBanner: 'Bingo!',
       bingoNoBingo: 'Keep going...',
       bingoCreatingTasks: 'Creating tasks...',
@@ -302,6 +303,11 @@ const en = {
       completedMessage: 'Progress is locked until you increase the goal.',
       emptyTimeline: 'No progress entries yet.',
       timelineEntry: '+{{value}} · comments: {{comments}}',
+    },
+    detail: {
+      historyTitle: 'Progress history',
+      loadError: 'Could not load progress history.',
+      entryValue: '+{{value}}',
     },
   },
   settings: {

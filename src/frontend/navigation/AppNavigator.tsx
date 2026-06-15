@@ -10,6 +10,7 @@ import { CreateTaskScreen } from '../screens/tasks/CreateTaskScreen';
 import { EditTaskScreen } from '../screens/tasks/EditTaskScreen';
 import { AddProgressScreen } from '../screens/tasks/AddProgressScreen';
 import { GroupTasksScreen } from '../screens/tasks/GroupTasksScreen';
+import { TaskDetailScreen } from '../screens/tasks/TaskDetailScreen';
 import { JoinGroupScreen } from '../screens/tasks/JoinGroupScreen';
 import { colors } from '../theme/colors';
 import { PanelHost } from './PanelHost';
@@ -49,6 +50,7 @@ export function AppNavigator() {
         <Stack.Screen name="AddProgress" component={AddProgressScreen} />
         <Stack.Screen name="JoinGroup" component={JoinGroupScreen} />
         <Stack.Screen name="GroupTasks" component={GroupTasksScreen} />
+        <Stack.Screen name="TaskDetail" component={TaskDetailScreen} />
         <Stack.Screen name="EditGroup" component={EditGroupScreen} />
         <Stack.Screen name="UserProfile" component={UserProfileScreen} />
         <Stack.Screen name="EditProfile" component={EditProfileScreen} />
