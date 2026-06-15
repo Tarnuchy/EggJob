@@ -1,5 +1,6 @@
-import type { FrontendState, Invitation, Notification, Task, TaskGroup, User } from './state';
+import type { FrontendState, Invitation, Notification, Task, TaskGroup, TaskGroupType, User } from './state';
 import { colors } from '../theme/colors';
+import { hasBingoLine } from '../components/tasks/bingoDetection';
 
 export function selectCurrentUserId(state: FrontendState): string | null {
   return state.session.currentUserId;
@@ -119,6 +120,59 @@ export function selectHomeActiveTasks(
       });
     }
   }
+  ranked.sort((a, b) =>
+    a.recency !== b.recency ? (a.recency < b.recency ? 1 : -1) : a.name.localeCompare(b.name),
+  );
+  return ranked.slice(0, limit).map(({ recency, ...rest }) => rest);
+}
+
+export interface HomeGroupHighlight {
+  groupId: string;
+  name: string;
+  type: TaskGroupType;
+  taskCount: number;
+  memberCount: number;
+  bingo?: { size: number; doneCount: number; totalCount: number; hasBingo: boolean };
+}
+
+/** Member/owned groups for the dashboard, with bingo done/total when applicable,
+ *  most-recently-active first (tie-break: name asc). */
+export function selectHomeGroupHighlights(
+  state: FrontendState,
+  userId: string,
+  limit: number,
+): HomeGroupHighlight[] {
+  const latest = buildLatestProgressMap(state);
+  const ranked = selectTaskGroupsByMember(state, userId).map(({ id: groupId, group }) => {
+    const tasks = selectTasksByGroup(state, groupId);
+    const doneFlags = tasks.map(({ task }) => {
+      const value = state.entities.taskProgresses[task.progressId]?.value ?? 0;
+      return task.goal > 0 && value >= task.goal;
+    });
+    // Bingo boards are seeded with goal>0 tasks; any goal<=0 task counts toward totalCount
+    // but is never "done", so it can only ever suppress hasBingo (acceptable).
+    const totalCount = tasks.length;
+    const sqrt = Math.sqrt(totalCount);
+    const size = Math.round(sqrt);
+    const isBingoBoard = group.isBingo && Number.isInteger(sqrt) && size >= 3 && size <= 5;
+    let recency = '';
+    for (const { id: taskId } of tasks) {
+      const r = latest.get(taskId) ?? '';
+      if (r > recency) recency = r;
+    }
+    const highlight: HomeGroupHighlight & { recency: string } = {
+      groupId,
+      name: group.name,
+      type: group.type,
+      taskCount: totalCount,
+      memberCount: group.memberIds.length + 1,
+      bingo: isBingoBoard
+        ? { size, doneCount: doneFlags.filter(Boolean).length, totalCount, hasBingo: hasBingoLine(doneFlags, size) }
+        : undefined,
+      recency,
+    };
+    return highlight;
+  });
   ranked.sort((a, b) =>
     a.recency !== b.recency ? (a.recency < b.recency ? 1 : -1) : a.name.localeCompare(b.name),
   );
