@@ -1,5 +1,13 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, Text, Animated, KeyboardAvoidingView, Platform } from 'react-native';
+import {
+  StyleSheet,
+  View,
+  Text,
+  Animated,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
 
@@ -40,7 +48,12 @@ export const AuthScreen = () => {
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.keyboard}
         >
-          <View style={styles.content}>
+          <ScrollView
+            style={styles.scroll}
+            contentContainerStyle={styles.content}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
             <Text style={styles.appName}>{t('app.name')}</Text>
             <Spacer height={spacing.md} />
 
@@ -63,7 +76,7 @@ export const AuthScreen = () => {
                 </View>
               </BlurView>
             </Animated.View>
-          </View>
+          </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
     </View>
@@ -82,11 +95,15 @@ const styles = StyleSheet.create({
   keyboard: {
     flex: 1,
   },
-  content: {
+  scroll: {
     flex: 1,
+  },
+  content: {
+    flexGrow: 1,
     justifyContent: 'flex-start',
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.xl,
+    paddingBottom: spacing.xl,
   },
   appName: {
     ...typography.h1,
