@@ -4,6 +4,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { AppButton } from '../../components/common/AppButton';
 import { AppInput } from '../../components/common/AppInput';
+import { OutlineButton } from '../../components/common/OutlineButton';
+import { Avatar } from '../../components/common/Avatar';
+import { PhotoSourceSheet } from '../../components/common/PhotoSourceSheet';
 import { Spacer } from '../../components/common/Spacer';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
@@ -25,6 +28,16 @@ export const RegisterForm = ({ onSuccess, isActive }: Props) => {
 
   return (
     <>
+      <View style={styles.photoSection}>
+        <Avatar photoUrl={form.photoUrl} size={88} accessibilityLabel={form.username} />
+        <OutlineButton
+          title={form.uploading ? t('photo.uploading') : form.photoUrl ? t('photo.change') : t('photo.add')}
+          onPress={form.openPhotoSheet}
+          isLoading={form.uploading}
+          disabled={form.isLoading}
+          style={styles.photoButton}
+        />
+      </View>
       <AppInput
         label={t('auth.fields.email')}
         placeholder={t('auth.fields.emailPlaceholder')}
@@ -84,12 +97,29 @@ export const RegisterForm = ({ onSuccess, isActive }: Props) => {
         onPress={form.handleSubmit}
         shakeCount={form.shakeCount}
         isLoading={form.isLoading}
+        disabled={form.uploading}
+      />
+
+      <PhotoSourceSheet
+        visible={form.sheetVisible}
+        onSelect={form.handleSelectSource}
+        onCancel={form.closePhotoSheet}
       />
     </>
   );
 };
 
 const styles = StyleSheet.create({
+  photoSection: {
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  photoButton: {
+    alignSelf: 'center',
+    paddingHorizontal: spacing.lg,
+    width: 'auto',
+  },
   errorRow: {
     marginBottom: spacing.sm,
     flexDirection: 'row',

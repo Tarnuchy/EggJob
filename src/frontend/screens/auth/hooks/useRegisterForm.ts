@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAppState } from '../../../application/AppStateContext';
 import { authService } from '../../../services';
+import { usePhotoUpload } from '../../../hooks/usePhotoUpload';
 import {
   getRegConfirmError,
   getRegEmailError,
@@ -10,7 +11,10 @@ import {
   shouldValidateOnBlur,
   shouldValidatePasswordOnBlur,
 } from '../../../utils/authValidation';
+import { getPhotoErrorMessage } from '../../../utils/getPhotoErrorMessage';
+import { afterInteractions } from '../../../utils/afterInteractions';
 import { mapReducerError } from '../../../utils/mapReducerError';
+import type { PickSource } from '../../../utils/pickImage';
 
 interface UseRegisterFormOptions {
   onSuccess: () => void;
@@ -19,11 +23,14 @@ interface UseRegisterFormOptions {
 export function useRegisterForm({ onSuccess }: UseRegisterFormOptions) {
   const { dispatch } = useAppState();
   const { t } = useTranslation();
+  const { uploading, pickAndUpload } = usePhotoUpload();
 
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
+  const [photoUrl, setPhotoUrl] = useState('');
+  const [sheetVisible, setSheetVisible] = useState(false);
   const [emailTouched, setEmailTouched] = useState(false);
   const [usernameTouched, setUsernameTouched] = useState(false);
   const [passwordTouched, setPasswordTouched] = useState(false);
@@ -88,6 +95,22 @@ export function useRegisterForm({ onSuccess }: UseRegisterFormOptions) {
 
   const togglePasswordVisibility = () => setPasswordVisible((v) => !v);
 
+  const openPhotoSheet = () => setSheetVisible(true);
+  const closePhotoSheet = () => setSheetVisible(false);
+
+  const handleSelectSource = async (source: PickSource) => {
+    setSheetVisible(false);
+    await afterInteractions();
+    const outcome = await pickAndUpload(source);
+    if (outcome.status === 'uploaded') {
+      setPhotoUrl(outcome.url);
+      if (registerError) setRegisterError('');
+    } else if (outcome.status === 'error') {
+      setRegisterError(getPhotoErrorMessage(t, outcome.code));
+      setShakeCount((c) => c + 1);
+    }
+  };
+
   const resetShake = () => setShakeCount(0);
 
   const handleSubmit = async () => {
@@ -114,6 +137,7 @@ export function useRegisterForm({ onSuccess }: UseRegisterFormOptions) {
         email: email.trim(),
         username: username.trim(),
         password,
+        photoUrl: photoUrl || undefined,
       });
       if (!result.ok) {
         if (result.error.field === 'email') {
@@ -134,6 +158,7 @@ export function useRegisterForm({ onSuccess }: UseRegisterFormOptions) {
         username: username.trim(),
         accountId: result.value.accountId,
         userId: result.value.userId,
+        photoUrl: photoUrl || undefined,
       });
       if (!dispatchResult.ok) {
         if (dispatchResult.error.field === 'email') {
@@ -157,6 +182,7 @@ export function useRegisterForm({ onSuccess }: UseRegisterFormOptions) {
     username,
     password,
     confirm,
+    photoUrl,
     emailTouched,
     usernameTouched,
     passwordTouched,
@@ -168,6 +194,8 @@ export function useRegisterForm({ onSuccess }: UseRegisterFormOptions) {
     registerError,
     shakeCount,
     isLoading,
+    uploading,
+    sheetVisible,
     passwordVisible,
     handleEmailChange,
     handleUsernameChange,
@@ -178,6 +206,9 @@ export function useRegisterForm({ onSuccess }: UseRegisterFormOptions) {
     handlePasswordBlur,
     handleConfirmBlur,
     togglePasswordVisibility,
+    openPhotoSheet,
+    closePhotoSheet,
+    handleSelectSource,
     handleSubmit,
     resetShake,
   };
