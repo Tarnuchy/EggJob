@@ -17,6 +17,7 @@ export type AppAction =
       userId: string;
       email: string;
       username: string;
+      photoUrl?: string;
       passwordHash?: string;
       registrationDate?: Date;
     }
@@ -174,6 +175,7 @@ export type AppAction =
       authorUserId: string;
       value: number;
       note?: string;
+      photoUrl?: string;
       createdAt?: Date;
     }
   | {

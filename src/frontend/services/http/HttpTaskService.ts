@@ -147,6 +147,7 @@ export class HttpTaskService implements ITaskService {
     authorUserId: string;
     value: number;
     note: string;
+    photoUrl?: string;
   }): Promise<Result<void>> {
     // TaskProgress is keyed by group member, not user: resolve task -> group -> my member id,
     // then pick my progress row (competitive) or the single shared one (cooperative)
@@ -193,7 +194,11 @@ export class HttpTaskService implements ITaskService {
         {
           method: 'POST',
           headers: { ...headers, ...JSON_HEADERS },
-          body: JSON.stringify({ delta_value: input.value, message: input.note, photo_url: null }),
+          body: JSON.stringify({
+            delta_value: input.value,
+            message: input.note,
+            photo_url: input.photoUrl ?? null,
+          }),
         },
       );
       if (!updateRes.ok) return { ok: false, error: { code: `http-${updateRes.status}` } };

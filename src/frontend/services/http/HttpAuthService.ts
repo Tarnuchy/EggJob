@@ -50,13 +50,19 @@ export class HttpAuthService implements IAuthService {
     email: string;
     username: string;
     password: string;
+    photoUrl?: string;
   }): Promise<Result<{ accountId: string; userId: string }>> {
     let response: Response;
     try {
       response = await fetch(`${this.baseUrl}/auth/register`, {
         method: 'POST',
         headers: JSON_HEADERS,
-        body: JSON.stringify(input),
+        body: JSON.stringify({
+          email: input.email,
+          username: input.username,
+          password: input.password,
+          ...(input.photoUrl !== undefined ? { photo_url: input.photoUrl } : {}),
+        }),
       });
     } catch {
       return { ok: false, error: { code: 'network' } };

@@ -31,6 +31,7 @@ export interface ITaskService {
     authorUserId: string;
     value: number;
     note: string;
+    photoUrl?: string;
   }): Promise<Result<void>>;
 
   setProgress(input: {

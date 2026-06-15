@@ -52,6 +52,7 @@ export type ProgressEntry = {
   taskId: string;
   value: number;
   commentIds: string[];
+  photoUrl?: string;
 };
 
 export type Comment = {

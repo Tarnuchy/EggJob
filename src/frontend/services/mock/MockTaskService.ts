@@ -71,6 +71,7 @@ class MockTaskService implements ITaskService {
     authorUserId: string;
     value: number;
     note: string;
+    photoUrl?: string;
   }): Promise<Result<void>> {
     const { entryId, taskId, value } = input;
     if (value < 0) {

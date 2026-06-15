@@ -79,7 +79,7 @@ export function handleTasks(state: FrontendState, action: TaskAction): ReducerRe
   }
 
   if (action.type === 'tasks/add-progress') {
-    const { entryId, taskId, value } = action;
+    const { entryId, taskId, value, photoUrl } = action;
 
     if (value < 0) {
       return { ok: false, error: { code: 'validation', field: 'value' } };
@@ -101,7 +101,12 @@ export function handleTasks(state: FrontendState, action: TaskAction): ReducerRe
           ...state.entities,
           progressEntries: {
             ...state.entities.progressEntries,
-            [entryId]: { taskId, value, commentIds: [] },
+            [entryId]: {
+              taskId,
+              value,
+              commentIds: [],
+              ...(photoUrl !== undefined ? { photoUrl } : {}),
+            },
           },
           taskProgresses: {
             ...state.entities.taskProgresses,

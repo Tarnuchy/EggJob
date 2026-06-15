@@ -5,6 +5,7 @@ export interface IAuthService {
     email: string;
     username: string;
     password: string;
+    photoUrl?: string;
   }): Promise<Result<{ accountId: string; userId: string }>>;
 
   login(input: {

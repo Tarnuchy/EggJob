@@ -7,7 +7,7 @@ type AuthAction = ActionOf<'auth/register' | 'auth/login' | 'auth/logout'>;
 
 export function handleAuth(state: FrontendState, action: AuthAction): ReducerResult {
   if (action.type === 'auth/register') {
-    const { email, username, accountId, userId } = action;
+    const { email, username, accountId, userId, photoUrl } = action;
 
     if (!isValidEmail(email)) {
       return { ok: false, error: { code: 'validation', field: 'email' } };
@@ -24,7 +24,10 @@ export function handleAuth(state: FrontendState, action: AuthAction): ReducerRes
         entities: {
           ...state.entities,
           accounts: { ...state.entities.accounts, [accountId]: { email } },
-          users: { ...state.entities.users, [userId]: { username } },
+          users: {
+            ...state.entities.users,
+            [userId]: { username, ...(photoUrl !== undefined ? { photoUrl } : {}) },
+          },
         },
       },
     };

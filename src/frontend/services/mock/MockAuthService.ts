@@ -32,6 +32,7 @@ class MockAuthService implements IAuthService {
     email: string;
     username: string;
     password: string;
+    photoUrl?: string;
   }): Promise<Result<{ accountId: string; userId: string }>> {
     if (!isValidEmail(input.email)) {
       return { ok: false, error: { code: 'validation', field: 'email' } };
