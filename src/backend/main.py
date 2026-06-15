@@ -198,6 +198,20 @@ def update_profile(
     return MessageResponse(message="profile_updated")
 
 
+@app.delete("/users/{user_id}/profile/photo", response_model=MessageResponse)
+def delete_profile_photo(
+    user_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    assert_self(user_id, current_user)
+    user = _get_or_404(db, User, id=user_id)
+    with transaction(db):
+        user.removeAvatar(db_session=db)
+
+    return MessageResponse(message="avatar_removed")
+
+
 @app.post("/users/{user_id}/friends/invitations", response_model=MessageResponse)
 def invite_friend(
     user_id: UUID,

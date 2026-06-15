@@ -298,6 +298,11 @@ class User(Base):
             self.photoUrl = new_data["photoUrl"]
         db_session.flush()
 
+    def removeAvatar(self, db_session: Session) -> None:
+        # Czyści avatar; plik w storage skasuje event po commicie (o ile to nasz /media).
+        self.photoUrl = None
+        db_session.flush()
+
     def inviteFriend(self, db_session: Session, friend_id: UUID) -> None:
         friend = db_session.query(User).filter_by(id=friend_id).first()
         if friend is None or db_session.query(Friendship).filter(

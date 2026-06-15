@@ -93,7 +93,12 @@ def _task_params_payload(params: TaskParams) -> TaskParamsResponse:
 
 
 @router.get("/users/{user_id}/friends", response_model=FriendsListResponse)
-def list_user_friends(user_id: UUID, db: Session = Depends(get_db)):
+def list_user_friends(
+    user_id: UUID,
+    limit: int = Query(default=20, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    db: Session = Depends(get_db),
+):
     user = db.query(User).filter_by(id=user_id).first()
     if user is None:
         raise NotFoundError("User not found")
@@ -105,13 +110,24 @@ def list_user_friends(user_id: UUID, db: Session = Depends(get_db)):
         f.userTwoID if f.userOneID == user.id else f.userOneID
         for f in friendships
     ]
+    total = len(friend_ids)
     friends = []
     if friend_ids:
-        friends = db.query(User).filter(User.id.in_(friend_ids)).all()
+        friends = (
+            db.query(User)
+            .filter(User.id.in_(friend_ids))
+            .order_by(User.username.asc())
+            .offset(offset)
+            .limit(limit)
+            .all()
+        )
 
     return FriendsListResponse(
         count=len(friends),
         items=[_user_payload(friend) for friend in friends],
+        total=total,
+        limit=limit,
+        offset=offset,
     )
 
 
@@ -501,14 +517,22 @@ def user_upcoming(user_id: UUID, db: Session = Depends(get_db)):
 
 
 @router.get("/users/{user_id}/notifications", response_model=NotificationListResponse)
-def list_user_notifications(user_id: UUID, db: Session = Depends(get_db)):
+def list_user_notifications(
+    user_id: UUID,
+    limit: int = Query(default=20, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    db: Session = Depends(get_db),
+):
     user = db.query(User).filter_by(id=user_id).first()
     if user is None:
         raise NotFoundError("User not found")
+
+    base = db.query(Notification).filter_by(userID=user.id)
+    total = base.count()
     notifications = (
-        db.query(Notification)
-        .filter_by(userID=user.id)
-        .order_by(Notification.date.desc())
+        base.order_by(Notification.date.desc())
+        .offset(offset)
+        .limit(limit)
         .all()
     )
 
@@ -522,7 +546,13 @@ def list_user_notifications(user_id: UUID, db: Session = Depends(get_db)):
         for notification in notifications
     ]
 
-    return NotificationListResponse(count=len(items), items=items)
+    return NotificationListResponse(
+        count=len(items),
+        items=items,
+        total=total,
+        limit=limit,
+        offset=offset,
+    )
 
 
 @router.get("/users/{user_id}/invitations/sent", response_model=InvitationListResponse)

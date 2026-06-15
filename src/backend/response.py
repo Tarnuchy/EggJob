@@ -25,6 +25,9 @@ class UserSummaryResponse(BaseModel):
 class FriendsListResponse(BaseModel):
     count: int
     items: list[UserSummaryResponse]
+    total: int | None = None
+    limit: int | None = None
+    offset: int | None = None
 
 
 class TaskGroupSummaryResponse(BaseModel):
@@ -102,6 +105,9 @@ class NotificationSummaryResponse(BaseModel):
 class NotificationListResponse(BaseModel):
     count: int
     items: list[NotificationSummaryResponse]
+    total: int | None = None
+    limit: int | None = None
+    offset: int | None = None
 
 
 class GroupMemberSummaryResponse(BaseModel):
