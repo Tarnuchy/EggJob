@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,12 +7,19 @@ import { TopBar } from '../../components/layout/TopBar';
 import { AppText } from '../../components/common/AppText';
 import { AppInput } from '../../components/common/AppInput';
 import { AppButton } from '../../components/common/AppButton';
+import { OutlineButton } from '../../components/common/OutlineButton';
+import { PhotoSourceSheet } from '../../components/common/PhotoSourceSheet';
 import { EmptyState } from '../../components/common/EmptyState';
 import { useAppState } from '../../application/AppStateContext';
 import { useCurrentUserId } from '../../hooks/useCurrentUserId';
+import { usePhotoUpload } from '../../hooks/usePhotoUpload';
 import { useToast } from '../../context/ToastContext';
 import { selectTaskGroupsByMember, selectTasksByGroup } from '../../application/selectors';
 import { taskService } from '../../services';
+import { getPhotoErrorMessage } from '../../utils/getPhotoErrorMessage';
+import { resolvePhotoUri } from '../../utils/resolvePhotoUri';
+import { afterInteractions } from '../../utils/afterInteractions';
+import type { PickSource } from '../../utils/pickImage';
 import { colors } from '../../theme/colors';
 import { SCREEN_PADDING_H, spacing } from '../../theme/spacing';
 
@@ -24,6 +31,7 @@ export const AddProgressScreen = ({ navigation, route }: any) => {
   const { state, dispatch } = useAppState();
   const currentUserId = useCurrentUserId();
   const { showToast } = useToast();
+  const { uploading, pickAndUpload } = usePhotoUpload();
   const initialParams = (route?.params ?? {}) as { groupId?: string; taskId?: string };
 
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(
@@ -34,6 +42,25 @@ export const AddProgressScreen = ({ navigation, route }: any) => {
   );
   const [progressValue, setProgressValue] = useState('1');
   const [progressNote, setProgressNote] = useState('');
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [sheetVisible, setSheetVisible] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const selectTask = (taskId: string) => {
+    setSelectedTaskId(taskId);
+    setPhotoUrl(null);
+  };
+
+  const handleSelectSource = async (source: PickSource) => {
+    setSheetVisible(false);
+    await afterInteractions();
+    const outcome = await pickAndUpload(source);
+    if (outcome.status === 'uploaded') {
+      setPhotoUrl(outcome.url);
+    } else if (outcome.status === 'error') {
+      showToast({ message: getPhotoErrorMessage(t, outcome.code), variant: 'error' });
+    }
+  };
 
   const memberGroups = useMemo(
     () => selectTaskGroupsByMember(state, currentUserId),
@@ -52,6 +79,7 @@ export const AddProgressScreen = ({ navigation, route }: any) => {
   const isOneTime = selectedTask?.kind === 'one_time' || selectedTask?.goal === 1;
 
   const submitProgress = async (value: number) => {
+    if (isSubmitting) return;
     if (!selectedTaskId || !selectedTask) return;
     if (Number.isNaN(value) || value <= 0) {
       showToast({ message: t('tasks.progress.validationMessage'), variant: 'error' });
@@ -64,36 +92,48 @@ export const AddProgressScreen = ({ navigation, route }: any) => {
       return;
     }
 
+    if (selectedTask.params.photoRequired && !photoUrl) {
+      showToast({ message: t('tasks.progress.photoMissing'), variant: 'error' });
+      return;
+    }
+
     const entryId = generateId('entry');
     const note = progressNote.trim();
 
-    const serviceResult = await taskService.addProgress({
-      entryId,
-      taskId: selectedTaskId,
-      authorUserId: currentUserId,
-      value,
-      note,
-    });
-    if (!serviceResult.ok) {
-      showToast({ message: t('tasks.progress.errorMessage'), variant: 'error' });
-      return;
-    }
+    setIsSubmitting(true);
+    try {
+      const serviceResult = await taskService.addProgress({
+        entryId,
+        taskId: selectedTaskId,
+        authorUserId: currentUserId,
+        value,
+        note,
+        photoUrl: photoUrl ?? undefined,
+      });
+      if (!serviceResult.ok) {
+        showToast({ message: t('tasks.progress.errorMessage'), variant: 'error' });
+        return;
+      }
 
-    const result = dispatch({
-      type: 'tasks/add-progress',
-      entryId,
-      taskId: selectedTaskId,
-      authorUserId: currentUserId,
-      value,
-      note: note || undefined,
-    });
-    if (!result.ok) {
-      showToast({ message: t('tasks.progress.errorMessage'), variant: 'error' });
-      return;
-    }
+      const result = dispatch({
+        type: 'tasks/add-progress',
+        entryId,
+        taskId: selectedTaskId,
+        authorUserId: currentUserId,
+        value,
+        note: note || undefined,
+        photoUrl: photoUrl ?? undefined,
+      });
+      if (!result.ok) {
+        showToast({ message: t('tasks.progress.errorMessage'), variant: 'error' });
+        return;
+      }
 
-    showToast({ message: t('tasks.progress.successMessage'), variant: 'success' });
-    navigation.goBack();
+      showToast({ message: t('tasks.progress.successMessage'), variant: 'success' });
+      navigation.goBack();
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const renderGroupStep = () => (
@@ -167,7 +207,7 @@ export const AddProgressScreen = ({ navigation, route }: any) => {
             return (
               <Pressable
                 key={id}
-                onPress={() => setSelectedTaskId(id)}
+                onPress={() => selectTask(id)}
                 style={({ pressed }) => [styles.rowCard, pressed && styles.rowCardPressed]}
                 accessibilityRole="button"
                 accessibilityLabel={task.name}
@@ -243,10 +283,42 @@ export const AddProgressScreen = ({ navigation, route }: any) => {
             onChangeText={setProgressNote}
             placeholder={t('tasks.progress.notePlaceholder')}
           />
+          <View style={styles.photoBlock}>
+            {photoUrl ? (
+              <View style={styles.photoPreviewRow}>
+                <Image
+                  source={{ uri: resolvePhotoUri(photoUrl) }}
+                  style={styles.photoPreview}
+                  resizeMode="cover"
+                  accessibilityRole="image"
+                  accessibilityLabel={t('tasks.progress.photoAttached')}
+                />
+                <View style={styles.photoAttachedRow}>
+                  <Ionicons name="checkmark-circle" size={16} color={colors.primary} />
+                  <AppText variant="caption" color="textSecondary">
+                    {t('tasks.progress.photoAttached')}
+                  </AppText>
+                </View>
+              </View>
+            ) : null}
+            <OutlineButton
+              title={
+                uploading
+                  ? t('photo.uploading')
+                  : photoUrl
+                    ? t('photo.change')
+                    : t('photo.add')
+              }
+              onPress={() => setSheetVisible(true)}
+              isLoading={uploading}
+              disabled={isSubmitting}
+            />
+          </View>
           <AppButton
             title={isOneTime ? t('tasks.progress.markDone') : t('tasks.progress.addProgress')}
             onPress={() => submitProgress(isOneTime ? 1 : Number(progressValue))}
-            disabled={!isOneTime && !progressValue.trim()}
+            disabled={isSubmitting || uploading || (!isOneTime && !progressValue.trim())}
+            isLoading={isSubmitting}
           />
         </View>
       </>
@@ -261,6 +333,12 @@ export const AddProgressScreen = ({ navigation, route }: any) => {
           {!selectedGroupId ? renderGroupStep() : !selectedTaskId ? renderTaskStep() : renderProgressStep()}
         </ScrollView>
       </SafeAreaView>
+
+      <PhotoSourceSheet
+        visible={sheetVisible}
+        onSelect={handleSelectSource}
+        onCancel={() => setSheetVisible(false)}
+      />
     </View>
   );
 };
@@ -329,6 +407,24 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   noticeText: { flex: 1 },
+  photoBlock: {
+    gap: spacing.sm,
+  },
+  photoPreviewRow: {
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  photoPreview: {
+    width: '100%',
+    height: 180,
+    borderRadius: 12,
+    backgroundColor: colors.surfaceAlt,
+  },
+  photoAttachedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
 });
 
 export default AddProgressScreen;

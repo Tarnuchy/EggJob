@@ -60,6 +60,12 @@ export const GroupTasksScreen = ({ navigation, route }: any) => {
   };
 
   const handleToggleDone = async (cell: NonNullable<BingoCell>) => {
+    // Ukończenie taska wymagającego zdjęcia musi przejść przez bramkowany ekran AddProgress
+    // (dołączenie zdjęcia). Odznaczanie (powrót do 0) nie wymaga zdjęcia i zostaje bezpośrednie.
+    if (!cell.isDone && cell.task.params.photoRequired) {
+      navigation.navigate('AddProgress', { groupId, taskId: cell.taskId });
+      return;
+    }
     // przełączenie ukończenia = ustawienie progresu na cel (done) albo 0 (undone)
     const target = cell.isDone ? 0 : cell.task.goal;
     const res = await taskService.setProgress({
