@@ -16,6 +16,10 @@ type TabName = keyof TabParamList;
 
 const FAB_GAP = 88;
 
+/** Visible height of the tab bar's interactive row, above any safe-area inset.
+ *  Tab screens use this to pad their scrollable content clear of the overlay bar. */
+export const TAB_BAR_HEIGHT = 68;
+
 const TAB_NAMES: readonly TabName[] = ['Home', 'Tasks', 'Friends', 'Profile'];
 
 const isTabName = (name: string): name is TabName =>
@@ -173,7 +177,7 @@ const styles = StyleSheet.create({
   tabsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 68,
+    height: TAB_BAR_HEIGHT,
   },
   side: {
     flex: 1,

@@ -16,6 +16,7 @@ import { EmptyState } from '../../components/common/EmptyState';
 import { taskGroupService } from '../../services';
 import { USE_HTTP_SERVICES } from '../../services/http/config';
 import { fetchHydratedTaskData } from '../../services/http/hydrateTaskData';
+import { TAB_BAR_HEIGHT } from '../../components/layout/tabs';
 import { colors } from '../../theme/colors';
 import { spacing, SCREEN_PADDING_H } from '../../theme/spacing';
 import type { TaskGroupPrivacy } from '../../application/state';
@@ -401,7 +402,9 @@ const styles = StyleSheet.create({
   body: { flex: 1 },
   switcherWrap: { paddingHorizontal: SCREEN_PADDING_H, paddingTop: spacing.md },
   tabContent: { flex: 1, paddingHorizontal: SCREEN_PADDING_H, paddingTop: spacing.md },
-  groupsContent: { paddingBottom: spacing.xl, gap: spacing.md },
+  // dolny pasek (CustomTabBar) to nakładka nad treścią — odsuwamy ostatnie elementy
+  // ponad jego wysokość (+ oddech), by nie były zasłonięte; safe-area inset paduje SafeAreaView
+  groupsContent: { paddingBottom: TAB_BAR_HEIGHT + spacing.lg, gap: spacing.md },
   sectionHeaderRow: { marginBottom: spacing.sm },
   sectionTitle: { letterSpacing: 1.2, textTransform: 'uppercase' },
   sectionCard: { padding: spacing.md, borderRadius: 18, backgroundColor: colors.cardSurfaceTranslucent, borderWidth: 1, borderColor: colors.cardBorderTranslucent },
