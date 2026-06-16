@@ -42,8 +42,9 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "REPLACE_WITH_EAS_PROJECT_ID"
+        "projectId": "cos"
       }
-    }
+    },
+    "owner": "dariooo23"
   }
 }
