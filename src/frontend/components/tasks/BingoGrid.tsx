@@ -6,6 +6,7 @@ import { AppText } from '../common/AppText';
 import { colors } from '../../theme/colors';
 import { spacing, SCREEN_PADDING_H } from '../../theme/spacing';
 import { computeBingoCellSize } from './bingoLayout';
+import { hasBingoLine } from './bingoDetection';
 import type { BingoSize, Task } from '../../application/state';
 
 export type BingoCell = {
@@ -27,17 +28,6 @@ export type BingoGridProps = {
 
 const GRID_GAP = spacing.sm;
 
-function buildLines(size: number): number[][] {
-  const lines: number[][] = [];
-  for (let i = 0; i < size; i++) {
-    lines.push(Array.from({ length: size }, (_, j) => i * size + j));
-    lines.push(Array.from({ length: size }, (_, j) => j * size + i));
-  }
-  lines.push(Array.from({ length: size }, (_, i) => i * size + i));
-  lines.push(Array.from({ length: size }, (_, i) => i * size + (size - 1 - i)));
-  return lines;
-}
-
 export const BingoGrid = ({
   cells,
   size,
@@ -58,7 +48,7 @@ export const BingoGrid = ({
   const hasBingo = useMemo(() => {
     if (cells.length === 0) return false;
     const done = cells.map((cell) => cell?.isDone ?? false);
-    return buildLines(size).some((line) => line.every((index) => done[index]));
+    return hasBingoLine(done, size);
   }, [cells, size]);
 
   return (

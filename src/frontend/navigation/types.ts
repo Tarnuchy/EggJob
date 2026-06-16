@@ -1,6 +1,8 @@
+import type { NavigatorScreenParams } from '@react-navigation/native';
+
 export type RootStackParamList = {
   Auth: undefined;
-  Main: undefined;
+  Main: NavigatorScreenParams<TabParamList> | undefined;
   UserProfile: { userId: string };
   EditProfile: undefined;
   CreateGroup: undefined;
@@ -13,9 +15,11 @@ export type RootStackParamList = {
   TaskDetail: { groupId: string; taskId: string };
 };
 
+export type FriendsTabName = 'myFriends' | 'addFriend' | 'invitations';
+
 export type TabParamList = {
   Home: undefined;
   Tasks: undefined;
-  Friends: undefined;
+  Friends: { initialTab?: FriendsTabName } | undefined;
   Profile: undefined;
 };

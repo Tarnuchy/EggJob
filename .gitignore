@@ -12,6 +12,7 @@ yarn-error.*
 
 # Claude environment files
 .claude
+.superpowers/
 
 # Uploaded media (local storage backend)
 media_uploads/
