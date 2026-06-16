@@ -26,6 +26,7 @@
       "barStyle": "dark-content"
     },
     "plugins": [
+      "expo-notifications",
       "expo-asset",
       "expo-font",
       "expo-secure-store",
@@ -38,6 +39,12 @@
           "microphonePermission": false
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "cos"
+      }
+    },
+    "owner": "dariooo23"
   }
 }

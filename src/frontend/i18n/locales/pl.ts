@@ -325,6 +325,7 @@ const pl: Translation = {
     sections: {
       preferences: 'Preferencje',
       notifications: 'Powiadomienia',
+      account: 'Konto',
     },
     rows: {
       language: 'Język',
@@ -342,6 +343,17 @@ const pl: Translation = {
       permissionDenied: 'Włącz powiadomienia w ustawieniach urządzenia, aby je otrzymywać.',
       testTitle: 'EggJob',
       testBody: 'Powiadomienia są włączone — to test.',
+    },
+    account: {
+      delete: 'Usuń konto',
+      modalTitle: 'Usuń konto',
+      warning: 'To trwale usuwa Twoje konto i wszystkie dane. Tej operacji nie można cofnąć.',
+      passwordLabel: 'Hasło',
+      passwordPlaceholder: 'Wpisz swoje hasło',
+      confirm: 'Usuń konto',
+      cancel: 'Anuluj',
+      errorPassword: 'Nieprawidłowe hasło.',
+      errorGeneric: 'Nie udało się usunąć konta. Spróbuj ponownie.',
     },
   },
   relativeTime: {

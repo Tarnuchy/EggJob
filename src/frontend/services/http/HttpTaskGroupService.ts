@@ -374,6 +374,43 @@ export class HttpTaskGroupService implements ITaskGroupService {
     return this.removeMember(groupId, actingUser);
   }
 
+  private async fetchGroupMemberIds(groupId: string): Promise<string[]> {
+    try {
+      const headers = await buildAuthHeaders();
+      const response = await fetch(
+        `${this.baseUrl}/taskgroups/${encodeURIComponent(groupId)}/members`,
+        { method: 'GET', headers: { ...headers, ...JSON_HEADERS } },
+      );
+      if (!response.ok) return [];
+      const parsed = await response.json();
+      const items: Array<{ user_id?: string; role?: string | null; active?: boolean }> =
+        Array.isArray(parsed?.items) ? parsed.items : [];
+      // mirror hydrateTaskData: skip inactive members and the owner (tracked separately)
+      return items
+        .filter((m) => m.active !== false && m.role !== 'owner')
+        .map((m) => m.user_id)
+        .filter((id): id is string => typeof id === 'string');
+    } catch {
+      return [];
+    }
+  }
+
+  private async fetchGroupTaskIds(groupId: string): Promise<string[]> {
+    try {
+      const headers = await buildAuthHeaders();
+      const response = await fetch(
+        `${this.baseUrl}/taskgroups/${encodeURIComponent(groupId)}/tasks`,
+        { method: 'GET', headers: { ...headers, ...JSON_HEADERS } },
+      );
+      if (!response.ok) return [];
+      const parsed = await response.json();
+      const items: Array<{ id?: string }> = Array.isArray(parsed?.items) ? parsed.items : [];
+      return items.map((t) => t.id).filter((id): id is string => typeof id === 'string');
+    } catch {
+      return [];
+    }
+  }
+
   async getGroup(groupId: string): Promise<
     Result<{
       name: string;
@@ -403,6 +440,10 @@ export class HttpTaskGroupService implements ITaskGroupService {
 
     try {
       const parsed = await response.json();
+      const [memberIds, taskIds] = await Promise.all([
+        this.fetchGroupMemberIds(groupId),
+        this.fetchGroupTaskIds(groupId),
+      ]);
       return {
         ok: true,
         value: {
@@ -411,8 +452,8 @@ export class HttpTaskGroupService implements ITaskGroupService {
           type: parsed.type ?? 'cooperative',
           isBingo: Boolean(parsed.is_bingo ?? parsed.isBingo),
           inviteCode: parsed.invite_code ?? parsed.inviteCode ?? '',
-          memberIds: [],
-          taskIds: [],
+          memberIds,
+          taskIds,
         },
       };
     } catch {

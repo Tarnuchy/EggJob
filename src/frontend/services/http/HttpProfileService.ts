@@ -57,9 +57,18 @@ export class HttpProfileService implements IProfileService {
     }
   }
 
-  async deleteAccount(_accountId: string, _userId: string): Promise<Result<void>> {
-    // backend wymaga hasła (POST /accounts/{id}/delete), którego ten interfejs nie przekazuje
-    return { ok: false, error: { code: 'not-implemented' } };
+  async deleteAccount(accountId: string, _userId: string, password: string): Promise<Result<void>> {
+    try {
+      const headers = await buildAuthHeaders();
+      const response = await fetch(
+        `${this.baseUrl}/accounts/${encodeURIComponent(accountId)}/delete`,
+        { method: 'POST', headers, body: JSON.stringify({ password }) },
+      );
+      if (!response.ok) return mapStatus(response.status);
+      return { ok: true, value: undefined };
+    } catch {
+      return { ok: false, error: { code: 'network' } };
+    }
   }
 
   async getProfile(userId: string): Promise<Result<{ username: string; photoUrl?: string }>> {
