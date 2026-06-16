@@ -77,7 +77,7 @@ export const EditTaskScreen = ({ navigation, route }: any) => {
 
     const serviceResult = await taskService.editTask(taskId, {
       name: trimmedName,
-      ...(isInBingoGroup ? {} : { goal: parsedGoal }),
+      ...(isInBingoGroup ? {} : { goal: parsedGoal, kind: taskKind }),
       params,
     });
     if (!serviceResult.ok) {

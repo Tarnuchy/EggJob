@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import type { TextInputProps } from 'react-native';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
@@ -37,6 +38,7 @@ export const AppInput = ({
   accessibilityHint,
   ...rest
 }: Props) => {
+  const { t } = useTranslation();
   const [isFocused, setIsFocused] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -104,7 +106,7 @@ export const AppInput = ({
               onPress={handleTogglePasswordVisibility}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               accessibilityRole="button"
-              accessibilityLabel={resolvedPasswordVisible ? 'Hide password' : 'Show password'}
+              accessibilityLabel={resolvedPasswordVisible ? t('auth.fields.hidePassword') : t('auth.fields.showPassword')}
             >
               <Ionicons
                 name={resolvedPasswordVisible ? 'eye-off-outline' : 'eye-outline'}

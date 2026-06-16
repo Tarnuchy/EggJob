@@ -1,5 +1,5 @@
-import React from 'react';
-import { DefaultTheme, NavigationContainer } from '@react-navigation/native';
+import React, { useEffect } from 'react';
+import { DefaultTheme, NavigationContainer, useNavigationContainerRef } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import { AuthScreen } from '../screens/auth/AuthScreen';
@@ -14,6 +14,8 @@ import { TaskDetailScreen } from '../screens/tasks/TaskDetailScreen';
 import { JoinGroupScreen } from '../screens/tasks/JoinGroupScreen';
 import { colors } from '../theme/colors';
 import { PanelHost } from './PanelHost';
+import { setUnauthorizedHandler } from '../services/http/authEvents';
+import { AuthSessionStorage } from '../services/http/AuthSessionStorage';
 import type { RootStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -30,13 +32,28 @@ const navigationTheme = {
   },
 };
 
-export function AppNavigator() {
+export function AppNavigator({ initialRouteName }: { initialRouteName: keyof RootStackParamList }) {
+  const navigationRef = useNavigationContainerRef<RootStackParamList>();
   // require dynamically to avoid static resolution issues when file is added at runtime
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const EditGroupScreen = require('../screens/tasks/EditGroupScreen').default;
+
+  // On any authenticated 401 the HTTP layer clears the token and fires this handler: drop the
+  // persisted session and return to Auth, so an expired token can't strand the user in the shell.
+  useEffect(() => {
+    setUnauthorizedHandler(() => {
+      void AuthSessionStorage.clear();
+      if (navigationRef.isReady() && navigationRef.getCurrentRoute()?.name !== 'Auth') {
+        navigationRef.reset({ index: 0, routes: [{ name: 'Auth' }] });
+      }
+    });
+    return () => setUnauthorizedHandler(null);
+  }, [navigationRef]);
+
   return (
-    <NavigationContainer theme={navigationTheme}>
+    <NavigationContainer ref={navigationRef} theme={navigationTheme}>
       <Stack.Navigator
+        initialRouteName={initialRouteName}
         screenOptions={{
           headerShown: false,
           freezeOnBlur: true,

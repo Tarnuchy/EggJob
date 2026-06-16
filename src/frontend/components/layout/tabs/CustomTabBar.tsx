@@ -110,7 +110,7 @@ export const CustomTabBar = ({ state, navigation }: BottomTabBarProps) => {
           style={StyleSheet.absoluteFillObject}
           onPress={closeMenu}
           accessibilityRole="button"
-          accessibilityLabel="Close menu"
+          accessibilityLabel={t('quickAction.closeMenu')}
         />
       )}
 

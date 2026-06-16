@@ -9,6 +9,7 @@ import type { Result } from '../types/index';
 import { DEFAULT_TASK_COLOR } from '../../screens/tasks/taskColors';
 import { API_BASE_URL } from './config';
 import { buildAuthHeaders } from './buildAuthHeaders';
+import { notifyUnauthorized } from './authEvents';
 
 export type HydratedTaskData = {
   taskGroups: Record<string, TaskGroup>;
@@ -59,7 +60,10 @@ type ProgressItemPayload = {
 async function getJson<T>(path: string, headers: Record<string, string>): Promise<T | null> {
   try {
     const response = await fetch(`${API_BASE_URL}${path}`, { method: 'GET', headers });
-    if (!response.ok) return null;
+    if (!response.ok) {
+      if (response.status === 401) notifyUnauthorized();
+      return null;
+    }
     return (await response.json()) as T;
   } catch {
     return null;

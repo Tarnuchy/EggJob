@@ -8,6 +8,7 @@ import { socialService } from '../../../services';
 import { usePaginatedList } from '../../../hooks/usePaginatedList';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
+import { TAB_BAR_HEIGHT } from '../../../components/layout/tabs';
 import { useAppNavigation } from '../../../hooks/useAppNavigation';
 import { useCurrentUserId } from './useCurrentUserId';
 
@@ -51,6 +52,8 @@ export const MyFriendsTab = () => {
           title={t('friends.empty.myFriendsTitle')}
           message={t('friends.empty.myFriendsMessage')}
         />
+      ) : filtered.length === 0 ? (
+        <EmptyState icon="search-outline" title={t('friends.empty.addFriendNoResults')} />
       ) : (
         <FlatList
           data={filtered}
@@ -88,7 +91,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   listContent: {
-    paddingBottom: spacing.xl,
+    paddingBottom: TAB_BAR_HEIGHT + spacing.lg,
   },
   footer: {
     paddingVertical: spacing.md,

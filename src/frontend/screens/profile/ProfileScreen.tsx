@@ -17,6 +17,7 @@ import { useAppNavigation } from '../../hooks/useAppNavigation';
 import { usePanelContext } from '../../navigation/PanelContext';
 import { colors } from '../../theme/colors';
 import { spacing, SCREEN_PADDING_H } from '../../theme/spacing';
+import { TAB_BAR_HEIGHT } from '../../components/layout/tabs';
 
 export const ProfileScreen = () => {
   const { t } = useTranslation();
@@ -115,7 +116,7 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: SCREEN_PADDING_H,
     paddingTop: spacing.lg,
-    paddingBottom: spacing.xxl,
+    paddingBottom: TAB_BAR_HEIGHT + spacing.lg,
     gap: spacing.lg,
   },
   header: {

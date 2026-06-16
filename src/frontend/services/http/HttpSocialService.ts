@@ -3,6 +3,7 @@ import type { Page, PageOptions, Result } from '../types/index';
 import { pageQueryString } from '../pagination';
 import { API_BASE_URL } from './config';
 import { buildAuthHeaders } from './buildAuthHeaders';
+import { notifyUnauthorized } from './authEvents';
 import { CurrentUser } from './CurrentUser';
 
 // Backend identyfikuje zaproszenia parą (from, to), a przyjaźnie parą userów —
@@ -34,7 +35,10 @@ type FeedItemPayload = {
 
 function mapStatus(status: number): Result<never> {
   if (status === 400) return { ok: false, error: { code: 'validation' } };
-  if (status === 401) return { ok: false, error: { code: 'unauthorized' } };
+  if (status === 401) {
+    notifyUnauthorized();
+    return { ok: false, error: { code: 'unauthorized' } };
+  }
   if (status === 404) return { ok: false, error: { code: 'not-found' } };
   if (status === 409) return { ok: false, error: { code: 'conflict' } };
   return { ok: false, error: { code: `http-${status}` } };

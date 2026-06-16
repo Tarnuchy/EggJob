@@ -6,6 +6,7 @@ const pl: Translation = {
   },
   common: {
     loading: 'Ładowanie...',
+    clearSearch: 'Wyczyść wyszukiwanie',
   },
   auth: {
     tabs: {
@@ -21,6 +22,8 @@ const pl: Translation = {
       confirmPasswordPlaceholder: 'Potwierdź hasło',
       username: 'Nazwa użytkownika',
       usernamePlaceholder: 'Twoja nazwa użytkownika',
+      showPassword: 'Pokaż hasło',
+      hidePassword: 'Ukryj hasło',
     },
     cta: {
       login: 'Zaloguj się',
@@ -62,6 +65,7 @@ const pl: Translation = {
     addProgress: 'Dodaj progres',
     joinGroup: 'Dołącz do grupy',
     createGroup: 'Stwórz grupę',
+    closeMenu: 'Zamknij menu',
   },
   topBar: {
     back: 'Wstecz',
@@ -332,7 +336,7 @@ const pl: Translation = {
     },
     languagePicker: {
       title: 'Wybierz język',
-      system: 'Języka systemowy',
+      system: 'Język systemowy',
       english: 'English',
       polish: 'Polski',
       close: 'Zamknij',
@@ -467,6 +471,11 @@ const pl: Translation = {
       errorTitle: 'Nie udało się wczytać aktywności',
       retry: 'Ponów',
     },
+  },
+  errorScreen: {
+    title: 'Coś poszło nie tak',
+    retry: 'Spróbuj ponownie',
+    generic: 'Wystąpił nieoczekiwany błąd.',
   },
 };
 

@@ -1,4 +1,5 @@
 import type { ITaskService, TaskParams } from '../types/ITaskService';
+import type { TaskKind } from '../../application/state';
 import type { Result } from '../types/index';
 import { API_BASE_URL } from './config';
 import { buildAuthHeaders } from './buildAuthHeaders';
@@ -72,7 +73,7 @@ export class HttpTaskService implements ITaskService {
 
   async editTask(
     taskId: string,
-    input: { name?: string; goal?: number; status?: string; params?: Partial<TaskParams> },
+    input: { name?: string; goal?: number; status?: string; kind?: TaskKind; params?: Partial<TaskParams> },
   ): Promise<Result<void>> {
     let response: Response;
     try {
@@ -94,6 +95,29 @@ export class HttpTaskService implements ITaskService {
       if (response.status === 400) return { ok: false, error: { code: 'validation' } };
       if (response.status === 404) return { ok: false, error: { code: 'not-found' } };
       return { ok: false, error: { code: `http-${response.status}` } };
+    }
+
+    // Task type (one_time <-> endless) has its own endpoint; the PATCH above does not carry it,
+    // so a local kind change would otherwise silently revert on the next hydration.
+    if (input.kind !== undefined) {
+      try {
+        const actingUser = CurrentUser.get();
+        if (!actingUser) return { ok: false, error: { code: 'unauthorized' } };
+        const headers = await buildAuthHeaders();
+        const typeRes = await fetch(
+          `${this.baseUrl}/users/${encodeURIComponent(actingUser)}/tasks/${encodeURIComponent(taskId)}/type`,
+          {
+            method: 'POST',
+            headers: { ...headers, ...JSON_HEADERS },
+            body: JSON.stringify({ new_type: mapTaskType(input.kind) }),
+          },
+        );
+        if (!typeRes.ok && typeRes.status !== 403) {
+          return { ok: false, error: { code: `http-${typeRes.status}` } };
+        }
+      } catch {
+        return { ok: false, error: { code: 'network' } };
+      }
     }
 
     if (input.params) {
@@ -183,10 +207,19 @@ export class HttpTaskService implements ITaskService {
       });
       if (!progressRes.ok) return { ok: false, error: { code: 'not-found' } };
       const parsed = (await progressRes.json()) as {
-        items?: Array<{ id: string; group_member_id?: string | null }>;
+        items?: Array<{ id?: string | null; group_member_id?: string | null }>;
       };
-      const items = parsed.items ?? [];
-      const item = items.find((p) => myMemberId !== null && p.group_member_id === myMemberId) ?? items[0];
+      // The real TaskProgress UUID lives ONLY in this response. The local task.progressId
+      // (a "prg-…" placeholder, or empty after backend hydration) must never reach the backend —
+      // it serializes to None and the update 422s. Keep only rows that carry a real id.
+      const validRows = (parsed.items ?? []).filter(
+        (p): p is { id: string; group_member_id?: string | null } =>
+          typeof p.id === 'string' && p.id.length > 0 && p.id !== 'None',
+      );
+      // Prefer my own progress row (competitive); fall back to the shared/first row (cooperative).
+      const item =
+        validRows.find((p) => myMemberId !== null && p.group_member_id === myMemberId) ??
+        validRows[0];
       if (!item) return { ok: false, error: { code: 'not-found' } };
 
       const updateRes = await fetch(
@@ -364,14 +397,17 @@ export class HttpTaskService implements ITaskService {
       });
       if (!res.ok) return { ok: false, error: { code: 'not-found' } };
       const parsed = (await res.json()) as { items?: ProgressEntryItem[] };
-      const items = (parsed.items ?? []).map((it) => ({
-        entryId: it.id,
-        value: it.value ?? 0,
-        message: it.message ?? '',
-        photoUrl: it.photo_url ?? undefined,
-        createdAt: it.created_at ?? '',
-        commentIds: [] as string[],
-      }));
+      const items = (parsed.items ?? [])
+        .map((it) => ({
+          entryId: it.id,
+          value: it.value ?? 0,
+          message: it.message ?? '',
+          photoUrl: it.photo_url ?? undefined,
+          createdAt: it.created_at ?? '',
+          commentIds: [] as string[],
+        }))
+        // newest-first, matching the mock contract so undo (entries[0]) removes the latest entry
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
       return { ok: true, value: items };
     } catch {
       return { ok: false, error: { code: 'network' } };

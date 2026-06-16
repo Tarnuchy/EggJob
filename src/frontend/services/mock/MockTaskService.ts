@@ -1,4 +1,5 @@
 import type { ITaskService, TaskParams } from '../types/ITaskService';
+import type { TaskKind } from '../../application/state';
 import type { Result } from '../types/index';
 
 class MockTaskService implements ITaskService {
@@ -49,7 +50,7 @@ class MockTaskService implements ITaskService {
 
   async editTask(
     taskId: string,
-    input: { name?: string; goal?: number; status?: string; params?: Partial<TaskParams> },
+    input: { name?: string; goal?: number; status?: string; kind?: TaskKind; params?: Partial<TaskParams> },
   ): Promise<Result<void>> {
     const { name, goal, params } = input;
     const task = this.tasks[taskId];
