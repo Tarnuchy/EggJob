@@ -35,6 +35,12 @@ app.include_router(basics_router)
 app.include_router(media_router)
 
 
+@app.get("/health")
+def health() -> dict[str, str]:
+    # Liveness dla health-checków PaaS/proxy — bez auth, bez DB.
+    return {"status": "ok"}
+
+
 @app.exception_handler(ValidationError)
 def handle_validation_error(_: Request, exc: ValidationError) -> JSONResponse:
     return JSONResponse(status_code=400, content={"detail": str(exc)})

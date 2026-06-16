@@ -1,0 +1,15 @@
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.git/
+.gitignore
+.pytest_cache/
+.env
+.env.*
+node_modules/
+src/frontend/
+tests/
+docs/
+media_uploads/
+*.md
