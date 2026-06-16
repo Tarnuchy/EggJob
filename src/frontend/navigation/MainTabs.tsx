@@ -8,12 +8,14 @@ import { FriendsScreen } from '../screens/social/FriendsScreen';
 import { ProfileScreen } from '../screens/profile/ProfileScreen';
 import { colors } from '../theme/colors';
 import { CustomTabBar } from '../components/layout/tabs';
+import { useDevSeed } from '../hooks/useDevSeed';
 import type { TabParamList } from './types';
 
 const Tab = createBottomTabNavigator<TabParamList>();
 
 export const MainTabs = () => {
   const { t } = useTranslation();
+  useDevSeed();
   return (
     <Tab.Navigator
       tabBar={(props) => <CustomTabBar {...props} />}
