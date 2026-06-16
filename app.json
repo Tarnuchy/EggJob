@@ -2,11 +2,17 @@
   "expo": {
     "name": "EggJob",
     "slug": "eggjob",
-    "version": "0.1.0",
+    "version": "1.0.0",
     "orientation": "portrait",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "backgroundColor": "#A99A8A",
     "scheme": "eggjob",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#A99A8A"
+    },
     "assetBundlePatterns": [
       "**/*"
     ],
@@ -18,6 +24,7 @@
       "package": "com.eggjob.app",
       "backgroundColor": "#A99A8A",
       "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#A99A8A"
       }
     },
@@ -42,7 +49,7 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "cos"
+        "projectId": "3e20e751-5f7a-4e92-bf73-9dd0ba36d035"
       }
     },
     "owner": "dariooo23"
