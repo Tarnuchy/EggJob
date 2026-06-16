@@ -352,6 +352,10 @@ const en = {
       cancel: 'Cancel',
       errorPassword: 'Incorrect password.',
       errorGeneric: 'Could not delete the account. Please try again.',
+      logout: 'Log out',
+      logoutTitle: 'Log out?',
+      logoutMessage: "You'll need to log in again to access your account.",
+      logoutConfirm: 'Log out',
     },
   },
   relativeTime: {
