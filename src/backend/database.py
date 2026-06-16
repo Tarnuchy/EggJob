@@ -19,16 +19,28 @@ DEFAULT_DATABASE_URL = "postgresql+psycopg://postgres:postgres@localhost:5432/to
 DEFAULT_TEST_DATABASE_URL = "postgresql+psycopg://postgres:postgres@localhost:5432/todo_test"
 
 
+def _normalize_database_url(url: str) -> str:
+    """Provider-y (Railway/Render/Heroku) podają DATABASE_URL jako
+    postgres:// albo postgresql://, co SQLAlchemy mapuje na psycopg2
+    (niezainstalowany). Wymuszamy sterownik psycopg (v3)."""
+    if url.startswith("postgres://"):
+        url = "postgresql://" + url[len("postgres://"):]
+    if url.startswith("postgresql://"):
+        url = "postgresql+psycopg://" + url[len("postgresql://"):]
+    return url
+
+
 def get_database_url() -> str:
-    return os.getenv("DATABASE_URL", DEFAULT_DATABASE_URL)
+    return _normalize_database_url(os.getenv("DATABASE_URL", DEFAULT_DATABASE_URL))
 
 
 def get_test_database_url() -> str:
-    return os.getenv("TEST_DATABASE_URL", DEFAULT_TEST_DATABASE_URL)
+    return _normalize_database_url(os.getenv("TEST_DATABASE_URL", DEFAULT_TEST_DATABASE_URL))
 
 
 def build_engine(database_url: str | None = None) -> Engine:
-    return create_engine(database_url or get_database_url(), pool_pre_ping=True)
+    url = _normalize_database_url(database_url) if database_url else get_database_url()
+    return create_engine(url, pool_pre_ping=True)
 
 
 engine = build_engine()
