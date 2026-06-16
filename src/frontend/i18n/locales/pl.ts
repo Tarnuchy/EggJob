@@ -409,6 +409,50 @@ const pl: Translation = {
     unknown: 'Coś poszło nie tak.',
     unknownAction: 'Nieznana akcja.',
   },
+  home: {
+    greeting: {
+      morning: 'Dzień dobry',
+      afternoon: 'Dzień dobry',
+      evening: 'Dobry wieczór',
+      night: 'Dobranoc',
+      withName: '{{greeting}}, {{name}}',
+      subtitle: 'Zróbmy dziś coś dobrego.',
+    },
+    nudges: {
+      notifications: 'Masz {{count}} nieprzeczytanych powiadomień',
+      friendRequests: '{{count}} zaproszenia do znajomych czekają',
+      tapToOpen: 'Dotknij, aby otworzyć',
+    },
+    sections: {
+      activeTasks: 'Wróć do pracy',
+      groups: 'Twoje grupy',
+      activity: 'Aktywność znajomych',
+    },
+    groups: {
+      competitive: 'Rywalizacja',
+      cooperative: 'Współpraca',
+      bingoBadge: 'Bingo',
+      bingoWin: '🎉 Bingo!',
+      taskCount: 'Zadania: {{count}}',
+      memberCount: 'Członkowie: {{count}}',
+    },
+    empty: {
+      noActiveTasks: 'Brak aktywnych zadań — dotknij +, aby dodać.',
+      noGroups: 'Brak grup — dołącz lub utwórz, aby grać ze znajomymi.',
+      noActivity: 'Brak aktywności',
+      noActivityHint: 'Dodaj znajomych, aby zobaczyć ich postępy.',
+    },
+    onboarding: {
+      title: 'Witaj w EggJob',
+      message: 'Utwórz grupę lub dodaj znajomych, aby wspólnie śledzić postępy.',
+      ctaCreateGroup: 'Utwórz grupę',
+      ctaAddFriends: 'Dodaj znajomych',
+    },
+    feed: {
+      errorTitle: 'Nie udało się wczytać aktywności',
+      retry: 'Ponów',
+    },
+  },
 };
 
 export default pl;
