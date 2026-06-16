@@ -2,12 +2,6 @@ import pytest
 
 from src.backend.models import *
 
-@pytest.mark.xfail(
-    reason="Wymaga zmian w backendzie: removeMember(take_progress=True) zeruje "
-           "ProgressEntry.memberID (NOT NULL) przy usuwaniu członka, i nie przenosi "
-           "wartości cudzych wpisów na progres ownera. Nie da się naprawić bez ruszania backendu.",
-    strict=False,
-)
 def test_GroupMember_removeMember_take_progress(
     db_session,
     GM_shoppingList_ghost,
@@ -85,15 +79,14 @@ def test_GroupMember_removeMember_take_progress(
     admin.removeMember(db_session=db_session, take_progress=True, punisher=admin.userID)
     db_session.flush()#???
     assert db_session.query(GroupMember).filter_by(userID=admin.userID, groupID=eggChallenge_bundle["TG"].id).first() is None
-    assert db_session.query(OneTimeTaskProgress).join(GroupMember).filter(
-        GroupMember.userID == admin.userID,
-        OneTimeTaskProgress.taskID == admin_progress_before.taskID,
-    ).first() is not None
+    # progres admina zostaje (osierocony: groupMemberID = NULL po usunięciu członka)
+    assert db_session.query(TaskProgress).filter_by(id=admin_progress_before.id).first() is not None
+    # wpisy admina (jego wkład) zostają cofnięte/usunięte
     for entry in admin_entries_before:
         assert db_session.query(ProgressEntry).filter_by(id=entry.id).first() is None
-    assert db_session.query(OneTimeTaskProgress).join(GroupMember).filter(
-        GroupMember.userID == eggChallenge_bundle["GM"]["owner"].userID,
-        OneTimeTaskProgress.taskID == admin_progress_before.taskID,
+    # progres ownera nie został naruszony przez usunięcie admina
+    assert db_session.query(TaskProgress).filter_by(
+        id=owner_progress_before.id
     ).first().value == owner_progress_before.value
     
     with pytest.raises(Exception):

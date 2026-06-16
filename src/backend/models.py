@@ -889,6 +889,7 @@ class GroupMember(Base):
     progressEntries: Mapped[list[ProgressEntry]] = relationship(
         "ProgressEntry",
         back_populates="groupMember",
+        passive_deletes=True,
     )
 
     def changePermissions(self, db_session: Session, new_role: GroupRole, by_user_id: UUID) -> None:
@@ -919,10 +920,15 @@ class GroupMember(Base):
         if not take_progress:
             self.active = False
         else:
-            for progress in self.taskProgresses:
-                db_session.delete(progress)
+            # Cofamy wkład tego członka: jego wpisy znikają, a progresy, do których
+            # je dodał, są pomniejszane o ich wartość. Własne progresy członka
+            # zostają (osierocone — groupMemberID staje się NULL przez FK SET NULL).
+            for entry in list(self.progressEntries):
+                entry.taskProgress._silentUpdateProgress(db_session, -entry.value)
+                db_session.delete(entry)
+            db_session.flush()
             db_session.delete(self)
-        
+
         db_session.flush()
             
         
