@@ -3,6 +3,7 @@ import type { Page, PageOptions, Result } from '../types/index';
 import { fetchAllPages, pageQueryString } from '../pagination';
 import { API_BASE_URL } from './config';
 import { buildAuthHeaders } from './buildAuthHeaders';
+import { notifyUnauthorized } from './authEvents';
 
 type NotificationPayload = {
   id: string;
@@ -13,7 +14,10 @@ type NotificationPayload = {
 
 function mapStatus(status: number): Result<never> {
   if (status === 400) return { ok: false, error: { code: 'validation' } };
-  if (status === 401) return { ok: false, error: { code: 'unauthorized' } };
+  if (status === 401) {
+    notifyUnauthorized();
+    return { ok: false, error: { code: 'unauthorized' } };
+  }
   if (status === 404) return { ok: false, error: { code: 'not-found' } };
   return { ok: false, error: { code: `http-${status}` } };
 }

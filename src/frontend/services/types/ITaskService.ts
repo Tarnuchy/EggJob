@@ -1,4 +1,5 @@
 import type { Result } from './index';
+import type { TaskKind } from '../../application/state';
 
 export type TaskParams = {
   photoRequired: boolean;
@@ -20,7 +21,7 @@ export interface ITaskService {
 
   editTask(
     taskId: string,
-    input: { name?: string; goal?: number; status?: string; params?: Partial<TaskParams> },
+    input: { name?: string; goal?: number; status?: string; kind?: TaskKind; params?: Partial<TaskParams> },
   ): Promise<Result<void>>;
 
   deleteTask(taskId: string): Promise<Result<void>>;

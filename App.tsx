@@ -14,6 +14,8 @@ import { ToastProvider } from './src/frontend/context/ToastContext';
 import { AppNavigator } from './src/frontend/navigation/AppNavigator';
 import type { SupportedLocale } from './src/frontend/i18n';
 import { interFonts } from './src/frontend/theme';
+import { AuthTokenStorage } from './src/frontend/services/http/AuthTokenStorage';
+import { AuthSessionStorage, type StoredSession } from './src/frontend/services/http/AuthSessionStorage';
 
 // Off-screen navigator screens (inactive tabs, screens below the top of the stack) stay
 // mounted and would otherwise re-render on every reducer dispatch via the shared AppState
@@ -33,6 +35,7 @@ type InitialLocale = {
 export default function App() {
   const [fontsLoaded] = useFonts(interFonts);
   const [initialLocale, setInitialLocale] = useState<InitialLocale | null>(null);
+  const [restoredSession, setRestoredSession] = useState<StoredSession | null | undefined>(undefined);
 
   useEffect(() => {
     let cancelled = false;
@@ -52,7 +55,25 @@ export default function App() {
     };
   }, []);
 
-  const ready = fontsLoaded && initialLocale !== null;
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const [token, session] = await Promise.all([
+          AuthTokenStorage.getToken(),
+          AuthSessionStorage.get(),
+        ]);
+        if (!cancelled) setRestoredSession(token && session ? session : null);
+      } catch {
+        if (!cancelled) setRestoredSession(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const ready = fontsLoaded && initialLocale !== null && restoredSession !== undefined;
 
   useEffect(() => {
     if (ready) {
@@ -73,9 +94,9 @@ export default function App() {
           initialPreference={initialLocale.preference}
           initialResolvedLocale={initialLocale.resolvedLocale}
         >
-          <AppStateProvider>
+          <AppStateProvider initialSession={restoredSession}>
             <ToastProvider>
-              <AppNavigator />
+              <AppNavigator initialRouteName={restoredSession ? 'Main' : 'Auth'} />
             </ToastProvider>
           </AppStateProvider>
         </LocaleProvider>

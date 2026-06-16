@@ -16,6 +16,7 @@ import { useAppState } from '../../application/AppStateContext';
 import { selectCurrentAccountId, selectCurrentUserId } from '../../application/selectors';
 import { authService, profileService } from '../../services';
 import { AuthTokenStorage } from '../../services/http/AuthTokenStorage';
+import { AuthSessionStorage } from '../../services/http/AuthSessionStorage';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import type { RootStackParamList } from '../../navigation/types';
 import { colors } from '../../theme/colors';
@@ -61,6 +62,7 @@ export const SettingsScreen = () => {
     const result = await profileService.deleteAccount(accountId, userId, password);
     if (result.ok) {
       await AuthTokenStorage.clearToken();
+      await AuthSessionStorage.clear();
       dispatch({ type: 'auth/logout' });
       setDeleteBusy(false);
       setDeleteVisible(false);

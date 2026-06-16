@@ -1,6 +1,7 @@
 import type { IAuthService } from '../types/IAuthService';
 import type { Result } from '../types/index';
 import { AuthTokenStorage } from './AuthTokenStorage';
+import { AuthSessionStorage } from './AuthSessionStorage';
 import { API_BASE_URL } from './config';
 import { mapBackendAuthPayload } from './mappers/mapBackendAuthPayload';
 import type { BackendAuthPayload } from './mappers/mapBackendAuthPayload';
@@ -76,6 +77,7 @@ export class HttpAuthService implements IAuthService {
     const parsed = mapBackendAuthPayload((await response.json()) as BackendAuthPayload);
     if (parsed.accessToken) {
       await AuthTokenStorage.setToken(parsed.accessToken);
+      await AuthSessionStorage.set(parsed.accountId, parsed.userId);
     }
     return {
       ok: true,
@@ -105,6 +107,7 @@ export class HttpAuthService implements IAuthService {
     const parsed = mapBackendAuthPayload((await response.json()) as BackendAuthPayload);
     if (parsed.accessToken) {
       await AuthTokenStorage.setToken(parsed.accessToken);
+      await AuthSessionStorage.set(parsed.accountId, parsed.userId);
     }
     return {
       ok: true,
@@ -113,15 +116,9 @@ export class HttpAuthService implements IAuthService {
   }
 
   async logout(): Promise<Result<void>> {
-    try {
-      await fetch(`${this.baseUrl}/auth/logout`, {
-        method: 'POST',
-        headers: JSON_HEADERS,
-      });
-    } catch {
-      // token will still be cleared locally
-    }
+    // The backend exposes no /auth/logout route — clearing the stored token IS the logout.
     await AuthTokenStorage.clearToken();
+    await AuthSessionStorage.clear();
     return { ok: true, value: undefined };
   }
 }

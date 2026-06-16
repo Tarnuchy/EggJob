@@ -2,6 +2,7 @@ import type { IProfileService, UserStats } from '../types/IProfileService';
 import type { Result } from '../types/index';
 import { API_BASE_URL } from './config';
 import { buildAuthHeaders } from './buildAuthHeaders';
+import { notifyUnauthorized } from './authEvents';
 
 type UserSummaryPayload = {
   id?: string;
@@ -17,7 +18,10 @@ type UserStatsPayload = {
 
 function mapStatus(status: number): Result<never> {
   if (status === 400) return { ok: false, error: { code: 'validation' } };
-  if (status === 401) return { ok: false, error: { code: 'unauthorized' } };
+  if (status === 401) {
+    notifyUnauthorized();
+    return { ok: false, error: { code: 'unauthorized' } };
+  }
   if (status === 404) return { ok: false, error: { code: 'not-found' } };
   return { ok: false, error: { code: `http-${status}` } };
 }

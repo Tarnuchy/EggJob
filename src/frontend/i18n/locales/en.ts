@@ -4,6 +4,7 @@ const en = {
   },
   common: {
     loading: 'Loading...',
+    clearSearch: 'Clear search',
   },
   auth: {
     tabs: {
@@ -19,6 +20,8 @@ const en = {
       confirmPasswordPlaceholder: 'Confirm Password',
       username: 'Username',
       usernamePlaceholder: 'Your Username',
+      showPassword: 'Show password',
+      hidePassword: 'Hide password',
     },
     cta: {
       login: 'Log In',
@@ -60,6 +63,7 @@ const en = {
     addProgress: 'Add progress',
     joinGroup: 'Join group',
     createGroup: 'Create group',
+    closeMenu: 'Close menu',
   },
   topBar: {
     back: 'Back',
@@ -465,6 +469,11 @@ const en = {
       errorTitle: "Couldn't load activity",
       retry: 'Retry',
     },
+  },
+  errorScreen: {
+    title: 'Something went wrong',
+    retry: 'Try again',
+    generic: 'An unexpected error occurred.',
   },
 } as const;
 

@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { socialService } from '../../../services';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
+import { TAB_BAR_HEIGHT } from '../../../components/layout/tabs';
 import { useAppNavigation } from '../../../hooks/useAppNavigation';
 import { useCurrentUserId } from './useCurrentUserId';
 import type { ResolvedUser } from './types';
@@ -152,7 +153,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   listContent: {
-    paddingBottom: spacing.xl,
+    paddingBottom: TAB_BAR_HEIGHT + spacing.lg,
   },
   actionButton: {
     paddingHorizontal: spacing.md,

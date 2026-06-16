@@ -12,8 +12,25 @@ type AppStateContextValue = {
 
 const AppStateContext = createContext<AppStateContextValue | null>(null);
 
-export function AppStateProvider({ children }: { children: React.ReactNode }) {
-  const [state, setState] = useState<FrontendState>(createInitialFrontendState);
+export function AppStateProvider({
+  children,
+  initialSession,
+}: {
+  children: React.ReactNode;
+  initialSession?: { accountId: string; userId: string } | null;
+}) {
+  const [state, setState] = useState<FrontendState>(() => {
+    const base = createInitialFrontendState();
+    return initialSession
+      ? {
+          ...base,
+          session: {
+            currentAccountId: initialSession.accountId,
+            currentUserId: initialSession.userId,
+          },
+        }
+      : base;
+  });
 
   const dispatch = useCallback((action: AppAction): ReducerResult => {
     let result!: ReducerResult;
