@@ -65,7 +65,11 @@ export const GroupHighlights = ({ items }: Props) => {
                 </AppText>
                 <View style={styles.pill}>
                   <AppText variant="caption" color="textPrimary">
-                    {g.bingo ? t('home.groups.bingoBadge') : t(`home.groups.${g.type}`)}
+                    {g.bingo
+                      ? t('home.groups.bingoBadge')
+                      : g.type === 'competitive'
+                        ? t('home.groups.competitive')
+                        : t('home.groups.cooperative')}
                   </AppText>
                 </View>
               </View>

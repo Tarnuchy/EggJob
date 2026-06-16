@@ -419,7 +419,6 @@ const en = {
     nudges: {
       notifications: 'You have {{count}} unread notifications',
       friendRequests: '{{count}} friend requests waiting',
-      tapToOpen: 'Tap to open',
     },
     sections: {
       activeTasks: 'Jump back in',

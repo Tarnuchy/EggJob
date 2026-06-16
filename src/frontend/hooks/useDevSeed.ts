@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useAppState } from '../application/AppStateContext';
 import { selectAllTaskGroups } from '../application/selectors';
 import { seedDevData } from '../application/devSeed';
@@ -13,10 +13,15 @@ import { USE_HTTP_SERVICES } from '../services/http/config';
 export function useDevSeed(): void {
   const { state, dispatch } = useAppState();
   const currentUserId = useCurrentUserId();
+  const seeded = useRef(false);
 
   useEffect(() => {
-    if (USE_HTTP_SERVICES) return;
-    if (selectAllTaskGroups(state).length > 0) return;
+    if (USE_HTTP_SERVICES || seeded.current) return;
+    if (selectAllTaskGroups(state).length > 0) {
+      seeded.current = true;
+      return;
+    }
     seedDevData(dispatch, currentUserId);
+    seeded.current = true;
   }, [state, dispatch, currentUserId]);
 }

@@ -421,7 +421,6 @@ const pl: Translation = {
     nudges: {
       notifications: 'Masz {{count}} nieprzeczytanych powiadomień',
       friendRequests: '{{count}} zaproszenia do znajomych czekają',
-      tapToOpen: 'Dotknij, aby otworzyć',
     },
     sections: {
       activeTasks: 'Wróć do pracy',

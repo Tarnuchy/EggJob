@@ -43,7 +43,7 @@ export const HomeScreen = () => {
     !home.loading &&
     !home.error &&
     groupHighlights.length === 0 &&
-    home.stats?.friendsCount === 0 &&
+    (home.stats?.friendsCount ?? 1) === 0 &&
     home.feed.length === 0;
 
   const onRefresh = () => {
