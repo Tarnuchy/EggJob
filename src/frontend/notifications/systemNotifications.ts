@@ -63,3 +63,28 @@ export async function presentTestNotification(title: string, body: string): Prom
     trigger: null,
   });
 }
+
+/**
+ * Subscription handle returned by the SDK's listener registration functions. Aliased via
+ * `ReturnType` so this module needs no direct `expo-modules-core` import.
+ */
+type NotificationSubscription = ReturnType<typeof Notifications.addNotificationReceivedListener>;
+
+/**
+ * Fires when the device push token rotates. The SDK callback receives the *device* (FCM/APNs)
+ * token, not the Expo token the backend needs — so we ignore the payload and just signal a
+ * change; the caller re-fetches `getExpoPushToken()`.
+ */
+export function addPushTokenChangeListener(onChange: () => void): NotificationSubscription {
+  return Notifications.addPushTokenListener(() => onChange());
+}
+
+/** Fires when a notification is received while the app is foregrounded. */
+export function addReceivedListener(onReceived: () => void): NotificationSubscription {
+  return Notifications.addNotificationReceivedListener(() => onReceived());
+}
+
+/** Fires when the user taps a notification (app foregrounded or returning from background). */
+export function addResponseListener(onResponse: () => void): NotificationSubscription {
+  return Notifications.addNotificationResponseReceivedListener(() => onResponse());
+}
