@@ -2,13 +2,21 @@ from datetime import datetime
 from uuid import uuid4
 
 import pytest
+from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from src.backend.database import Base, build_engine, get_test_database_url
+from src.backend.database import Base, get_test_database_url
 from src.backend.models import *
 from src.backend.security import *
 
-TEST_ENGINE = build_engine(get_test_database_url())
+# prepare_threshold=None wyłącza prepared statements psycopg — bez tego ciągłe
+# drop_all/create_all między testami unieważnia plany ("cached plan must not
+# change result type").
+TEST_ENGINE = create_engine(
+    get_test_database_url(),
+    pool_pre_ping=True,
+    connect_args={"prepare_threshold": None},
+)
 TestingSessionLocal = sessionmaker(bind=TEST_ENGINE, autoflush=False, autocommit=False)
 
 @pytest.fixture

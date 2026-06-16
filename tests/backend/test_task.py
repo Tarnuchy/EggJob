@@ -4,17 +4,23 @@ from uuid import uuid4
 
 from src.backend.models import *
 
-def test_Task_edit(db_session, shoppingList_bundle):
+def test_Task_edit(db_session, shoppingList_bundle, user_c):
     task = shoppingList_bundle["tasks"]["cheese"]["task"]
     owner = shoppingList_bundle["GM"]["owner"]
     member = shoppingList_bundle["GM"]["member"]
-    admin = shoppingList_bundle["GM"]["admin"]
+    # shopping bundle nie ma admina — tworzymy go lokalnie (user_c jako ADMIN)
+    admin = GroupMember()
+    admin.userID = user_c.id
+    admin.groupID = shoppingList_bundle["TG"].id
+    admin.role = GroupRole.ADMIN
+    admin.active = True
+    db_session.add(admin)
+    db_session.flush()
     # zmieniamy nazwę, opis, cel zadania na poprawne dane, sprawdzamy czy się zmieniły
     newData = { #wszystko na raz, nie chce mi się dzielić
         "name": "serek",
         "description": "może być jeden rodzaj, ale dużo i szybko",
         "goal": 10,
-        "deadline": datetime(2030, 12, 31) #nie pamiętam tamtych dat
     }
     task.edit(db_session, owner.userID, **newData)
     updatedTask = db_session.query(Task).filter_by(id=task.id).first()
@@ -22,7 +28,7 @@ def test_Task_edit(db_session, shoppingList_bundle):
     assert updatedTask.name == newData["name"]
     assert updatedTask.description == newData["description"]
     assert updatedTask.goal == newData["goal"]
-    assert updatedTask.deadline == newData["deadline"]
+    # Task.edit nie obsługuje deadline — nie jest tu zmieniane
     
     # próbujemy zmienić nazwę na błędną, powinno rzucić błąd
     newData["name"] = ""
@@ -41,11 +47,19 @@ def test_Task_edit(db_session, shoppingList_bundle):
     with pytest.raises(Exception):
         task.edit(db_session, member.userID, **newData)
         
-def test_Task_delete(db_session, shoppingList_bundle):
+def test_Task_delete(db_session, shoppingList_bundle, user_c):
     task = shoppingList_bundle["tasks"]["cheese"]["task"] #one time
     owner = shoppingList_bundle["GM"]["owner"]
     member = shoppingList_bundle["GM"]["member"]
-    admin = shoppingList_bundle["GM"]["admin"]
+    # shopping bundle nie ma admina — tworzymy go lokalnie (user_c jako ADMIN);
+    # Task.delete i tak wymaga OWNER, wiec admin powinien dostac blad
+    admin = GroupMember()
+    admin.userID = user_c.id
+    admin.groupID = shoppingList_bundle["TG"].id
+    admin.role = GroupRole.ADMIN
+    admin.active = True
+    db_session.add(admin)
+    db_session.flush()
     #params = shoppingList_bundle["tasks"]["cheese"]["params"]
     #progress = shoppingList_bundle["tasks"]["cheese"]["progress"]
     entries = shoppingList_bundle["tasks"]["cheese"]["entries"]

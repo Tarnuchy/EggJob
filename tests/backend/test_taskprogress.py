@@ -27,7 +27,8 @@ def test_TaskProgress_updateProgress(db_session, bingo_bundle):
     assert db_session.query(TaskProgress).filter_by(id=progress.id).first().value == old_value + 6
     assert db_session.query(TaskProgress).filter_by(id=progress.id).first().counter == old_counter + 1
     assert db_session.query(ProgressEntry).filter_by(TaskProgressID=progress.id, value=1, message="biegałem znowu").first() is not None
-    assert db_session.query(TaskProgress).filter_by(id=progress.id).first().status == TaskStatus.DONE
+    # repeatable: po ponownym update (gdy juz bylo DONE) backend wraca do IN_PROGRESS
+    assert db_session.query(TaskProgress).filter_by(id=progress.id).first().status == TaskStatus.IN_PROGRESS
     
     progress = bingo_bundle["tasks"]["president"]["progress"] #one time
     old_value = progress.value

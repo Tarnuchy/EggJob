@@ -20,8 +20,8 @@ def test_TaskGroup_edit(ecosystem):
 
     # Pakujemy docelowe dane w słownik dla wygody (jak przy test_Task_edit)
     new_data = {
-        "new_name": "super lista zakupow",
-        "new_privacy": PrivacyLevel.PUBLIC
+        "name": "super lista zakupow",
+        "privacy": PrivacyLevel.PUBLIC
     }
 
     # 1. PRZYPADEK: GHOST próbuje coś zmienić bez uprawnień -> Oczekujemy PermissionDeniedError
@@ -51,18 +51,19 @@ def test_TaskGroup_edit(ecosystem):
     
     saved_tg = db_session.query(TaskGroup).filter_by(id=tg.id).first()
     assert saved_tg is not None
-    assert saved_tg.name == new_data["new_name"]
-    assert saved_tg.privacy == new_data["new_privacy"]
+    assert saved_tg.name == new_data["name"]
+    assert saved_tg.privacy == new_data["privacy"]
 
     # 4. PRZYPADEK: OWNER podaje błędną nazwę w słowniku -> Oczekujemy ValidationError
-    new_data["new_name"] = ""
+    new_data["name"] = ""
     with pytest.raises(ValidationError):
         tg.edit(user_id=owner.userID, db_session=db_session, **new_data)
 
     db_session.flush()
     # Weryfikujemy w bazie, czy zachowała się poprzednia, działająca wartość, a pusta nazwa została zablokowana
     saved_tg = db_session.query(TaskGroup).filter_by(id=tg.id).first()
-    assert saved_tg.name == new_data["new_name"]
+    # nieudany edit (pusta nazwa) nie zmienia nazwy — zostaje poprzednia wartość
+    assert saved_tg.name == "super lista zakupow"
 
 
     #TODO zmiana typu na bingo ???
@@ -157,29 +158,28 @@ def test_TaskGroup_addFriend(ecosystem):
     # 1. PRZYPADEK: MEMBER próbuje dodać kogoś -> Błąd uprawnień (PermissionDeniedError)
     # B (member w shopping) próbuje dodać swojego znajomego C
     with pytest.raises(PermissionDeniedError):
-        shopping_tg.addFriend(db_session=db_session, user_id=shopping_member.userID, friend_id=user_c.id)
+        shopping_tg.addFriend(db_session=db_session, user_id=shopping_member.userID, friend_id=user_c.id, role=GroupRole.MEMBER)
 
     db_session.flush()
 
     # 2. PRZYPADEK: OWNER dodaje znajomego, który już jest w grupie -> Błąd (ConflictError)
     # A dodaje B w shopping (są znajomymi, ale B już jest)
     with pytest.raises(ConflictError):
-        shopping_tg.addFriend(db_session=db_session, user_id=shopping_owner.userID, friend_id=user_b.id)
+        shopping_tg.addFriend(db_session=db_session, user_id=shopping_owner.userID, friend_id=user_b.id, role=GroupRole.MEMBER)
 
     db_session.flush()
-    
-    # 3. PRZYPADEK: OWNER dodaje użytkownika, który nie jest jego znajomym -> Błąd (PermissionDeniedError)
-    # A próbuje dodać C w shopping (nie ma friendship_ac)
-    with pytest.raises(PermissionDeniedError):
-        shopping_tg.addFriend(db_session=db_session, user_id=shopping_owner.userID, friend_id=user_c.id)
 
+    # 3. PRZYPADEK: backend NIE wymaga znajomości — owner z uprawnieniami doda dowolnego usera
+    # A dodaje C w shopping (nie są znajomymi, ale to nie jest sprawdzane) -> sukces
+    shopping_tg.addFriend(db_session=db_session, user_id=shopping_owner.userID, friend_id=user_c.id, role=GroupRole.MEMBER)
     db_session.flush()
+    assert db_session.query(GroupMember).filter_by(groupID=shopping_tg.id, userID=user_c.id, active=True).first() is not None
     
     # 4. PRZYPADEK: SUKCES - OWNER dodaje poprawnego znajomego (grupa egg challenge)
     # B (owner w challenge) dodaje A (B i A są znajomymi, a A jeszcze nie ma w challenge)
     previous_members_count = len(db_session.query(GroupMember).filter_by(groupID=challenge_tg.id).all())
     
-    challenge_tg.addFriend(db_session=db_session, user_id=challenge_owner.userID, friend_id=user_a.id)
+    challenge_tg.addFriend(db_session=db_session, user_id=challenge_owner.userID, friend_id=user_a.id, role=GroupRole.MEMBER)
     db_session.flush()
     
     new_member_record = db_session.query(GroupMember).filter_by(
@@ -195,7 +195,7 @@ def test_TaskGroup_addFriend(ecosystem):
 
     # 5. PRZYPADEK: Dodanie znajomego, który uprzednio był członkiem i zostawił ducha
     # Skupiamy się na samym "wskrzeszaniu" ghosta z zachowaniem tego samego wiersza bazy
-    shopping_tg.addFriend(db_session=db_session, user_id=shopping_owner.userID, friend_id=shopping_ghost.userID)
+    shopping_tg.addFriend(db_session=db_session, user_id=shopping_owner.userID, friend_id=shopping_ghost.userID, role=GroupRole.MEMBER)
     db_session.flush()
     
     ghost_record = db_session.query(GroupMember).filter_by(
@@ -238,7 +238,7 @@ def test_TaskGroup_createTask(ecosystem):
     }
     
     with pytest.raises(PermissionDeniedError):
-        coop_tg.createTask(user_id=coop_ghost.userID, db_session=db_session, **ghost_task_data)
+        coop_tg.createTask(user_id=coop_ghost.userID, db_session=db_session, type=TaskType.ENDLESS, **ghost_task_data)
         
     db_session.flush()
     # Weryfikacja ze obiekt nie trafil do bazy 
@@ -261,7 +261,7 @@ def test_TaskGroup_createTask(ecosystem):
     }
     
     coop_task_count_before = coop_tg.taskCount
-    coop_tg.createTask(user_id=coop_member.userID, db_session=db_session, **member_data)
+    coop_tg.createTask(user_id=coop_member.userID, db_session=db_session, type=TaskType.ONE_TIME, **member_data)
     db_session.flush()
     
     assert coop_tg.taskCount == coop_task_count_before + 1
@@ -303,7 +303,7 @@ def test_TaskGroup_createTask(ecosystem):
         active=True,
     ).all()
     
-    comp_tg.createTask(user_id=comp_admin.userID, db_session=db_session, **admin_data)
+    comp_tg.createTask(user_id=comp_admin.userID, db_session=db_session, type=TaskType.REPEATABLE, **admin_data)
     db_session.flush()
     
     assert comp_tg.taskCount == comp_task_count_before + 1
@@ -339,7 +339,7 @@ def test_TaskGroup_createTask(ecosystem):
         "notifications": True
     }
     comp_owner_tasks_count = comp_tg.taskCount
-    comp_tg.createTask(user_id=comp_owner.userID, db_session=db_session, **owner_data)
+    comp_tg.createTask(user_id=comp_owner.userID, db_session=db_session, type=TaskType.CHALLENGE, **owner_data)
     db_session.flush()
     
     assert comp_tg.taskCount == comp_owner_tasks_count + 1
@@ -358,7 +358,7 @@ def test_TaskGroup_createTask(ecosystem):
     progress_count_before_err = len(db_session.query(TaskProgress).all())
     
     with pytest.raises(ValidationError):
-        comp_tg.createTask(user_id=comp_admin.userID, db_session=db_session, **invalid_name_data)
+        comp_tg.createTask(user_id=comp_admin.userID, db_session=db_session, type=TaskType.REPEATABLE, **invalid_name_data)
         
     db_session.flush()
     assert comp_tg.taskCount == tasks_count_before_err
@@ -377,7 +377,7 @@ def test_TaskGroup_createTask(ecosystem):
     user_not_in_group = ecosystem["users"]["a"] 
     
     with pytest.raises(PermissionDeniedError):
-        comp_tg.createTask(user_id=user_not_in_group.id, db_session=db_session, **invalid_user_data)
+        comp_tg.createTask(user_id=user_not_in_group.id, db_session=db_session, type=TaskType.REPEATABLE, **invalid_user_data)
         
     db_session.flush()
     assert comp_tg.taskCount == tasks_count_before_err

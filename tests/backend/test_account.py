@@ -21,10 +21,11 @@ def test_Account_register(ecosystem):
     }
 
     new_account = Account()
-    result = new_account.register(db_session=db_session, **valid_form)
+    new_account.register(db_session=db_session, **valid_form)
     db_session.flush()
 
-    assert result is True 
+    # register() nie zwraca wartości; sukces = brak wyjątku + zapis konta
+    assert new_account.id is not None
     assert len(db_session.query(Account).all()) == accounts_before + 1
     
     saved_account = db_session.query(Account).filter_by(email=valid_form["email"]).first()
@@ -107,9 +108,10 @@ def test_Account_login(ecosystem):
         "password": "P@ssw0rd_A" # Zgodne z conftest.py
     }
 
-    result = existing_acc_a.login(db_session=db_session, **valid_login_form)
-    
-    assert result is True 
+    existing_acc_a.login(db_session=db_session, **valid_login_form)
+
+    # login() nie zwraca wartości; sukces = brak wyjątku
+    assert existing_acc_a.id is not None
 
     # -------------------------------------------------------------------
     # PRZYPADEK 2: BŁĄD (AuthenticationError) - błędne hasło dla istniejącego konta

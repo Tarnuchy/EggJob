@@ -4,13 +4,14 @@ from uuid import uuid4
 
 from src.backend.models import *
 
-def test_ProgressEntry_delete(db_session, eggs_bundle):
+def test_ProgressEntry_delete(db_session, eggs_bundle, user_a):
     # usuwamy istniejacy ProgressEntry, sprawdzamy czy sie usunal idk
+    # user_a jest ownerem grupy (admin), wiec ma prawo usunac wpis
     entry = eggs_bundle["entries"][0]
     comment_id = eggs_bundle["comments"][0].id
     val = entry.value
     progress_val = eggs_bundle["progress"].value
-    entry.delete(db_session)
+    entry.delete(db_session, user_a.id)
     assert db_session.query(ProgressEntry).filter_by(id=entry.id).first() is None
     assert db_session.query(TaskProgress).filter_by(id=entry.TaskProgressID).first().value == progress_val - val
     assert db_session.query(Comment).filter_by(id=comment_id).first() is None
