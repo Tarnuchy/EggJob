@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
+import { useRoute, type RouteProp } from '@react-navigation/native';
 import { TopBar } from '../../components/layout/TopBar';
 import {
   SegmentedControl,
@@ -13,10 +14,12 @@ import { MyFriendsTab } from './friends/MyFriendsTab';
 import { AddFriendTab } from './friends/AddFriendTab';
 import { InvitationsTab } from './friends/InvitationsTab';
 import type { FriendsTab } from './friends/types';
+import type { TabParamList } from '../../navigation/types';
 
 export const FriendsScreen = () => {
   const { t } = useTranslation();
-  const [activeTab, setActiveTab] = useState<FriendsTab>('myFriends');
+  const route = useRoute<RouteProp<TabParamList, 'Friends'>>();
+  const [activeTab, setActiveTab] = useState<FriendsTab>(route.params?.initialTab ?? 'myFriends');
 
   const tabOptions = useMemo<ReadonlyArray<SegmentedControlOption<FriendsTab>>>(
     () => [
