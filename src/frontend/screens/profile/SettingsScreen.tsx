@@ -7,7 +7,7 @@ import {
   SettingsRow,
   SettingsSection,
 } from '../../components/settings';
-import { useSystemNotifications } from '../../hooks/useSystemNotifications';
+import { useSystemNotificationsContext } from '../../application/SystemNotificationsProvider';
 import { presentTestNotification } from '../../notifications/systemNotifications';
 import { colors } from '../../theme/colors';
 import { spacing, SCREEN_PADDING_H } from '../../theme/spacing';
@@ -24,7 +24,7 @@ const PREFERENCE_LABEL_KEYS: Record<
 export const SettingsScreen = () => {
   const { t } = useTranslation();
   const { preference, setPreference } = useLocale();
-  const systemNotifications = useSystemNotifications();
+  const systemNotifications = useSystemNotificationsContext();
   const [pickerVisible, setPickerVisible] = useState(false);
 
   const handleSelect = (next: LocalePreference) => {
