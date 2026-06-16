@@ -2,7 +2,7 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useTranslation } from 'react-i18next';
 
-import { HomeScreen } from '../screens/tasks/HomeScreen';
+import { HomeScreen } from '../screens/home/HomeScreen';
 import { TasksScreen } from '../screens/tasks/TasksScreen';
 import { FriendsScreen } from '../screens/social/FriendsScreen';
 import { ProfileScreen } from '../screens/profile/ProfileScreen';
