@@ -3,12 +3,20 @@ import { ScrollView, StyleSheet, Switch } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useLocale, type LocalePreference } from '../../application/LocaleContext';
 import {
+  DeleteAccountModal,
   LanguagePickerModal,
   SettingsRow,
   SettingsSection,
 } from '../../components/settings';
-import { useSystemNotifications } from '../../hooks/useSystemNotifications';
+import { useSystemNotificationsContext } from '../../application/SystemNotificationsProvider';
 import { presentTestNotification } from '../../notifications/systemNotifications';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useAppState } from '../../application/AppStateContext';
+import { selectCurrentAccountId, selectCurrentUserId } from '../../application/selectors';
+import { profileService } from '../../services';
+import { AuthTokenStorage } from '../../services/http/AuthTokenStorage';
+import type { RootStackParamList } from '../../navigation/types';
 import { colors } from '../../theme/colors';
 import { spacing, SCREEN_PADDING_H } from '../../theme/spacing';
 
@@ -24,8 +32,39 @@ const PREFERENCE_LABEL_KEYS: Record<
 export const SettingsScreen = () => {
   const { t } = useTranslation();
   const { preference, setPreference } = useLocale();
-  const systemNotifications = useSystemNotifications();
+  const systemNotifications = useSystemNotificationsContext();
+  const { state, dispatch } = useAppState();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [pickerVisible, setPickerVisible] = useState(false);
+  const [deleteVisible, setDeleteVisible] = useState(false);
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | undefined>(undefined);
+
+  const handleConfirmDelete = async (password: string) => {
+    const accountId = selectCurrentAccountId(state);
+    const userId = selectCurrentUserId(state);
+    if (!accountId || !userId) {
+      setDeleteError(t('settings.account.errorGeneric'));
+      return;
+    }
+    setDeleteBusy(true);
+    setDeleteError(undefined);
+    const result = await profileService.deleteAccount(accountId, userId, password);
+    if (result.ok) {
+      await AuthTokenStorage.clearToken();
+      dispatch({ type: 'auth/logout' });
+      setDeleteBusy(false);
+      setDeleteVisible(false);
+      navigation.reset({ index: 0, routes: [{ name: 'Auth' }] });
+      return;
+    }
+    setDeleteBusy(false);
+    setDeleteError(
+      result.error.code === 'unauthorized' || result.error.code === 'validation'
+        ? t('settings.account.errorPassword')
+        : t('settings.account.errorGeneric'),
+    );
+  };
 
   const handleSelect = (next: LocalePreference) => {
     setPickerVisible(false);
@@ -79,12 +118,32 @@ export const SettingsScreen = () => {
             />
           ) : null}
         </SettingsSection>
+
+        <SettingsSection title={t('settings.sections.account')}>
+          <SettingsRow
+            icon="trash-outline"
+            label={t('settings.account.delete')}
+            onPress={() => {
+              setDeleteError(undefined);
+              setDeleteVisible(true);
+            }}
+          />
+        </SettingsSection>
       </ScrollView>
       <LanguagePickerModal
         visible={pickerVisible}
         current={preference}
         onSelect={handleSelect}
         onClose={() => setPickerVisible(false)}
+      />
+      <DeleteAccountModal
+        visible={deleteVisible}
+        busy={deleteBusy}
+        error={deleteError}
+        onCancel={() => {
+          if (!deleteBusy) setDeleteVisible(false);
+        }}
+        onConfirm={handleConfirmDelete}
       />
     </>
   );

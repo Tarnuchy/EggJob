@@ -325,6 +325,7 @@ const pl: Translation = {
     sections: {
       preferences: 'Preferencje',
       notifications: 'Powiadomienia',
+      account: 'Konto',
     },
     rows: {
       language: 'Język',
@@ -342,6 +343,17 @@ const pl: Translation = {
       permissionDenied: 'Włącz powiadomienia w ustawieniach urządzenia, aby je otrzymywać.',
       testTitle: 'EggJob',
       testBody: 'Powiadomienia są włączone — to test.',
+    },
+    account: {
+      delete: 'Usuń konto',
+      modalTitle: 'Usuń konto',
+      warning: 'To trwale usuwa Twoje konto i wszystkie dane. Tej operacji nie można cofnąć.',
+      passwordLabel: 'Hasło',
+      passwordPlaceholder: 'Wpisz swoje hasło',
+      confirm: 'Usuń konto',
+      cancel: 'Anuluj',
+      errorPassword: 'Nieprawidłowe hasło.',
+      errorGeneric: 'Nie udało się usunąć konta. Spróbuj ponownie.',
     },
   },
   relativeTime: {
@@ -408,6 +420,49 @@ const pl: Translation = {
     notFound: 'Nie znaleziono zasobu.',
     unknown: 'Coś poszło nie tak.',
     unknownAction: 'Nieznana akcja.',
+  },
+  home: {
+    greeting: {
+      morning: 'Dzień dobry',
+      afternoon: 'Dzień dobry',
+      evening: 'Dobry wieczór',
+      night: 'Dobranoc',
+      withName: '{{greeting}}, {{name}}',
+      subtitle: 'Zróbmy dziś coś dobrego.',
+    },
+    nudges: {
+      notifications: 'Masz {{count}} nieprzeczytanych powiadomień',
+      friendRequests: '{{count}} zaproszenia do znajomych czekają',
+    },
+    sections: {
+      activeTasks: 'Wróć do pracy',
+      groups: 'Twoje grupy',
+      activity: 'Aktywność znajomych',
+    },
+    groups: {
+      competitive: 'Rywalizacja',
+      cooperative: 'Współpraca',
+      bingoBadge: 'Bingo',
+      bingoWin: '🎉 Bingo!',
+      taskCount: 'Zadania: {{count}}',
+      memberCount: 'Członkowie: {{count}}',
+    },
+    empty: {
+      noActiveTasks: 'Brak aktywnych zadań — dotknij +, aby dodać.',
+      noGroups: 'Brak grup — dołącz lub utwórz, aby grać ze znajomymi.',
+      noActivity: 'Brak aktywności',
+      noActivityHint: 'Dodaj znajomych, aby zobaczyć ich postępy.',
+    },
+    onboarding: {
+      title: 'Witaj w EggJob',
+      message: 'Utwórz grupę lub dodaj znajomych, aby wspólnie śledzić postępy.',
+      ctaCreateGroup: 'Utwórz grupę',
+      ctaAddFriends: 'Dodaj znajomych',
+    },
+    feed: {
+      errorTitle: 'Nie udało się wczytać aktywności',
+      retry: 'Ponów',
+    },
   },
 };
 

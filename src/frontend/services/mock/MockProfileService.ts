@@ -55,8 +55,10 @@ class MockProfileService implements IProfileService {
     return { ok: true, value: undefined };
   }
 
-  async deleteAccount(accountId: string, userId: string): Promise<Result<void>> {
+  async deleteAccount(accountId: string, userId: string, password: string): Promise<Result<void>> {
     void accountId;
+    // mock nie przechowuje hasła profilu, więc nie weryfikuje go — backend zrobi to realnie
+    void password;
     delete this.profiles[userId];
     delete this.stats[userId];
     return { ok: true, value: undefined };

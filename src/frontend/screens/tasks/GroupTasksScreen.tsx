@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
@@ -53,10 +54,11 @@ export const GroupTasksScreen = ({ navigation, route }: any) => {
   const canEdit =
     group.ownerUserId === currentUserId || group.memberRoles[currentUserId] === 'admin';
 
-  // TODO: npx expo install expo-clipboard — then replace this Alert with
-  // Clipboard.setStringAsync(group.inviteCode) + inviteCodeCopied success toast
-  const handleCopyCode = () => {
-    Alert.alert(t('tasks.groups.inviteCodeSection'), group.inviteCode || '-');
+  const handleCopyCode = async () => {
+    const code = group?.inviteCode;
+    if (!code) return;
+    await Clipboard.setStringAsync(code);
+    showToast({ message: t('tasks.groups.inviteCodeCopied'), variant: 'success' });
   };
 
   const handleToggleDone = async (cell: NonNullable<BingoCell>) => {

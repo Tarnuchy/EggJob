@@ -323,6 +323,7 @@ const en = {
     sections: {
       preferences: 'Preferences',
       notifications: 'Notifications',
+      account: 'Account',
     },
     rows: {
       language: 'Language',
@@ -340,6 +341,17 @@ const en = {
       permissionDenied: 'Enable notifications in your device settings to receive them.',
       testTitle: 'EggJob',
       testBody: 'Notifications are on — this is a test.',
+    },
+    account: {
+      delete: 'Delete account',
+      modalTitle: 'Delete account',
+      warning: 'This permanently deletes your account and all your data. This cannot be undone.',
+      passwordLabel: 'Password',
+      passwordPlaceholder: 'Enter your password',
+      confirm: 'Delete account',
+      cancel: 'Cancel',
+      errorPassword: 'Incorrect password.',
+      errorGeneric: 'Could not delete the account. Please try again.',
     },
   },
   relativeTime: {
@@ -406,6 +418,49 @@ const en = {
     notFound: 'Resource not found.',
     unknown: 'Something went wrong.',
     unknownAction: 'Unknown action.',
+  },
+  home: {
+    greeting: {
+      morning: 'Good morning',
+      afternoon: 'Good afternoon',
+      evening: 'Good evening',
+      night: 'Good night',
+      withName: '{{greeting}}, {{name}}',
+      subtitle: "Let's make today count.",
+    },
+    nudges: {
+      notifications: 'You have {{count}} unread notifications',
+      friendRequests: '{{count}} friend requests waiting',
+    },
+    sections: {
+      activeTasks: 'Jump back in',
+      groups: 'Your groups',
+      activity: "Friends' activity",
+    },
+    groups: {
+      competitive: 'Competitive',
+      cooperative: 'Cooperative',
+      bingoBadge: 'Bingo',
+      bingoWin: '🎉 Bingo!',
+      taskCount: '{{count}} tasks',
+      memberCount: '{{count}} members',
+    },
+    empty: {
+      noActiveTasks: 'No active tasks — tap + to add one.',
+      noGroups: 'No groups yet — join or create one to play with friends.',
+      noActivity: 'No activity yet',
+      noActivityHint: 'Add friends to see their progress here.',
+    },
+    onboarding: {
+      title: 'Welcome to EggJob',
+      message: 'Create a group or add friends to start tracking progress together.',
+      ctaCreateGroup: 'Create a group',
+      ctaAddFriends: 'Add friends',
+    },
+    feed: {
+      errorTitle: "Couldn't load activity",
+      retry: 'Retry',
+    },
   },
 } as const;
 
