@@ -354,6 +354,10 @@ const pl: Translation = {
       cancel: 'Anuluj',
       errorPassword: 'Nieprawidłowe hasło.',
       errorGeneric: 'Nie udało się usunąć konta. Spróbuj ponownie.',
+      logout: 'Wyloguj się',
+      logoutTitle: 'Wylogować się?',
+      logoutMessage: 'Aby ponownie korzystać z konta, musisz zalogować się ponownie.',
+      logoutConfirm: 'Wyloguj się',
     },
   },
   relativeTime: {

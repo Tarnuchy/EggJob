@@ -39,6 +39,7 @@ export function AppNavigator() {
       <Stack.Navigator
         screenOptions={{
           headerShown: false,
+          freezeOnBlur: true,
           contentStyle: { backgroundColor: colors.background },
         }}
       >

@@ -8,8 +8,23 @@
       "distribution": "internal"
     },
     "preview": {
-      "distribution": "internal"
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_USE_HTTP_SERVICES": "true",
+        "EXPO_PUBLIC_API_URL": "https://eggjob.up.railway.app"
+      }
     },
-    "production": {}
+    "production": {
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_USE_HTTP_SERVICES": "true",
+        "EXPO_PUBLIC_API_URL": "https://eggjob.up.railway.app"
+      }
+    }
   }
 }

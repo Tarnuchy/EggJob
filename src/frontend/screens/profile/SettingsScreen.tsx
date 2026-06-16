@@ -14,8 +14,9 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAppState } from '../../application/AppStateContext';
 import { selectCurrentAccountId, selectCurrentUserId } from '../../application/selectors';
-import { profileService } from '../../services';
+import { authService, profileService } from '../../services';
 import { AuthTokenStorage } from '../../services/http/AuthTokenStorage';
+import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import type { RootStackParamList } from '../../navigation/types';
 import { colors } from '../../theme/colors';
 import { spacing, SCREEN_PADDING_H } from '../../theme/spacing';
@@ -39,6 +40,14 @@ export const SettingsScreen = () => {
   const [deleteVisible, setDeleteVisible] = useState(false);
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [deleteError, setDeleteError] = useState<string | undefined>(undefined);
+  const [logoutVisible, setLogoutVisible] = useState(false);
+
+  const handleLogout = async () => {
+    setLogoutVisible(false);
+    await authService.logout();
+    dispatch({ type: 'auth/logout' });
+    navigation.reset({ index: 0, routes: [{ name: 'Auth' }] });
+  };
 
   const handleConfirmDelete = async (password: string) => {
     const accountId = selectCurrentAccountId(state);
@@ -121,12 +130,18 @@ export const SettingsScreen = () => {
 
         <SettingsSection title={t('settings.sections.account')}>
           <SettingsRow
+            icon="log-out-outline"
+            label={t('settings.account.logout')}
+            onPress={() => setLogoutVisible(true)}
+          />
+          <SettingsRow
             icon="trash-outline"
             label={t('settings.account.delete')}
             onPress={() => {
               setDeleteError(undefined);
               setDeleteVisible(true);
             }}
+            showDivider
           />
         </SettingsSection>
       </ScrollView>
@@ -144,6 +159,15 @@ export const SettingsScreen = () => {
           if (!deleteBusy) setDeleteVisible(false);
         }}
         onConfirm={handleConfirmDelete}
+      />
+      <ConfirmDialog
+        visible={logoutVisible}
+        title={t('settings.account.logoutTitle')}
+        message={t('settings.account.logoutMessage')}
+        confirmLabel={t('settings.account.logoutConfirm')}
+        cancelLabel={t('settings.account.cancel')}
+        onConfirm={() => void handleLogout()}
+        onCancel={() => setLogoutVisible(false)}
       />
     </>
   );

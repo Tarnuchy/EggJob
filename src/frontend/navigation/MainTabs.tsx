@@ -21,6 +21,7 @@ export const MainTabs = () => {
       tabBar={(props) => <CustomTabBar {...props} />}
       screenOptions={{
         headerShown: false,
+        freezeOnBlur: true,
         sceneStyle: { backgroundColor: colors.background },
       }}
     >

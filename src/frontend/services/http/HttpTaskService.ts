@@ -260,11 +260,21 @@ export class HttpTaskService implements ITaskService {
 
   async deleteComment(input: { commentId: string; progressEntryId: string }): Promise<Result<void>> {
     try {
-      const res = await fetch(`${this.baseUrl}/comments/${encodeURIComponent(input.commentId)}`, {
-        method: 'DELETE',
-        headers: JSON_HEADERS,
-      });
-      if (!res.ok) return { ok: false, error: { code: `http-${res.status}` } };
+      const actingUser = CurrentUser.get();
+      if (!actingUser) return { ok: false, error: { code: 'unauthorized' } };
+      const headers = await buildAuthHeaders();
+      const res = await fetch(
+        `${this.baseUrl}/users/${encodeURIComponent(actingUser)}/comments/${encodeURIComponent(
+          input.commentId,
+        )}`,
+        { method: 'DELETE', headers: { ...headers } },
+      );
+      if (!res.ok) {
+        if (res.status === 401) return { ok: false, error: { code: 'unauthorized' } };
+        if (res.status === 403) return { ok: false, error: { code: 'forbidden' } };
+        if (res.status === 404) return { ok: false, error: { code: 'not-found' } };
+        return { ok: false, error: { code: `http-${res.status}` } };
+      }
       return { ok: true, value: undefined };
     } catch {
       return { ok: false, error: { code: 'network' } };
