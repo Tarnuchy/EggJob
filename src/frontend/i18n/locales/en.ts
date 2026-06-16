@@ -323,6 +323,7 @@ const en = {
     sections: {
       preferences: 'Preferences',
       notifications: 'Notifications',
+      account: 'Account',
     },
     rows: {
       language: 'Language',
@@ -340,6 +341,17 @@ const en = {
       permissionDenied: 'Enable notifications in your device settings to receive them.',
       testTitle: 'EggJob',
       testBody: 'Notifications are on — this is a test.',
+    },
+    account: {
+      delete: 'Delete account',
+      modalTitle: 'Delete account',
+      warning: 'This permanently deletes your account and all your data. This cannot be undone.',
+      passwordLabel: 'Password',
+      passwordPlaceholder: 'Enter your password',
+      confirm: 'Delete account',
+      cancel: 'Cancel',
+      errorPassword: 'Incorrect password.',
+      errorGeneric: 'Could not delete the account. Please try again.',
     },
   },
   relativeTime: {
