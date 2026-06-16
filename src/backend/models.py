@@ -555,7 +555,12 @@ class TaskGroup(Base):
     inviteCode: Mapped[str | None] = mapped_column(String(64), nullable=True)
     createdAt: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=utcnow)
     type: Mapped[TaskGroupType] = mapped_column(
-        SAEnum(TaskGroupType, name="task_group_type", native_enum=True),
+        SAEnum(
+            TaskGroupType,
+            name="task_group_type",
+            native_enum=True,
+            values_callable=lambda enum_cls: [member.value for member in enum_cls],
+        ),
         nullable=False,
     )
 

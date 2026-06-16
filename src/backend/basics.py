@@ -131,6 +131,59 @@ def list_user_friends(
     )
 
 
+# Trasy literalne MUSZĄ być przed /users/{user_id} i /taskgroups/{group_id},
+# inaczej "search" zostanie złapane jako {id} i odrzucone jako niepoprawny UUID (422).
+@router.get("/users/search", response_model=FriendsListResponse)
+def search_users(
+    q: str = Query(min_length=1),
+    exclude_user_id: UUID | None = Query(default=None),
+    limit: int = Query(default=20, ge=1, le=100),
+    db: Session = Depends(get_db),
+):
+    query = db.query(User).filter(User.username.ilike(f"%{q}%"))
+    if exclude_user_id is not None:
+        query = query.filter(User.id != exclude_user_id)
+
+    users = query.order_by(User.username.asc()).limit(limit).all()
+    return FriendsListResponse(
+        count=len(users),
+        items=[_user_payload(user) for user in users],
+    )
+
+
+@router.get("/taskgroups/search", response_model=TaskGroupListResponse)
+def search_taskgroups(
+    q: str = Query(min_length=1),
+    privacy: str | None = Query(default="public"),
+    limit: int = Query(default=20, ge=1, le=100),
+    db: Session = Depends(get_db),
+):
+    query = db.query(TaskGroup).filter(TaskGroup.name.ilike(f"%{q}%"))
+
+    if privacy is not None:
+        try:
+            privacy_value = PrivacyLevel(privacy)
+        except ValueError as exc:
+            raise ValidationError("Invalid privacy") from exc
+        query = query.filter(TaskGroup.privacy == privacy_value)
+
+    groups = query.order_by(TaskGroup.name.asc()).limit(limit).all()
+    items = [
+        {
+            "group_id": str(group.id),
+            "name": group.name,
+            "privacy": group.privacy.value if group.privacy else None,
+            "type": group.type.value if group.type else None,
+            "role": None,
+            "is_bingo": group.isBingo,
+            "task_count": group.taskCount,
+        }
+        for group in groups
+    ]
+
+    return TaskGroupListResponse(count=len(items), items=items)
+
+
 @router.get("/users/{user_id}", response_model=UserSummaryResponse)
 def get_user(user_id: UUID, db: Session = Depends(get_db)):
     user = db.query(User).filter_by(id=user_id).first()
@@ -210,57 +263,6 @@ def get_task_params(task_id: UUID, db: Session = Depends(get_db)):
         raise NotFoundError("TaskParams not found")
 
     return _task_params_payload(params)
-
-
-@router.get("/users/search", response_model=FriendsListResponse)
-def search_users(
-    q: str = Query(min_length=1),
-    exclude_user_id: UUID | None = Query(default=None),
-    limit: int = Query(default=20, ge=1, le=100),
-    db: Session = Depends(get_db),
-):
-    query = db.query(User).filter(User.username.ilike(f"%{q}%"))
-    if exclude_user_id is not None:
-        query = query.filter(User.id != exclude_user_id)
-
-    users = query.order_by(User.username.asc()).limit(limit).all()
-    return FriendsListResponse(
-        count=len(users),
-        items=[_user_payload(user) for user in users],
-    )
-
-
-@router.get("/taskgroups/search", response_model=TaskGroupListResponse)
-def search_taskgroups(
-    q: str = Query(min_length=1),
-    privacy: str | None = Query(default="public"),
-    limit: int = Query(default=20, ge=1, le=100),
-    db: Session = Depends(get_db),
-):
-    query = db.query(TaskGroup).filter(TaskGroup.name.ilike(f"%{q}%"))
-
-    if privacy is not None:
-        try:
-            privacy_value = PrivacyLevel(privacy)
-        except ValueError as exc:
-            raise ValidationError("Invalid privacy") from exc
-        query = query.filter(TaskGroup.privacy == privacy_value)
-
-    groups = query.order_by(TaskGroup.name.asc()).limit(limit).all()
-    items = [
-        {
-            "group_id": str(group.id),
-            "name": group.name,
-            "privacy": group.privacy.value if group.privacy else None,
-            "type": group.type.value if group.type else None,
-            "role": None,
-            "is_bingo": group.isBingo,
-            "task_count": group.taskCount,
-        }
-        for group in groups
-    ]
-
-    return TaskGroupListResponse(count=len(items), items=items)
 
 
 @router.post("/taskgroups/join/{invite_code}", response_model=MessageResponse)
