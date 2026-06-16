@@ -793,13 +793,14 @@ class CooperativeTaskGroup(TaskGroup):
                 raise StateError("Owner is not a member of this group")
             
             for task in self.tasks:
+                task_type = task.type if isinstance(task.type, TaskType) else TaskType(task.type)
                 for member in self.members:
                     if member.id == owner_member.id:
                         continue
-                    progress = RepeatableTaskProgress() if task.type == TaskType.REPEATABLE.value else (OneTimeTaskProgress() if task.type == TaskType.ONE_TIME.value else (EndlessTaskProgress() if task.type == TaskType.ENDLESS.value else ChallengeTaskProgress())) #TODO za długie XD
+                    progress = _build_task_progress(task_type)
                     progress.groupMemberID = member.id
                     progress.taskID = task.id
-                    progress.type = TaskType(task.type) if isinstance(task.type, str) else task.type
+                    # dyskryminator `type` ustawia mapper (mała wartość identyfikatora)
                     db_session.add(progress)
                 db_session.flush()
 
