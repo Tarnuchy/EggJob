@@ -110,5 +110,5 @@ npm run typecheck # type-check without emitting
 
 ---
 
-<p align="center"><em>EggJob — dont put all your eggs in one job
+<p align="center"><em>EggJob — don't put all your eggs in one job
 </em></p>
