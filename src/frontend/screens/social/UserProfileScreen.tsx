@@ -12,8 +12,10 @@ import { OutlineButton } from '../../components/common/OutlineButton';
 import { EmptyState } from '../../components/common/EmptyState';
 import { LoadingIndicator } from '../../components/common/LoadingIndicator';
 import { ProfileStats } from '../../components/common/ProfileStats';
+import { PublicGroupsList } from '../../components/common/PublicGroupsList';
 import { ActivityItem } from './components/ActivityItem';
 import { useUserProfile } from '../../hooks/useUserProfile';
+import { useUserPublicGroups } from '../../hooks/useUserPublicGroups';
 import { useUserStats } from '../../hooks/useUserStats';
 import { useFriendRelationship } from './hooks/useFriendRelationship';
 import { useFriendActivity } from './hooks/useFriendActivity';
@@ -32,6 +34,7 @@ export const UserProfileScreen = () => {
 
   const { profile, loading: profileLoading, error: profileError } = useUserProfile(userId);
   const { stats } = useUserStats(userId);
+  const { groups: publicGroups } = useUserPublicGroups(userId);
   const relationship = useFriendRelationship(userId);
   const { items: activity, loading: activityLoading } = useFriendActivity(userId);
 
@@ -147,6 +150,8 @@ export const UserProfileScreen = () => {
           </View>
 
           {stats ? <ProfileStats stats={stats} /> : null}
+
+          <PublicGroupsList groups={publicGroups} />
 
           {renderRelationship()}
 

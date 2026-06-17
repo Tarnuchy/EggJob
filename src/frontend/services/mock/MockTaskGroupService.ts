@@ -1,4 +1,5 @@
-import type { ITaskGroupService } from '../types/ITaskGroupService';
+import type { ITaskGroupService, UserGroupSummary } from '../types/ITaskGroupService';
+import type { TaskGroupPrivacy } from '../../application/state';
 import type { Result } from '../types/index';
 
 class MockTaskGroupService implements ITaskGroupService {
@@ -31,6 +32,22 @@ class MockTaskGroupService implements ITaskGroupService {
 
   private invitations: Record<string, { groupId: string; fromUserId: string; toUserId: string }> =
     {};
+
+  async listUserGroups(userId: string): Promise<Result<UserGroupSummary[]>> {
+    const toPrivacy = (value: string): TaskGroupPrivacy =>
+      value === 'public' ? 'public' : value === 'friends' ? 'friends' : 'private';
+    const items = Object.entries(this.groups)
+      .filter(([, g]) => g.ownerUserId === userId || g.memberIds.includes(userId))
+      .map(([id, g]) => ({
+        id,
+        name: g.name,
+        privacy: toPrivacy(g.privacy),
+        type: g.type,
+        isBingo: g.isBingo,
+        taskCount: g.taskIds.length,
+      }));
+    return { ok: true, value: items };
+  }
 
   async joinByInviteCode(input: { inviteCode: string; userId: string }): Promise<Result<void>> {
     // Kod jest walidowany lokalnie wobec stanu reducera przed wywołaniem serwisu (tryb mock),

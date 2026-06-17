@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -9,8 +9,11 @@ import { AppText } from '../../components/common/AppText';
 import { EmptyState } from '../../components/common/EmptyState';
 import { LoadingIndicator } from '../../components/common/LoadingIndicator';
 import { ProfileStats } from '../../components/common/ProfileStats';
+import { PublicGroupsList } from '../../components/common/PublicGroupsList';
 import { SettingsRow } from '../../components/settings';
 import { profileService } from '../../services';
+import { useAppState } from '../../application/AppStateContext';
+import { selectPublicTaskGroupsByMember } from '../../application/selectors';
 import { useCurrentUserId } from '../../hooks/useCurrentUserId';
 import { useUserStats } from '../../hooks/useUserStats';
 import { useAppNavigation } from '../../hooks/useAppNavigation';
@@ -24,7 +27,20 @@ export const ProfileScreen = () => {
   const navigation = useAppNavigation();
   const { setOpenPanel } = usePanelContext();
   const currentUserId = useCurrentUserId();
+  const { state } = useAppState();
   const { stats, loading: statsLoading } = useUserStats(currentUserId);
+
+  const publicGroups = useMemo(
+    () =>
+      selectPublicTaskGroupsByMember(state, currentUserId).map(({ id, group }) => ({
+        id,
+        name: group.name,
+        type: group.type,
+        isBingo: group.isBingo,
+        taskCount: group.taskIds.length,
+      })),
+    [state, currentUserId],
+  );
 
   const [username, setUsername] = useState<string | null>(null);
   const [photoUrl, setPhotoUrl] = useState<string | undefined>(undefined);
@@ -81,6 +97,11 @@ export const ProfileScreen = () => {
             ) : statsLoading ? (
               <ActivityIndicator color={colors.primary} />
             ) : null}
+
+            <PublicGroupsList
+              groups={publicGroups}
+              onPressGroup={(groupId) => navigation.navigate('GroupTasks', { groupId })}
+            />
 
             <View style={styles.card}>
               <SettingsRow

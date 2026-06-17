@@ -47,6 +47,17 @@ export function selectTaskGroupsByMember(
     .map(([id, group]) => ({ id, group }));
 }
 
+/**
+ * Public groups the user belongs to — these are surfaced on the profile. Private (and the legacy
+ * "friends") groups are intentionally hidden.
+ */
+export function selectPublicTaskGroupsByMember(
+  state: FrontendState,
+  userId: string,
+): Array<{ id: string; group: TaskGroup }> {
+  return selectTaskGroupsByMember(state, userId).filter(({ group }) => group.privacy === 'public');
+}
+
 export function selectActiveNotifications(
   state: FrontendState,
 ): Array<{ id: string; notification: Notification }> {

@@ -1,8 +1,17 @@
-import type { ITaskGroupService } from '../types/ITaskGroupService';
+import type { ITaskGroupService, UserGroupSummary } from '../types/ITaskGroupService';
 import type { Result } from '../types/index';
 import { API_BASE_URL } from './config';
 import { buildAuthHeaders } from './buildAuthHeaders';
 import { CurrentUser } from './CurrentUser';
+
+interface UserGroupItemPayload {
+  group_id?: string;
+  name?: string;
+  privacy?: string | null;
+  type?: string | null;
+  is_bingo?: boolean;
+  task_count?: number;
+}
 
 const JSON_HEADERS = { Accept: 'application/json' };
 
@@ -36,6 +45,42 @@ export class HttpTaskGroupService implements ITaskGroupService {
         return { ok: false, error: { code: 'not-found' } };
       }
       return { ok: true, value: member.id };
+    } catch {
+      return { ok: false, error: { code: 'invalid-response' } };
+    }
+  }
+
+  async listUserGroups(userId: string): Promise<Result<UserGroupSummary[]>> {
+    let response: Response;
+    try {
+      const headers = await buildAuthHeaders();
+      response = await fetch(`${this.baseUrl}/users/${encodeURIComponent(userId)}/taskgroups`, {
+        method: 'GET',
+        headers: { ...headers, ...JSON_HEADERS },
+      });
+    } catch {
+      return { ok: false, error: { code: 'network' } };
+    }
+
+    if (!response.ok) {
+      if (response.status === 404) return { ok: false, error: { code: 'not-found' } };
+      if (response.status === 401) return { ok: false, error: { code: 'unauthorized' } };
+      return { ok: false, error: { code: `http-${response.status}` } };
+    }
+
+    try {
+      const parsed = (await response.json()) as { items?: UserGroupItemPayload[] };
+      const items: UserGroupSummary[] = (parsed.items ?? [])
+        .filter((g): g is UserGroupItemPayload & { group_id: string } => typeof g.group_id === 'string')
+        .map((g) => ({
+          id: g.group_id,
+          name: g.name ?? '',
+          privacy: g.privacy === 'public' ? 'public' : g.privacy === 'friends' ? 'friends' : 'private',
+          type: g.type === 'competitive' ? 'competitive' : 'cooperative',
+          isBingo: Boolean(g.is_bingo),
+          taskCount: typeof g.task_count === 'number' ? g.task_count : 0,
+        }));
+      return { ok: true, value: items };
     } catch {
       return { ok: false, error: { code: 'invalid-response' } };
     }

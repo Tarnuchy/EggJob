@@ -1,8 +1,21 @@
 import type { Result } from './index';
 import type { TaskGroupPrivacy, TaskGroupType } from '../../application/state';
 
+/** Lightweight summary of a group a given user belongs to (used on profiles). */
+export interface UserGroupSummary {
+  id: string;
+  name: string;
+  privacy: TaskGroupPrivacy;
+  type: TaskGroupType;
+  isBingo: boolean;
+  taskCount: number;
+}
+
 export interface ITaskGroupService {
   joinByInviteCode(input: { inviteCode: string; userId: string }): Promise<Result<void>>;
+
+  /** Lists the (active) groups a user belongs to. Callers filter by privacy as needed. */
+  listUserGroups(userId: string): Promise<Result<UserGroupSummary[]>>;
 
   createGroup(input: {
     groupId: string;

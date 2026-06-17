@@ -388,6 +388,11 @@ const en = {
       completedTasks: 'Completed',
       friends: 'Friends',
     },
+    publicGroups: {
+      title: 'Public groups',
+      empty: 'No public groups yet.',
+      bingoBadge: 'Bingo',
+    },
     actions: {
       edit: 'Edit Profile',
       settings: 'Settings',

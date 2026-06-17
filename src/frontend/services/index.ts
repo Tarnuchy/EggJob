@@ -21,6 +21,7 @@ export type {
   UploadableImage,
   NotificationItem,
   UserStats,
+  UserGroupSummary,
   UserSearchResult,
   FeedItem,
   FeedItemType,

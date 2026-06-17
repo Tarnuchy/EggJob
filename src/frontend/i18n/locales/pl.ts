@@ -390,6 +390,11 @@ const pl: Translation = {
       completedTasks: 'Ukończone',
       friends: 'Znajomi',
     },
+    publicGroups: {
+      title: 'Publiczne grupy',
+      empty: 'Brak publicznych grup.',
+      bingoBadge: 'Bingo',
+    },
     actions: {
       edit: 'Edytuj profil',
       settings: 'Ustawienia',
