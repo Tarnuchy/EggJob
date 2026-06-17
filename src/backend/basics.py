@@ -427,25 +427,43 @@ def user_stats(user_id: UUID, db: Session = Depends(get_db)):
         for f in friendships
     ]
 
+    # Per-member progresses (competitive groups, or any progress attributed to this user).
     progress_rows = (
         db.query(TaskProgress)
         .join(GroupMember, TaskProgress.groupMemberID == GroupMember.id)
         .filter(GroupMember.userID == user.id, GroupMember.active.is_(True))
         .all()
     )
+
+    # Cooperative groups (including bingo) keep a single shared progress with no groupMemberID.
+    # Those tasks belong to every active member, so they must count toward each member's stats —
+    # otherwise bingo/cooperative tasks would silently vanish from the profile (bug fix).
+    member_group_ids = [
+        gm.groupID
+        for gm in db.query(GroupMember)
+        .filter(GroupMember.userID == user.id, GroupMember.active.is_(True))
+        .all()
+    ]
+    shared_rows = (
+        db.query(TaskProgress)
+        .join(Task, TaskProgress.taskID == Task.id)
+        .filter(
+            TaskProgress.groupMemberID.is_(None),
+            Task.groupID.in_(member_group_ids),
+        )
+        .all()
+        if member_group_ids
+        else []
+    )
+
+    all_rows = progress_rows + shared_rows
     done_value = TaskStatus.DONE.value
-    active_tasks = sum(
-        1
-        for progress in progress_rows
-        if (progress.status.value if hasattr(progress.status, "value") else progress.status)
-        != done_value
-    )
-    completed_tasks = sum(
-        1
-        for progress in progress_rows
-        if (progress.status.value if hasattr(progress.status, "value") else progress.status)
-        == done_value
-    )
+
+    def _status_value(progress: TaskProgress) -> str:
+        return progress.status.value if hasattr(progress.status, "value") else progress.status
+
+    active_tasks = sum(1 for progress in all_rows if _status_value(progress) != done_value)
+    completed_tasks = sum(1 for progress in all_rows if _status_value(progress) == done_value)
 
     streak_rows = (
         db.query(RepeatableTaskProgress)

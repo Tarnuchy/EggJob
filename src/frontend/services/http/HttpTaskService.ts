@@ -184,7 +184,6 @@ export class HttpTaskService implements ITaskService {
         headers: { ...headers },
       });
       if (!taskRes.ok) {
-        if (__DEV__) console.log('[addProgress] GET /tasks/{id} ->', taskRes.status);
         return { ok: false, error: { code: 'not-found' } };
       }
       const taskDetail = (await taskRes.json()) as { task?: { group_id?: string } };
@@ -209,7 +208,6 @@ export class HttpTaskService implements ITaskService {
         headers: { ...headers },
       });
       if (!progressRes.ok) {
-        if (__DEV__) console.log('[addProgress] GET /tasks/{id}/progress ->', progressRes.status);
         return { ok: false, error: { code: 'not-found' } };
       }
       const parsed = (await progressRes.json()) as {
@@ -226,20 +224,6 @@ export class HttpTaskService implements ITaskService {
       const item =
         validRows.find((p) => myMemberId !== null && p.group_member_id === myMemberId) ??
         validRows[0];
-      if (__DEV__) {
-        // eslint-disable-next-line no-console
-        console.log('[addProgress] resolved', {
-          taskId: input.taskId,
-          actingUser,
-          groupId,
-          myMemberId,
-          validRowIds: validRows.map((r) => r.id),
-          selectedId: item ? item.id : null,
-          value: input.value,
-          note: input.note,
-          photoUrl: input.photoUrl ?? null,
-        });
-      }
       if (!item) return { ok: false, error: { code: 'not-found' } };
 
       const updateRes = await fetch(
@@ -255,15 +239,10 @@ export class HttpTaskService implements ITaskService {
         },
       );
       if (!updateRes.ok) {
-        if (__DEV__) {
-          // eslint-disable-next-line no-console
-          console.log('[addProgress] UPDATE ->', updateRes.status, await updateRes.text().catch(() => ''));
-        }
         return { ok: false, error: { code: `http-${updateRes.status}` } };
       }
       return { ok: true, value: undefined };
-    } catch (e) {
-      if (__DEV__) console.log('[addProgress] network error', e instanceof Error ? e.message : String(e));
+    } catch {
       return { ok: false, error: { code: 'network' } };
     }
   }

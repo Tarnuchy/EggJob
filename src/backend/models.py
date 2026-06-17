@@ -607,8 +607,11 @@ class TaskGroup(Base):
         if new_data.get("privacy") is not None:
             self.privacy = new_data["privacy"]
         if new_data.get("isBingo") is not None and new_data["isBingo"] != self.isBingo:
-            if new_data["isBingo"] and self.taskCount not in (9, 16, 25):
-                raise ValidationError("Bingo group must have exactly 9, 16 or 25 tasks")
+            # Validate against the real number of tasks, not the stored counter, which can drift.
+            if new_data["isBingo"]:
+                actual_count = db_session.query(Task).filter_by(groupID=self.id).count()
+                if actual_count not in (9, 16, 25):
+                    raise ValidationError("Bingo group must have exactly 9, 16 or 25 tasks")
             self.isBingo = new_data["isBingo"]
         db_session.flush()
 
@@ -721,30 +724,62 @@ class CompetitiveTaskGroup(TaskGroup):
             raise PermissionDeniedError("User does not have permission to change group type")
         if new_type == TaskGroupType.COMPETITIVE:
             return
-        elif new_type == TaskGroupType.COOPERATIVE:
-            owner_member = db_session.query(GroupMember).filter_by(groupID=self.id, userID=self.ownerID).first()
-            if owner_member is None:
-                raise StateError("Owner is not a member of this group")
+        if new_type != TaskGroupType.COOPERATIVE:
+            raise ValidationError("Invalid group type")
 
-            for task in self.tasks:
-                owner_progress = db_session.query(TaskProgress).filter_by(groupMemberID=owner_member.id, taskID=task.id).first()
-                for progress in db_session.query(TaskProgress).filter_by(taskID=task.id).all():
-                    if progress.id != owner_progress.id:
-                        owner_progress._silentUpdateProgress(db_session, progress.value)
-                        for entry in db_session.query(ProgressEntry).filter_by(TaskProgressID=progress.id).all():
-                            entry.TaskProgressID = owner_progress.id
-                            owner_progress._silentUpdateProgress(db_session, entry.value)
-                        db_session.delete(progress)
+        # Merge each task's per-member progresses into one shared progress (groupMemberID=None),
+        # summing the values and re-homing every progress entry onto it. A brand-new shared row is
+        # created and the old per-member rows are removed via Core statements; this avoids both the
+        # mid-flush `_silentUpdateProgress` path that previously raised "Can't delete ... using NULL
+        # for primary key" and the unit-of-work confusion of mutating a survivor in place.
+        # Query tasks fresh — self.tasks may be a stale relationship (e.g. loaded empty during addFriend).
+        for task in db_session.query(Task).filter_by(groupID=self.id).all():
+            old_progresses = db_session.query(TaskProgress).filter_by(taskID=task.id).all()
+            if not old_progresses:
+                continue
+            old_ids = [progress.id for progress in old_progresses]
+            total = sum(progress.value for progress in old_progresses)
+            task_type = task.type if isinstance(task.type, TaskType) else TaskType(task.type)
 
-            self.type = TaskGroupType.COOPERATIVE
+            shared = _build_task_progress(task_type)
+            shared.taskID = task.id
+            shared.groupMemberID = None
+            shared.value = total
+            if task.goal is not None and total >= task.goal:
+                shared.status = TaskStatus.DONE
+            elif total != 0:
+                shared.status = TaskStatus.IN_PROGRESS
+            else:
+                shared.status = TaskStatus.TODO
+            db_session.add(shared)
+            db_session.flush()
+
             db_session.execute(
-                CompetitiveTaskGroup.__table__.delete().where(CompetitiveTaskGroup.__table__.c.id == self.id)
+                ProgressEntry.__table__.update()
+                .where(ProgressEntry.__table__.c.TaskProgressID.in_(old_ids))
+                .values(TaskProgressID=shared.id)
             )
             db_session.execute(
-                CooperativeTaskGroup.__table__.insert().values(id=self.id)
+                TaskProgress.__table__.delete().where(TaskProgress.__table__.c.id.in_(old_ids))
             )
-        
+            for progress in old_progresses:
+                db_session.expunge(progress)
         db_session.flush()
+
+        # Move the joined-table-inheritance row to the cooperative subtype. SQLAlchemy cannot change
+        # an instance's polymorphic identity in place, so do it with Core statements and detach the
+        # now-stale instance — the API only returns a message and re-loads the group fresh elsewhere.
+        group_id = self.id
+        db_session.execute(
+            CompetitiveTaskGroup.__table__.delete().where(CompetitiveTaskGroup.__table__.c.id == group_id)
+        )
+        db_session.execute(CooperativeTaskGroup.__table__.insert().values(id=group_id))
+        db_session.execute(
+            TaskGroup.__table__.update()
+            .where(TaskGroup.__table__.c.id == group_id)
+            .values(type=TaskGroupType.COOPERATIVE)
+        )
+        db_session.expunge(self)
 
 class CooperativeTaskGroup(TaskGroup):
     __tablename__ = "cooperative_task_groups"
@@ -787,40 +822,87 @@ class CooperativeTaskGroup(TaskGroup):
             raise PermissionDeniedError("User does not have permission to change group type")
         if new_type == TaskGroupType.COOPERATIVE:
             return
-        elif new_type == TaskGroupType.COMPETITIVE:
-            owner_member = db_session.query(GroupMember).filter_by(groupID=self.id, userID=self.ownerID).first()
-            if owner_member is None:
-                raise StateError("Owner is not a member of this group")
-            
-            for task in self.tasks:
-                task_type = task.type if isinstance(task.type, TaskType) else TaskType(task.type)
-                for member in self.members:
-                    if member.id == owner_member.id:
-                        continue
-                    progress = _build_task_progress(task_type)
-                    progress.groupMemberID = member.id
-                    progress.taskID = task.id
-                    # dyskryminator `type` ustawia mapper (mała wartość identyfikatora)
-                    db_session.add(progress)
-                db_session.flush()
+        if new_type != TaskGroupType.COMPETITIVE:
+            raise ValidationError("Invalid group type")
 
-                owner_progress = db_session.query(TaskProgress).filter_by(groupMemberID=owner_member.id, taskID=task.id).first()
-                for entry in owner_progress.entries:
-                    if entry.memberID != owner_member.id:
-                        real_progress = db_session.query(TaskProgress).filter_by(groupMemberID=entry.memberID, taskID=task.id).first()
-                        entry.TaskProgressID = real_progress.id
-                        real_progress._silentUpdateProgress(db_session, entry.value)
-                        owner_progress._silentUpdateProgress(db_session, -entry.value)
-                        
-            self.type = TaskGroupType.COMPETITIVE
-            db_session.execute(
-                CooperativeTaskGroup.__table__.delete().where(CooperativeTaskGroup.__table__.c.id == self.id)
+        active_members = db_session.query(GroupMember).filter_by(groupID=self.id, active=True).all()
+        owner_member = next((m for m in active_members if m.userID == self.ownerID), None)
+        if owner_member is None:
+            raise StateError("Owner is not a member of this group")
+
+        # Split the single shared progress into one progress per active member. Each entry is
+        # re-homed onto its author's progress (owner as fallback) and every member's value is
+        # recomputed from their entries. Old shared rows are neutralised (groupMemberID=None,
+        # which is distinct under the unique constraint) before the new rows are added, so the
+        # (groupMemberID, taskID) uniqueness never collides mid-flush.
+        # Query tasks fresh — self.tasks may be a stale relationship (e.g. loaded empty during addFriend).
+        for task in db_session.query(Task).filter_by(groupID=self.id).all():
+            task_type = task.type if isinstance(task.type, TaskType) else TaskType(task.type)
+            old_progresses = db_session.query(TaskProgress).filter_by(taskID=task.id).all()
+            old_ids = [progress.id for progress in old_progresses]
+            entries = (
+                db_session.query(ProgressEntry).filter(ProgressEntry.TaskProgressID.in_(old_ids)).all()
+                if old_ids
+                else []
             )
-            db_session.execute(
-                CompetitiveTaskGroup.__table__.insert().values(id=self.id)
-            )
-        
-        db_session.flush()
+
+            if old_ids:
+                db_session.execute(
+                    TaskProgress.__table__.update()
+                    .where(TaskProgress.__table__.c.id.in_(old_ids))
+                    .values(groupMemberID=None)
+                )
+
+            member_progress: dict[UUID, TaskProgress] = {}
+            for member in active_members:
+                progress = _build_task_progress(task_type)
+                progress.taskID = task.id
+                progress.groupMemberID = member.id
+                db_session.add(progress)
+                member_progress[member.id] = progress
+            db_session.flush()
+
+            owner_progress = member_progress[owner_member.id]
+            for entry in entries:
+                target = member_progress.get(entry.memberID, owner_progress)
+                entry.TaskProgressID = target.id
+            db_session.flush()
+
+            if old_ids:
+                db_session.execute(
+                    TaskProgress.__table__.delete().where(TaskProgress.__table__.c.id.in_(old_ids))
+                )
+                for old in old_progresses:
+                    db_session.expunge(old)
+
+            for progress in member_progress.values():
+                total = sum(
+                    entry.value
+                    for entry in entries
+                    if member_progress.get(entry.memberID, owner_progress).id == progress.id
+                )
+                progress.value = total
+                if task.goal is not None and total >= task.goal:
+                    progress.status = TaskStatus.DONE
+                elif total != 0:
+                    progress.status = TaskStatus.IN_PROGRESS
+                else:
+                    progress.status = TaskStatus.TODO
+            db_session.flush()
+
+        # Move the joined-table-inheritance row to the competitive subtype (see the cooperative
+        # direction above): swap via Core statements and detach the stale instance.
+        group_id = self.id
+        db_session.execute(
+            CooperativeTaskGroup.__table__.delete().where(CooperativeTaskGroup.__table__.c.id == group_id)
+        )
+        db_session.execute(CompetitiveTaskGroup.__table__.insert().values(id=group_id))
+        db_session.execute(
+            TaskGroup.__table__.update()
+            .where(TaskGroup.__table__.c.id == group_id)
+            .values(type=TaskGroupType.COMPETITIVE)
+        )
+        db_session.expunge(self)
         
     def createTask(self, db_session: Session, user_id: UUID, type: TaskType, **taskparams) -> Task:
         if not self.checkPerms(db_session, user_id, GroupRole.MEMBER):

@@ -148,6 +148,7 @@ const pl: Translation = {
       createAction: 'Stwórz grupę',
       createSubtitle: 'Rozpocznij nowe wyzwanie',
       editAction: 'Edytuj grupę',
+      editForbidden: 'Tylko właściciel lub administratorzy grupy mogą ją edytować.',
       notFound: 'Nie znaleziono grupy',
       basicInfoSection: 'Podstawowe informacje',
       privacySection: 'Prywatność',
@@ -227,6 +228,9 @@ const pl: Translation = {
     },
     tasks: {
       groupPickerSection: 'Wybierz grupę',
+      groupModeNew: 'Nowa grupa',
+      groupModeExisting: 'Istniejąca grupa',
+      newGroupNamePlaceholder: 'Nazwa nowej grupy',
       noGroupSelectedTitle: 'Wybierz grupę',
       noGroupSelectedMessage: 'Wybierz grupę, aby zarządzać taskami.',
       createSection: 'Tworzenie taska',

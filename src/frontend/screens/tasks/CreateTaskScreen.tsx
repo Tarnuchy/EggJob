@@ -12,11 +12,13 @@ import { useAppState } from '../../application/AppStateContext';
 import { useCurrentUserId } from '../../hooks/useCurrentUserId';
 import { useToast } from '../../context/ToastContext';
 import { selectTaskGroupsByMember } from '../../application/selectors';
-import { taskService } from '../../services';
+import { taskGroupService, taskService } from '../../services';
 import { colors } from '../../theme/colors';
 import { SCREEN_PADDING_H, spacing } from '../../theme/spacing';
 import type { TaskColor, TaskKind } from '../../application/state';
 import { DEFAULT_TASK_COLOR, findTaskColorId, TASK_COLORS } from './taskColors';
+
+type GroupMode = 'new' | 'existing';
 
 const generateId = (prefix: string) =>
   `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
@@ -36,6 +38,10 @@ export const CreateTaskScreen = ({ navigation, route }: any) => {
     [state, currentUserId],
   );
 
+  // Standalone task creation defaults to spinning up a brand-new group; opening from within an
+  // existing (non-bingo) group preselects that group instead.
+  const [groupMode, setGroupMode] = useState<GroupMode>(initialGroupId ? 'existing' : 'new');
+  const [newGroupName, setNewGroupName] = useState('');
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(initialGroupId);
   const [groupPickerOpen, setGroupPickerOpen] = useState(false);
   const [taskName, setTaskName] = useState('');
@@ -58,17 +64,66 @@ export const CreateTaskScreen = ({ navigation, route }: any) => {
     [t],
   );
 
-  const handleCreateTask = async () => {
-    if (!selectedGroupId || !selectedGroup) {
-      showToast({ message: t('tasks.tasks.missingGroupMessage'), variant: 'error' });
-      return;
-    }
+  const groupModeOptions = useMemo(
+    () =>
+      [
+        { value: 'new', label: t('tasks.tasks.groupModeNew') },
+        { value: 'existing', label: t('tasks.tasks.groupModeExisting') },
+      ] as const satisfies ReadonlyArray<SegmentedControlOption<GroupMode>>,
+    [t],
+  );
 
+  const handleCreateTask = async () => {
     const trimmedName = taskName.trim();
     const parsedGoal = taskKind === 'one_time' ? 1 : Number(taskGoal);
     if (!trimmedName || Number.isNaN(parsedGoal) || parsedGoal <= 0) {
       showToast({ message: t('tasks.tasks.validationMessage'), variant: 'error' });
       return;
+    }
+
+    // Resolve the destination group: an existing one, or a freshly created cooperative group.
+    let groupId: string;
+    if (groupMode === 'new') {
+      const trimmedGroupName = newGroupName.trim();
+      if (!trimmedGroupName) {
+        showToast({ message: t('tasks.groups.nameRequired'), variant: 'error' });
+        return;
+      }
+      const newGroupId = generateId('grp');
+      const groupResult = await taskGroupService.createGroup({
+        groupId: newGroupId,
+        ownerUserId: currentUserId,
+        name: trimmedGroupName,
+        privacy: 'private',
+        type: 'cooperative',
+        isBingo: false,
+      });
+      if (!groupResult.ok) {
+        showToast({ message: t('tasks.groups.createErrorMessage'), variant: 'error' });
+        return;
+      }
+      const createdGroupId = groupResult.value?.id ?? newGroupId;
+      const groupDispatch = dispatch({
+        type: 'task-groups/create',
+        groupId: createdGroupId,
+        ownerUserId: currentUserId,
+        name: trimmedGroupName,
+        privacy: 'private',
+        groupType: 'cooperative',
+        isBingo: false,
+        inviteCode: groupResult.value?.inviteCode ?? '',
+      });
+      if (!groupDispatch.ok) {
+        showToast({ message: t('tasks.groups.createErrorMessage'), variant: 'error' });
+        return;
+      }
+      groupId = createdGroupId;
+    } else {
+      if (!selectedGroupId || !selectedGroup) {
+        showToast({ message: t('tasks.tasks.missingGroupMessage'), variant: 'error' });
+        return;
+      }
+      groupId = selectedGroupId;
     }
 
     const taskId = generateId('tsk');
@@ -81,7 +136,7 @@ export const CreateTaskScreen = ({ navigation, route }: any) => {
 
     const serviceResult = await taskService.createTask({
       taskId,
-      groupId: selectedGroupId,
+      groupId,
       progressId,
       name: trimmedName,
       goal: parsedGoal,
@@ -98,7 +153,7 @@ export const CreateTaskScreen = ({ navigation, route }: any) => {
     const result = dispatch({
       type: 'tasks/create',
       taskId: createdTaskId,
-      groupId: selectedGroupId,
+      groupId,
       progressId,
       name: trimmedName,
       goal: parsedGoal,
@@ -123,52 +178,68 @@ export const CreateTaskScreen = ({ navigation, route }: any) => {
             <AppText variant="caption" color="muted" style={styles.sectionTitle}>
               {t('tasks.tasks.groupPickerSection')}
             </AppText>
-            <Pressable
-              onPress={() => setGroupPickerOpen((value) => !value)}
-              style={({ pressed }) => [styles.dropdownTrigger, pressed && styles.dropdownTriggerPressed]}
-              accessibilityRole="button"
-              accessibilityState={{ expanded: groupPickerOpen }}
-            >
-              <AppText variant="label" color={selectedGroup ? 'textPrimary' : 'textSecondary'}>
-                {selectedGroup ? selectedGroup.name : t('tasks.tasks.noGroupSelectedTitle')}
-              </AppText>
-              <Ionicons
-                name={groupPickerOpen ? 'chevron-up' : 'chevron-down'}
-                size={18}
-                color={colors.muted}
+            <SegmentedControl<GroupMode>
+              options={groupModeOptions}
+              value={groupMode}
+              onChange={setGroupMode}
+              accessibilityLabel={t('tasks.tasks.groupPickerSection')}
+            />
+            {groupMode === 'new' ? (
+              <AppInput
+                value={newGroupName}
+                onChangeText={setNewGroupName}
+                placeholder={t('tasks.tasks.newGroupNamePlaceholder')}
               />
-            </Pressable>
-            {groupPickerOpen ? (
-              <View style={styles.dropdownList}>
-                {memberGroups.map(({ id, group }) => (
-                  <Pressable
-                    key={id}
-                    onPress={() => {
-                      setSelectedGroupId(id);
-                      setGroupPickerOpen(false);
-                    }}
-                    style={({ pressed }) => [
-                      styles.dropdownRow,
-                      selectedGroupId === id && styles.dropdownRowActive,
-                      pressed && styles.dropdownRowPressed,
-                    ]}
-                    accessibilityRole="button"
-                  >
-                    <AppText
-                      variant="caption"
-                      color={selectedGroupId === id ? 'textOnPrimary' : 'textPrimary'}
-                    >
-                      {group.name}
-                    </AppText>
-                  </Pressable>
-                ))}
-                {memberGroups.length === 0 ? (
-                  <AppText variant="caption" color="textSecondary">
-                    {t('tasks.groups.emptyMessage')}
+            ) : (
+              <>
+                <Pressable
+                  onPress={() => setGroupPickerOpen((value) => !value)}
+                  style={({ pressed }) => [styles.dropdownTrigger, pressed && styles.dropdownTriggerPressed]}
+                  accessibilityRole="button"
+                  accessibilityState={{ expanded: groupPickerOpen }}
+                >
+                  <AppText variant="label" color={selectedGroup ? 'textPrimary' : 'textSecondary'}>
+                    {selectedGroup ? selectedGroup.name : t('tasks.tasks.noGroupSelectedTitle')}
                   </AppText>
+                  <Ionicons
+                    name={groupPickerOpen ? 'chevron-up' : 'chevron-down'}
+                    size={18}
+                    color={colors.muted}
+                  />
+                </Pressable>
+                {groupPickerOpen ? (
+                  <View style={styles.dropdownList}>
+                    {memberGroups.map(({ id, group }) => (
+                      <Pressable
+                        key={id}
+                        onPress={() => {
+                          setSelectedGroupId(id);
+                          setGroupPickerOpen(false);
+                        }}
+                        style={({ pressed }) => [
+                          styles.dropdownRow,
+                          selectedGroupId === id && styles.dropdownRowActive,
+                          pressed && styles.dropdownRowPressed,
+                        ]}
+                        accessibilityRole="button"
+                      >
+                        <AppText
+                          variant="caption"
+                          color={selectedGroupId === id ? 'textOnPrimary' : 'textPrimary'}
+                        >
+                          {group.name}
+                        </AppText>
+                      </Pressable>
+                    ))}
+                    {memberGroups.length === 0 ? (
+                      <AppText variant="caption" color="textSecondary">
+                        {t('tasks.groups.emptyMessage')}
+                      </AppText>
+                    ) : null}
+                  </View>
                 ) : null}
-              </View>
-            ) : null}
+              </>
+            )}
           </View>
 
           <View style={styles.card}>
@@ -297,7 +368,11 @@ export const CreateTaskScreen = ({ navigation, route }: any) => {
             <AppButton
               title={t('tasks.tasks.createTask')}
               onPress={handleCreateTask}
-              disabled={!taskName.trim() || !selectedGroupId || !currentUserId}
+              disabled={
+                !taskName.trim() ||
+                !currentUserId ||
+                (groupMode === 'existing' ? !selectedGroupId : !newGroupName.trim())
+              }
             />
           </View>
         </ScrollView>

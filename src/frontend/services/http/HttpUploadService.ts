@@ -23,7 +23,6 @@ export class HttpUploadService implements IUploadService {
   async uploadImage(image: UploadableImage): Promise<Result<{ key: string; url: string }>> {
     const validationError = validateImageAsset(image);
     if (validationError) {
-      if (__DEV__) console.log('[upload] validation rejected ->', validationError.code, 'mime=', image.mimeType);
       return { ok: false, error: { code: validationError.code } };
     }
 
@@ -43,9 +42,7 @@ export class HttpUploadService implements IUploadService {
         headers,
       });
 
-      if (__DEV__) console.log('[upload] POST /uploads ->', response.status, '| mime=', image.mimeType);
       if (response.status < 200 || response.status >= 300) {
-        if (__DEV__) console.log('[upload] FAILED body=', (response.body || '').slice(0, 300));
         return { ok: false, error: mapStatus(response.status) };
       }
 
@@ -53,16 +50,13 @@ export class HttpUploadService implements IUploadService {
       try {
         parsed = JSON.parse(response.body) as { key?: string; url?: string };
       } catch {
-        if (__DEV__) console.log('[upload] non-JSON body=', (response.body || '').slice(0, 300));
         return { ok: false, error: { code: 'invalid-response' } };
       }
       if (!parsed.url) {
-        if (__DEV__) console.log('[upload] no url in body=', (response.body || '').slice(0, 300));
         return { ok: false, error: { code: 'invalid-response' } };
       }
       return { ok: true, value: { key: parsed.key ?? '', url: parsed.url } };
-    } catch (e) {
-      if (__DEV__) console.log('[upload] network error ->', e instanceof Error ? e.message : String(e));
+    } catch {
       return { ok: false, error: { code: 'network' } };
     }
   }

@@ -146,6 +146,7 @@ const en = {
       createAction: 'Create group',
       createSubtitle: 'Start a new challenge',
       editAction: 'Edit group',
+      editForbidden: 'Only the group owner or admins can edit this group.',
       notFound: 'Group not found',
       basicInfoSection: 'Basic info',
       privacySection: 'Privacy',
@@ -225,6 +226,9 @@ const en = {
     },
     tasks: {
       groupPickerSection: 'Choose group',
+      groupModeNew: 'New group',
+      groupModeExisting: 'Existing group',
+      newGroupNamePlaceholder: 'New group name',
       noGroupSelectedTitle: 'Select a group',
       noGroupSelectedMessage: 'Pick a group to manage tasks.',
       createSection: 'Create task',

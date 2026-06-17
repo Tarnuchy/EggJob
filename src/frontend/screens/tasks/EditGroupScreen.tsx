@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { AppInput } from '../../components/common/AppInput';
 import { AppButton } from '../../components/common/AppButton';
 import { AppText } from '../../components/common/AppText';
+import { ConfirmDialog } from '../../components/common/ConfirmDialog';
 import { SegmentedControl } from '../../components/common/SegmentedControl';
 import { useAppState } from '../../application/AppStateContext';
 import { useToast } from '../../context/ToastContext';
@@ -28,6 +29,7 @@ export const EditGroupScreen = ({ navigation, route }: any) => {
   const [groupType, setGroupType] = useState<TaskGroupType>(group?.type ?? 'cooperative');
   const [isBingo, setIsBingo] = useState<boolean>(group?.isBingo ?? false);
   const [expandedMemberId, setExpandedMemberId] = useState<string | null>(null);
+  const [confirmDeleteVisible, setConfirmDeleteVisible] = useState(false);
   const editableRoles: Exclude<MemberRole, 'owner'>[] = ['member', 'admin'];
   const currentUserRole: MemberRole = group?.ownerUserId === state.session.currentUserId
     ? 'owner'
@@ -60,6 +62,34 @@ export const EditGroupScreen = ({ navigation, route }: any) => {
       </View>
     );
   }
+
+  // Plain members may only view tasks / add progress — they must not reach group settings.
+  if (currentUserRole === 'member') {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.background }}>
+        <TopBar title={t('tasks.groups.editAction')} showBackButton showRightActions={false} />
+        <SafeAreaView style={{ flex: 1, padding: 16 }}>
+          <AppText variant="label">{t('tasks.groups.editForbidden')}</AppText>
+        </SafeAreaView>
+      </View>
+    );
+  }
+
+  const handleDeleteGroup = async () => {
+    setConfirmDeleteVisible(false);
+    const res = await taskGroupService.deleteGroup(groupId);
+    if (!res.ok) {
+      showToast({ message: t('tasks.groups.deleteErrorMessage'), variant: 'error' });
+      return;
+    }
+    const result = dispatch({ type: 'task-groups/delete', groupId });
+    if (!result.ok) {
+      showToast({ message: t('tasks.groups.deleteErrorMessage'), variant: 'error' });
+      return;
+    }
+    showToast({ message: t('tasks.groups.deleteSuccessMessage'), variant: 'success' });
+    navigation.goBack();
+  };
 
   const handleSave = async () => {
     const trimmed = name.trim();
@@ -318,9 +348,26 @@ export const EditGroupScreen = ({ navigation, route }: any) => {
 
           <View style={styles.actions}>
             <AppButton title={t('tasks.groups.saveChanges')} onPress={handleSave} disabled={!name.trim()} />
+            {currentUserRole === 'owner' ? (
+              <AppButton
+                title={t('tasks.groups.deleteGroup')}
+                onPress={() => setConfirmDeleteVisible(true)}
+                style={styles.deleteButton}
+              />
+            ) : null}
           </View>
         </ScrollView>
       </SafeAreaView>
+      <ConfirmDialog
+        visible={confirmDeleteVisible}
+        title={t('tasks.groups.deleteTitle')}
+        message={t('tasks.groups.deleteMessage')}
+        confirmLabel={t('tasks.common.delete')}
+        cancelLabel={t('tasks.common.cancel')}
+        destructive
+        onConfirm={handleDeleteGroup}
+        onCancel={() => setConfirmDeleteVisible(false)}
+      />
     </View>
   );
 };
@@ -465,7 +512,8 @@ const styles = StyleSheet.create({
   removeMemberBtnPressed: {
     opacity: 0.7,
   },
-  actions: { marginTop: spacing.sm },
+  actions: { marginTop: spacing.sm, gap: spacing.sm },
+  deleteButton: { marginTop: 0 },
 });
 
 export default EditGroupScreen;
