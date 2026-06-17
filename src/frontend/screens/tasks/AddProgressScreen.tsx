@@ -55,6 +55,7 @@ export const AddProgressScreen = ({ navigation, route }: any) => {
     setSheetVisible(false);
     await afterInteractions();
     const outcome = await pickAndUpload(source);
+    if (__DEV__) console.log('[photo] pickAndUpload outcome ->', JSON.stringify(outcome));
     if (outcome.status === 'uploaded') {
       setPhotoUrl(outcome.url);
     } else if (outcome.status === 'error') {
@@ -110,6 +111,10 @@ export const AddProgressScreen = ({ navigation, route }: any) => {
         note,
         photoUrl: photoUrl ?? undefined,
       });
+      if (__DEV__) {
+        // eslint-disable-next-line no-console
+        console.log('[submitProgress] service.ok=', serviceResult.ok, '| value=', value, '| taskInState=', !!selectedTask, '| progressId=', selectedTask?.progressId, '| photo=', photoUrl != null);
+      }
       if (!serviceResult.ok) {
         showToast({ message: t('tasks.progress.errorMessage'), variant: 'error' });
         return;
@@ -125,6 +130,10 @@ export const AddProgressScreen = ({ navigation, route }: any) => {
         photoUrl: photoUrl ?? undefined,
         createdAt: new Date(),
       });
+      if (__DEV__ && !result.ok) {
+        // eslint-disable-next-line no-console
+        console.log('[submitProgress] reducer FAILED ->', JSON.stringify(result));
+      }
       if (!result.ok) {
         showToast({ message: t('tasks.progress.errorMessage'), variant: 'error' });
         return;
