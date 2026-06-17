@@ -110,4 +110,5 @@ npm run typecheck # type-check without emitting
 
 ---
 
-<p align="center"><em>EggJob — because every goal deserves a tally.</em></p>
+<p align="center"><em>EggJob — dont put all your eggs in one job
+</em></p>
